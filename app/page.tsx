@@ -1,7 +1,13 @@
+import HeroCarousel from '@/components/hero-carousel';
+import FeaturedCategories from '@/components/featured-categories';
+import NewProducts from '@/components/new-products';
+
 export default function Home() {
   return (
-    <main>
-      <h1>Hello, Next.js!</h1>
-    </main>
-  )
+    <div>
+      <HeroCarousel />
+      <FeaturedCategories />
+      <NewProducts />
+    </div>
+  );
 }

@@ -1,9 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer utilities {
-  .brand {
-    color: #FF4D00;
-  }
+@theme {
+  --color-brand: #FF4D00;
+  --color-secondary: #111827;
+}
+
+@layer components {
+  .form-card { @apply bg-white p-4 md:p-6 rounded-lg shadow space-y-4; }
+  .form-grid { @apply grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4; }
+  .form-label { @apply block text-sm font-medium text-gray-700; }
+  .form-input { @apply w-full border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500; }
+  .form-select { @apply w-full border rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500; }
+  .form-textarea { @apply w-full border rounded px-2 py-1 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500; }
+  .form-actions { @apply flex flex-wrap items-center gap-2; }
 }
