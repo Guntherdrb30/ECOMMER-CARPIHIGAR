@@ -40,6 +40,10 @@ model User {
   receivedPOs  PurchaseOrder[] @relation("POReceiver")
   wishlistItems WishlistItem[]
 
+  // Messaging relations
+  conversations Conversation[] @relation("ConversationUser")
+  assignedConversations Conversation[] @relation("ConversationAssignedTo")
+
   passwordResetToken          String?   @unique
   passwordResetTokenExpiresAt DateTime?
 }
@@ -439,7 +443,7 @@ enum MessageStatus {
 model Conversation {
   id            String    @id @default(cuid())
   userId        String?
-  user          User?     @relation(fields: [userId], references: [id])
+  user          User?     @relation("ConversationUser", fields: [userId], references: [id])
   phone         String
   channel       Channel   @default(WHATSAPP)
   assignedToId  String?
