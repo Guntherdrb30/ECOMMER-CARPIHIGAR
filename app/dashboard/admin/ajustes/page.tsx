@@ -1,7 +1,14 @@
 import { getSettings, updateSettings, getAuditLogs } from "@/server/actions/settings";
 import LogoUploader from "@/components/admin/logo-uploader";
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export default async function AdminSettingsPage() {
+  const session = await getServerSession(authOptions);
+  const email = String((session?.user as any)?.email || '').toLowerCase();
+  const isAdmin = (session?.user as any)?.role === 'ADMIN';
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  const isRoot = isAdmin && email === rootEmail;
   const [settings, logs] = await Promise.all([
     getSettings(),
     getAuditLogs({ take: 50 }),
@@ -160,6 +167,13 @@ export default async function AdminSettingsPage() {
           </button>
         </form>
       </div>
+      {isRoot && (
+        <div className="bg-white p-4 rounded-lg shadow mt-6">
+          <h2 className="text-lg font-bold mb-2">Ajustes del Sistema (Root)</h2>
+          <p className="text-sm text-gray-600 mb-3">Accede a la gestión de la clave de eliminación y opciones avanzadas de seguridad.</p>
+          <a href="/dashboard/admin/ajustes/sistema" className="inline-block px-3 py-2 bg-gray-800 text-white rounded">Ir a Ajustes del Sistema</a>
+        </div>
+      )}
       <div className="bg-white p-4 rounded-lg shadow mt-6">
         <h2 className="text-lg font-bold mb-2">Historial de Seguridad (Audit Log)</h2>
         <p className="text-sm text-gray-600 mb-2">Últimos 50 eventos registrados del sistema.</p>
