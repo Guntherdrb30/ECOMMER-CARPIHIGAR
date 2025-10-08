@@ -4,9 +4,9 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const oldRootEmail = 'root@carpihogar.ai';
-  const newRootEmail = 'guntherdrb@carpihogar.ai';
-  const newRootPassword = 'trends172';
+  const oldRootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com');
+  const newRootEmail = String(process.env.NEW_ROOT_EMAIL || 'admin@carpihogar.com');
+  const newRootPassword = String(process.env.NEW_ROOT_PASSWORD || 'ChangeMe123!');
 
   console.log(`Attempting to reset credentials for root user...`);
 

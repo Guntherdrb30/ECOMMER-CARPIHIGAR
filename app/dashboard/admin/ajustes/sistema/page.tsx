@@ -7,7 +7,8 @@ export default async function SystemSettingsPage() {
   const session = await getServerSession(authOptions);
   const user = (session?.user as any) || {};
   const email = String(user?.email || '').toLowerCase();
-  const isRoot = user?.role === 'ADMIN' && email === 'root@carpihogar.ai';
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  const isRoot = user?.role === 'ADMIN' && email === rootEmail;
   if (!isRoot) {
     return (
       <div className="container mx-auto p-4">
@@ -76,4 +77,3 @@ export default async function SystemSettingsPage() {
     </div>
   );
 }
-

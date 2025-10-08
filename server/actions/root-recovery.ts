@@ -16,9 +16,10 @@ function normalizePhoneE164(phone: string): string {
 export async function setRootRecoverySettings(formData: FormData) {
   // Only ROOT (admin with root email) can configure
   const email = String(formData.get('email') || '').toLowerCase();
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
   const token = String(formData.get('token') || ''); // CSRF-ish no-op for now
   void token; // silence unused
-  if (email !== 'root@carpihogar.ai') {
+  if (email !== rootEmail) {
     throw new Error('Not authorized');
   }
   const phone = normalizePhoneE164(String(formData.get('rootPhone') || ''));
@@ -73,8 +74,8 @@ export async function completeRootRecovery(formData: FormData) {
   if (new Date(s.rootResetCodeExpiresAt).getTime() < Date.now()) throw new Error('Codigo expirado');
 
   const hash = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({ where: { email: 'root@carpihogar.ai' }, data: { password: hash } });
+  const rootEmail2 = String(process.env.ROOT_EMAIL || 'root@carpihogar.com');
+  await prisma.user.update({ where: { email: rootEmail2 }, data: { password: hash } });
   await prisma.siteSettings.update({ where: { id: 1 }, data: { rootResetCode: null, rootResetCodeExpiresAt: null } });
   return { ok: true };
 }
-
