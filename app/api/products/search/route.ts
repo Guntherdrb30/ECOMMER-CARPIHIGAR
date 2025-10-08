@@ -14,14 +14,21 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const where: any = q
-    ? { OR: [ { name: { contains: q, mode: 'insensitive' } }, { sku: { contains: q, mode: 'insensitive' } } ] }
-    : {};
+  const digits = q.replace(/\D/g, '');
+  const or: any[] = [];
+  if (q) {
+    or.push({ name: { contains: q, mode: 'insensitive' } });
+    or.push({ sku: { contains: q, mode: 'insensitive' } });
+    if (digits.length >= 6) {
+      or.push({ barcode: digits });
+    }
+  }
+  const where: any = or.length ? { OR: or } : {};
   const items = await prisma.product.findMany({
     where,
     take: 20,
     orderBy: { createdAt: 'desc' },
-    select: { id: true, name: true, sku: true, priceUSD: true, priceAllyUSD: true },
+    select: { id: true, name: true, sku: true, barcode: true, priceUSD: true, priceAllyUSD: true },
   });
   return NextResponse.json(items);
 }

@@ -46,7 +46,7 @@ export default function PoItemsEditor() {
     <div className="space-y-3">
       <div>
         <label className="block text-sm text-gray-700">Agregar productos</label>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre o SKU" className="w-full border rounded px-2 py-1" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, SKU o código de barras" className="w-full border rounded px-2 py-1" />
         {found.length > 0 && (
           <div className="mt-1 border rounded bg-white divide-y max-h-64 overflow-auto">
             {found.map((p) => (
@@ -102,4 +102,3 @@ export default function PoItemsEditor() {
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement } from "@/server/actions/products";
+import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm } from "@/server/actions/products";
 import SecretDeleteButton from "@/components/admin/secret-delete-button";
 import { getCategories } from "@/server/actions/categories";
 import { getSuppliers } from "@/server/actions/procurement";
@@ -75,6 +75,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             description: String(formData.get('description') || ''),
             images: limited,
             sku: String(formData.get('sku') || '') || null,
+            barcode: String(formData.get('barcode') || ''),
             priceUSD: parseFloat(String(formData.get('priceUSD') || '0')),
             priceAllyUSD: formData.get('priceAllyUSD') ? parseFloat(String(formData.get('priceAllyUSD'))) : null,
             stock: parseInt(String(formData.get('stock') || '0'), 10),
@@ -87,6 +88,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           <input name="name" placeholder="Nombre" className="form-input" required />
           <input name="slug" placeholder="slug-ejemplo" className="form-input" required />
           <input name="sku" placeholder="SKU (opcional)" className="form-input" />
+          <input name="barcode" placeholder="Código de barras (opcional)" className="form-input" />
           <input name="brand" placeholder="Marca" className="form-input" required />
           <input name="priceUSD" type="number" step="0.01" placeholder="Precio USD" className="form-input" required />
           <input name="priceAllyUSD" type="number" step="0.01" placeholder="Precio Aliado USD (opcional)" className="form-input" />
@@ -115,7 +117,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           </div>
           <div className="md:col-span-3">
             <div className="form-actions">
-              <button className="bg-green-600 text-white px-3 py-1 rounded">Crear</button>
+              <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creando…">Crear</PendingButton>
             </div>
           </div>
         </form>
@@ -170,6 +172,14 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                       <input name="quantity" type="number" min="1" placeholder="Qty" className="w-20 border rounded px-1 py-0.5" />
                       <input name="reason" placeholder="Motivo" className="w-40 border rounded px-1 py-0.5" />
                       <PendingButton className="px-2 py-1 border rounded" pendingText="Moviendo…">Mover</PendingButton>
+                    </form>
+                    <form action={updateProductBarcodeByForm} className="flex flex-wrap gap-2 items-center text-sm">
+                      <input type="hidden" name="id" value={product.id} />
+                      <input name="barcode" defaultValue={(product as any).barcode || ''} placeholder="EAN-13" className="w-40 border rounded px-1 py-0.5" />
+                      <PendingButton className="px-2 py-1 bg-gray-800 text-white rounded" pendingText="Guardando…">Guardar código</PendingButton>
+                      {!(product as any).barcode && (
+                        <button name="generate" value="1" className="px-2 py-1 border rounded" title="Generar EAN-13">Generar</button>
+                      )}
                     </form>
                     <StockHistory productId={product.id} />
                     <a className="text-blue-600 hover:underline" href={`/dashboard/admin/productos/${product.id}`}>Editar</a>

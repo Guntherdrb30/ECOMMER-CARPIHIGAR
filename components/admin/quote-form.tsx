@@ -81,7 +81,7 @@ export default function QuoteForm({ sellers, ivaPercent, tasaVES, action }: { se
 
       <div>
         <label className="block text-sm text-gray-700">Buscar productos</label>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre o SKU" className="border rounded px-2 py-1 w-full" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre, SKU o código de barras" className="border rounded px-2 py-1 w-full" />
         {found.length > 0 && (
           <div className="mt-2 border rounded">
             {found.map((p) => (
@@ -152,4 +152,3 @@ export default function QuoteForm({ sellers, ivaPercent, tasaVES, action }: { se
     </form>
   );
 }
-

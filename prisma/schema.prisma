@@ -104,6 +104,7 @@ model Product {
   category     Category?       @relation(fields: [categoryId], references: [id])
   isNew        Boolean         @default(false)
   createdAt    DateTime        @default(now())
+  barcode      String?         @unique
   orderItems   OrderItem[]
   stockMoves   StockMovement[]
   purchaseOrderItems PurchaseOrderItem[]

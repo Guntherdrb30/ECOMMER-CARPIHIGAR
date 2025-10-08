@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { generateEan13, normalizeBarcode } from '@/lib/barcode';
 
 export async function getProducts(filters?: { isNew?: boolean; categorySlug?: string; q?: string; supplierId?: string }) {
     const where: any = {};
@@ -44,7 +45,16 @@ export async function createProduct(data: any) {
     if ((session?.user as any)?.role !== 'ADMIN') {
         throw new Error('Not authorized');
     }
-    const product = await prisma.product.create({ data });
+    let barcode: string | undefined = normalizeBarcode(data?.barcode);
+    if (!barcode) {
+        // generate unique barcode
+        for (let i = 0; i < 5; i++) {
+            const candidate = generateEan13('200');
+            const exists = await prisma.product.findFirst({ where: { barcode: candidate }, select: { id: true } });
+            if (!exists) { barcode = candidate; break; }
+        }
+    }
+    const product = await prisma.product.create({ data: { ...data, barcode } });
     revalidatePath('/dashboard/admin/productos');
     return product;
 }
@@ -189,6 +199,37 @@ export async function updateProductFull(formData: FormData) {
     await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'PRODUCT_UPDATE_FULL', details: id } });
     revalidatePath('/dashboard/admin/productos');
     redirect('/dashboard/admin/productos?message=Producto%20actualizado');
+}
+
+export async function updateProductBarcodeByForm(formData: FormData) {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role !== 'ADMIN') {
+        throw new Error('Not authorized');
+    }
+    const id = String(formData.get('id') || '');
+    const generate = String(formData.get('generate') || '').toLowerCase();
+    const input = String(formData.get('barcode') || '');
+    let newBarcode: string | undefined = undefined;
+    if (generate === '1' || generate === 'true' || generate === 'on') {
+        for (let i = 0; i < 5; i++) {
+            const candidate = generateEan13('200');
+            const exists = await prisma.product.findFirst({ where: { barcode: candidate }, select: { id: true } });
+            if (!exists) { newBarcode = candidate; break; }
+        }
+    } else {
+        newBarcode = normalizeBarcode(input);
+    }
+    if (!newBarcode) {
+        redirect('/dashboard/admin/productos?error=C%C3%B3digo%20inv%C3%A1lido');
+    }
+    const conflict = await prisma.product.findFirst({ where: { barcode: newBarcode!, NOT: { id } }, select: { id: true } });
+    if (conflict) {
+        redirect('/dashboard/admin/productos?error=C%C3%B3digo%20ya%20en%20uso');
+    }
+    await prisma.product.update({ where: { id }, data: { barcode: newBarcode } });
+    try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'PRODUCT_BARCODE_SET', details: `${id}:${newBarcode}` } }); } catch {}
+    revalidatePath('/dashboard/admin/productos');
+    redirect('/dashboard/admin/productos?message=C%C3%B3digo%20actualizado');
 }
 
 export async function getProductPageData(slug: string) {
