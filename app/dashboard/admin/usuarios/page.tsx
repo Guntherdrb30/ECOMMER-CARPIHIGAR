@@ -3,6 +3,7 @@ import { getUsers, approveAlly, createAdminUser, updateUser, deleteUserByForm, u
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import PendingButton from '@/components/pending-button';
 
 export default async function AdminUsersPage() {
   const users = await getUsers();
@@ -28,7 +29,7 @@ export default async function AdminUsersPage() {
           <input name="name" placeholder="Nombre" className="border rounded px-2 py-1" required />
           <input type="email" name="email" placeholder="Email" className="border rounded px-2 py-1" required />
           <input type="password" name="password" placeholder="Contraseña" className="border rounded px-2 py-1" required />
-          <button className="bg-blue-600 text-white px-3 py-1 rounded">Crear Admin</button>
+          <PendingButton className="bg-blue-600 text-white px-3 py-1 rounded" pendingText="Creando…">Crear Admin</PendingButton>
         </form>
       </div>
       <div className="bg-white p-4 rounded-lg shadow mb-4">
@@ -46,7 +47,7 @@ export default async function AdminUsersPage() {
           <input type="email" name="seller_email" placeholder="Email" className="border rounded px-2 py-1" required />
           <input type="password" name="seller_password" placeholder="Contraseña" className="border rounded px-2 py-1" required />
           <input type="number" step="0.01" min="0" max="100" name="seller_commission" placeholder="% Comisión (opcional)" className="border rounded px-2 py-1" />
-          <button className="bg-green-600 text-white px-3 py-1 rounded">Crear Vendedor</button>
+          <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creando…">Crear Vendedor</PendingButton>
         </form>
       </div>
       <div className="bg-white p-4 rounded-lg shadow mt-4">
@@ -75,9 +76,7 @@ export default async function AdminUsersPage() {
                           'use server';
                           await approveAlly(user.id);
                       }}>
-                        <button className="bg-green-500 text-white px-2 py-1 rounded">
-                          Aprobar Aliado
-                        </button>
+                        <PendingButton className="bg-green-500 text-white px-2 py-1 rounded" pendingText="Aprobando…">Aprobar Aliado</PendingButton>
                       </form>
                     )}
                     <form action={updateUser} className="flex flex-wrap gap-2 items-center">
@@ -92,19 +91,19 @@ export default async function AdminUsersPage() {
                       {user.role === 'VENDEDOR' && (
                         <input name="commissionPercent" type="number" step="0.01" min="0" max="100" defaultValue={(user as any).commissionPercent?.toString?.()} placeholder="% Comisión" className="border rounded px-2 py-1 w-32" />
                       )}
-                      <button className="px-3 py-1 bg-gray-800 text-white rounded">Guardar</button>
+                      <PendingButton className="px-3 py-1 bg-gray-800 text-white rounded" pendingText="Guardando…">Guardar</PendingButton>
                     </form>
                     <form action={deleteUserByForm} className="flex flex-wrap gap-2 items-center">
                       <input type="hidden" name="id" value={user.id} />
                       <input name="secret" type="password" placeholder="Clave secreta" className="border rounded px-2 py-1 w-40" required />
-                      <button className="px-3 py-1 bg-red-600 text-white rounded" title="Eliminar usuario">Eliminar</button>
+                      <PendingButton className="px-3 py-1 bg-red-600 text-white rounded" pendingText="Eliminando…" title="Eliminar usuario">Eliminar</PendingButton>
                     </form>
                     {isRoot && (
                       <form action={updateUserPasswordByForm} className="flex flex-wrap gap-2 items-center">
                         <input type="hidden" name="id" value={user.id} />
                         <input name="newPassword" type="password" placeholder="Nueva clave (min 8 + número)" className="border rounded px-2 py-1 w-56" required minLength={8} pattern="(?=.*\d).{8,}" />
                         <input name="confirm" type="password" placeholder="Confirmar clave" className="border rounded px-2 py-1 w-56" required minLength={8} />
-                        <button className="px-3 py-1 bg-blue-600 text-white rounded" title="Cambiar clave">Cambiar clave</button>
+                        <PendingButton className="px-3 py-1 bg-blue-600 text-white rounded" pendingText="Actualizando…" title="Cambiar clave">Cambiar clave</PendingButton>
                       </form>
                     )}
                   </td>
