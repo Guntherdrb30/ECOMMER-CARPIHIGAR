@@ -8,6 +8,8 @@ import ImagesUploader from "@/components/admin/images-uploader";
 import MainImageUploader from "@/components/admin/main-image-uploader";
 import { redirect } from "next/navigation";
 import ProductQuickSearch from "@/components/admin/product-quick-search";
+import PendingButton from '@/components/pending-button';
+import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 export default async function AdminProductsPage({ searchParams }: { searchParams?: Promise<{ q?: string; categoria?: string; proveedor?: string; message?: string }> }) {
   const sp = (await searchParams) || {};
@@ -25,6 +27,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
 
   return (
     <div className="container mx-auto p-4">
+      <ShowToastFromSearch successParam="message" errorParam="error" />
       <h1 className="text-2xl font-bold mb-4">Gestionar Productos</h1>
       <div className="mb-4">
         <label className="block text-sm text-gray-700 mb-1">Búsqueda rápida</label>
@@ -155,7 +158,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                       <input name="stock" type="number" defaultValue={product.stock} className="w-20 border rounded px-1 py-0.5" />
                       <label className="inline-flex items-center gap-1"><input type="checkbox" name="isNew" defaultChecked={product.isNew} /> Nuevo</label>
                       <input name="image" placeholder="URL img" className="w-40 border rounded px-1 py-0.5" />
-                      <button className="px-2 py-1 bg-gray-800 text-white rounded">Guardar</button>
+                      <PendingButton className="px-2 py-1 bg-gray-800 text-white rounded" pendingText="Guardando…">Guardar</PendingButton>
                     </form>
                     <form action={createStockMovement} className="flex flex-wrap gap-2 items-center text-sm">
                       <input type="hidden" name="productId" value={product.id} />
@@ -166,7 +169,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                       </select>
                       <input name="quantity" type="number" min="1" placeholder="Qty" className="w-20 border rounded px-1 py-0.5" />
                       <input name="reason" placeholder="Motivo" className="w-40 border rounded px-1 py-0.5" />
-                      <button className="px-2 py-1 border rounded">Mover</button>
+                      <PendingButton className="px-2 py-1 border rounded" pendingText="Moviendo…">Mover</PendingButton>
                     </form>
                     <StockHistory productId={product.id} />
                     <a className="text-blue-600 hover:underline" href={`/dashboard/admin/productos/${product.id}`}>Editar</a>

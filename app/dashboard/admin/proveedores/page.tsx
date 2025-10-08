@@ -1,4 +1,6 @@
 import { getSuppliers, createSupplier } from "@/server/actions/procurement";
+import PendingButton from '@/components/pending-button';
+import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 export default async function SuppliersPage({ searchParams }: { searchParams?: Promise<{ error?: string; message?: string }> }) {
   const [suppliers, sp] = await Promise.all([ getSuppliers(), (async () => (await searchParams) || {})() ]);
@@ -7,6 +9,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams?: P
 
   return (
     <div className="container mx-auto p-4 space-y-4">
+      <ShowToastFromSearch successParam="message" errorParam="error" />
       <h1 className="text-2xl font-bold">Proveedores</h1>
       {error && <div className="border border-red-200 bg-red-50 text-red-800 px-3 py-2 rounded">{error}</div>}
       {message && <div className="border border-green-200 bg-green-50 text-green-800 px-3 py-2 rounded">{message}</div>}
@@ -19,7 +22,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams?: P
           <input name="phone" placeholder="Teléfono (opcional)" className="form-input" />
           <input name="taxId" placeholder="RIF/NIT (opcional)" className="form-input" />
           <input name="address" placeholder="Dirección (opcional)" className="form-input md:col-span-2" />
-          <button className="bg-green-600 text-white px-3 py-1 rounded">Guardar</button>
+          <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Guardando…">Guardar</PendingButton>
         </form>
       </div>
 

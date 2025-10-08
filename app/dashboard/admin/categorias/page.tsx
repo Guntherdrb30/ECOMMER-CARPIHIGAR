@@ -1,5 +1,7 @@
 import { getCategories, getCategoryTree, createCategoryByForm, deleteCategoryByForm } from "@/server/actions/categories";
 import SecretDeleteButton from "@/components/admin/secret-delete-button";
+import PendingButton from '@/components/pending-button';
+import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 export default async function AdminCategoriesPage({ searchParams }: { searchParams?: Promise<{ error?: string; message?: string }> }) {
   const [categories, tree, sp] = await Promise.all([
@@ -12,6 +14,7 @@ export default async function AdminCategoriesPage({ searchParams }: { searchPara
 
   return (
     <div className="container mx-auto p-4 space-y-4">
+      <ShowToastFromSearch successParam="message" errorParam="error" />
       <h1 className="text-2xl font-bold">Gestionar Categorías</h1>
       {error && <div className="border border-red-200 bg-red-50 text-red-800 px-3 py-2 rounded">{error}</div>}
       {message && <div className="border border-green-200 bg-green-50 text-green-800 px-3 py-2 rounded">{message}</div>}
@@ -27,7 +30,7 @@ export default async function AdminCategoriesPage({ searchParams }: { searchPara
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          <button className="bg-green-600 text-white px-3 py-1 rounded">Crear</button>
+          <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creando…">Crear</PendingButton>
         </form>
       </div>
 
