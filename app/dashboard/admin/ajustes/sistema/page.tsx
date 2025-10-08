@@ -2,6 +2,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDeleteSecret, setDeleteSecret, getSettings } from '@/server/actions/settings';
 import { setRootRecoverySettings } from '@/server/actions/root-recovery';
+import ShowToastFromSearch from '@/components/show-toast-from-search';
+import PendingButton from '@/components/pending-button';
+import { redirect } from 'next/navigation';
 
 export default async function SystemSettingsPage() {
   const session = await getServerSession(authOptions);
@@ -24,12 +27,13 @@ export default async function SystemSettingsPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-4">
+      <ShowToastFromSearch param="sys" okMessage="Cambios guardados" errMessage="No se pudieron guardar los cambios" />
       <h1 className="text-2xl font-bold">Ajustes del Sistema (Root)</h1>
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-2">Clave de eliminación</h2>
         <p className="text-sm text-gray-600 mb-3">Esta clave se usa para autorizar eliminaciones sensibles (abonos, productos, categorías, etc.).</p>
         <div className="mb-3 text-sm text-gray-700">Estado: {current ? 'Configurada' : 'No configurada'}</div>
-        <form action={setDeleteSecret as any} className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl">
+        <form action={async (formData) => { 'use server'; try { await (setDeleteSecret as any)(formData); redirect('/dashboard/admin/ajustes/sistema?sys=ok'); } catch { redirect('/dashboard/admin/ajustes/sistema?sys=err'); } }} className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl">
           <div>
             <label className="block text-sm text-gray-700">Nueva clave</label>
             <input name="newSecret" type="password" minLength={6} required className="border rounded px-2 py-1 w-full" placeholder="Mínimo 6 caracteres" />
@@ -39,7 +43,7 @@ export default async function SystemSettingsPage() {
             <input name="confirm" type="password" minLength={6} required className="border rounded px-2 py-1 w-full" placeholder="Repite la clave" />
           </div>
           <div className="md:col-span-2 flex gap-2">
-            <button className="px-3 py-2 bg-blue-600 text-white rounded">Guardar clave</button>
+            <PendingButton className="px-3 py-2 bg-blue-600 text-white rounded" pendingText="Guardando…">Guardar clave</PendingButton>
             <a className="px-3 py-2 border rounded" href="/dashboard/admin/ajustes">Volver a ajustes</a>
           </div>
         </form>
@@ -48,11 +52,7 @@ export default async function SystemSettingsPage() {
         <h2 className="text-lg font-semibold mb-2">Recuperación de Root por WhatsApp</h2>
         <p className="text-sm text-gray-600 mb-3">Configura el número de WhatsApp del Root y una clave de recuperación (se almacena de forma segura). Servirá para solicitar un código de recuperación y restablecer la contraseña del usuario root.</p>
         <form
-          action={async (formData) => {
-            'use server';
-            formData.set('email', String(email));
-            await setRootRecoverySettings(formData);
-          }}
+          action={async (formData) => { 'use server'; formData.set('email', String(email)); try { await setRootRecoverySettings(formData); redirect('/dashboard/admin/ajustes/sistema?sys=ok'); } catch { redirect('/dashboard/admin/ajustes/sistema?sys=err'); } }}
           className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl"
         >
           <div className="md:col-span-2">
@@ -68,7 +68,7 @@ export default async function SystemSettingsPage() {
             <input name="rootSecretConfirm" type="password" minLength={6} className="border rounded px-2 py-1 w-full" placeholder="Repite la clave" />
           </div>
           <div className="md:col-span-2 flex gap-2">
-            <button className="px-3 py-2 bg-blue-600 text-white rounded">Guardar recuperación</button>
+            <PendingButton className="px-3 py-2 bg-blue-600 text-white rounded" pendingText="Guardando…">Guardar recuperación</PendingButton>
             <a className="px-3 py-2 border rounded" href="/dashboard/admin/ajustes">Volver a ajustes</a>
           </div>
         </form>

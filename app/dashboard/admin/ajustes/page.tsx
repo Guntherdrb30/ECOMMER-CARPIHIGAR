@@ -1,5 +1,8 @@
 import { getSettings, updateSettings, getAuditLogs } from "@/server/actions/settings";
 import LogoUploader from "@/components/admin/logo-uploader";
+import ShowToastFromSearch from '@/components/show-toast-from-search';
+import PendingButton from '@/components/pending-button';
+import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -41,7 +44,12 @@ export default async function AdminSettingsPage() {
                 homeHeroUrls,
                 sellerCommissionPercent: parseFloat(String(formData.get('sellerCommissionPercent') || '5')),
             };
-            await updateSettings(data);
+            try {
+              await updateSettings(data);
+              redirect('/dashboard/admin/ajustes?ajustes=ok');
+            } catch (e) {
+              redirect('/dashboard/admin/ajustes?ajustes=err');
+            }
         }}>
           <div className="mb-4">
             <label className="block text-gray-700">Nombre de la Marca</label>
@@ -162,11 +170,10 @@ export default async function AdminSettingsPage() {
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
-          <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
-            Guardar Cambios
-          </button>
+          <PendingButton className="w-full bg-blue-500 text-white py-2 rounded-lg" pendingText="Guardando…">Guardar Cambios</PendingButton>
         </form>
       </div>
+      <ShowToastFromSearch param="ajustes" okMessage="Ajustes guardados" errMessage="No se pudieron guardar los ajustes" />
       {isRoot && (
         <div className="bg-white p-4 rounded-lg shadow mt-6">
           <h2 className="text-lg font-bold mb-2">Ajustes del Sistema (Root)</h2>
