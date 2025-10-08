@@ -55,8 +55,8 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
           {logoUrl ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logoUrl} alt={brandName || 'Logo'} className="h-10 md:h-12 w-auto object-contain" />
-              <span className="hidden lg:inline text-2xl font-bold text-brand">
+              <img src={logoUrl} alt={brandName || 'Logo'} className="h-10 lg:h-11 xl:h-12 w-auto object-contain" />
+              <span className="hidden xl:inline text-2xl font-bold text-brand">
                 {brandName || 'Carpihogar.ai'}
               </span>
             </>
@@ -64,9 +64,9 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
             <span className="text-2xl md:text-3xl font-bold text-brand">{brandName || 'Carpihogar.ai'}</span>
           )}
         </Link>
-        <nav className="hidden lg:flex items-center space-x-6 ml-auto">
+        <nav className="hidden lg:flex items-center space-x-4 xl:space-x-6 ml-auto">
           {allLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="relative text-gray-600 hover:text-brand transition-colors px-2 py-1">
+            <Link key={link.href} href={link.href} className="relative text-gray-600 hover:text-brand transition-colors px-2 py-1 whitespace-nowrap text-sm xl:text-base">
               {link.label}
               {isClient && link.href === '/carrito' && totalItems > 0 && (
                 <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
