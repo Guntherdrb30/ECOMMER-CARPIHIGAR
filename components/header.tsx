@@ -50,13 +50,13 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4 md:py-5 flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-3" aria-label={brandName || 'Inicio'}>
+      <div className="container mx-auto px-4 py-4 md:py-5 flex justify-between items-center gap-4">
+        <Link href="/" className="flex items-center gap-3 shrink-0" aria-label={brandName || 'Inicio'}>
           {logoUrl ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={logoUrl} alt={brandName || 'Logo'} className="h-10 md:h-12 w-auto object-contain" />
-              <span className="hidden sm:inline text-xl md:text-2xl font-bold text-brand">
+              <span className="hidden lg:inline text-2xl font-bold text-brand">
                 {brandName || 'Carpihogar.ai'}
               </span>
             </>
@@ -64,7 +64,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
             <span className="text-2xl md:text-3xl font-bold text-brand">{brandName || 'Carpihogar.ai'}</span>
           )}
         </Link>
-        <nav className="hidden md:flex items-center space-x-6">
+        <nav className="hidden lg:flex items-center space-x-6 ml-auto">
           {allLinks.map((link) => (
             <Link key={link.href} href={link.href} className="relative text-gray-600 hover:text-brand transition-colors px-2 py-1">
               {link.label}
@@ -81,7 +81,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
             </button>
           )}
         </nav>
-        <div className="md:hidden">
+        <div className="lg:hidden ml-auto">
           <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600 hover:text-brand focus:outline-none">
             {isOpen ? <X /> : <Menu />}
           </button>
