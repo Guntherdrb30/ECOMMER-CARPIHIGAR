@@ -1,8 +1,15 @@
 
-import { getUsers, approveAlly, createAdminUser, updateUser, deleteUserByForm } from "@/server/actions/users";
+import { getUsers, approveAlly, createAdminUser, updateUser, deleteUserByForm, updateUserPasswordByForm } from "@/server/actions/users";
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export default async function AdminUsersPage() {
   const users = await getUsers();
+  const session = await getServerSession(authOptions);
+  const email = String((session?.user as any)?.email || '').toLowerCase();
+  const role = String((session?.user as any)?.role || '');
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  const isRoot = role === 'ADMIN' && email === rootEmail;
 
   return (
     <div className="container mx-auto p-4">
@@ -90,6 +97,14 @@ export default async function AdminUsersPage() {
                       <input name="secret" type="password" placeholder="Clave secreta" className="border rounded px-2 py-1 w-40" required />
                       <button className="px-3 py-1 bg-red-600 text-white rounded" title="Eliminar usuario">Eliminar</button>
                     </form>
+                    {isRoot && (
+                      <form action={updateUserPasswordByForm} className="flex flex-wrap gap-2 items-center">
+                        <input type="hidden" name="id" value={user.id} />
+                        <input name="newPassword" type="password" placeholder="Nueva clave (min 6)" className="border rounded px-2 py-1 w-48" required minLength={6} />
+                        <input name="confirm" type="password" placeholder="Confirmar clave" className="border rounded px-2 py-1 w-48" required minLength={6} />
+                        <button className="px-3 py-1 bg-blue-600 text-white rounded" title="Cambiar clave">Cambiar clave</button>
+                      </form>
+                    )}
                   </td>
                 </tr>
               ))}

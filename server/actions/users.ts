@@ -200,3 +200,41 @@ export async function deleteUserByForm(formData: FormData) {
 }
 
 
+export async function updateUserPasswordByForm(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  const email = String((session?.user as any)?.email || '').toLowerCase();
+  const role = String((session?.user as any)?.role || '');
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  if (!(role === 'ADMIN' && email === rootEmail)) {
+    throw new Error('Not authorized');
+  }
+
+  const id = String(formData.get('id') || '');
+  const newPassword = String(formData.get('newPassword') || '').trim();
+  const confirm = String(formData.get('confirm') || '').trim();
+  if (!id) throw new Error('User id requerido');
+  if (!newPassword || newPassword.length < 6) throw new Error('Contraseña inválida (mínimo 6)');
+  if (newPassword !== confirm) throw new Error('Las contraseñas no coinciden');
+
+  const target = await prisma.user.findUnique({ where: { id }, select: { id: true, email: true } });
+  if (!target) throw new Error('Usuario no encontrado');
+
+  const bcrypt = (await import('bcrypt')).default;
+  const hashed = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({ where: { id }, data: { password: hashed } });
+
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId: (session?.user as any)?.id,
+        action: 'USER_PASSWORD_RESET',
+        details: `target:${id};by:${email}`,
+      },
+    });
+  } catch {}
+
+  revalidatePath('/dashboard/admin/usuarios');
+  return { ok: true } as any;
+}
+
+
