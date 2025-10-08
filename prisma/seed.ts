@@ -7,7 +7,7 @@ async function main() {
   console.log(`Start seeding ...`);
 
   // Create Root/Admin and demo users
-  const rootEmail = 'root@carpihogar.ai';
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com');
   const rootPassword = await bcrypt.hash('Root123!', 10);
   await prisma.user.upsert({
     where: { email: rootEmail },

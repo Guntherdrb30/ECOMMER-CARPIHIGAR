@@ -92,7 +92,8 @@ export async function getDeleteSecret(): Promise<string> {
 export async function setDeleteSecret(formData: FormData) {
   const session = await getServerSession(authOptions);
   const email = (session?.user as any)?.email as string | undefined;
-  if ((session?.user as any)?.role !== 'ADMIN' || String(email || '').toLowerCase() !== 'root@carpihogar.ai') {
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  if ((session?.user as any)?.role !== 'ADMIN' || String(email || '').toLowerCase() !== rootEmail) {
     throw new Error('Not authorized');
   }
   const newSecret = String(formData.get('newSecret') || '').trim();

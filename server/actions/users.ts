@@ -46,8 +46,26 @@ export async function getUsers() {
         throw new Error('Not authorized');
     }
 
-    const users = await prisma.user.findMany();
-    return users;
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        alliedStatus: true,
+        commissionPercent: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Convert Decimal/Date to JSON-safe values
+    return users.map((u: any) => ({
+      ...u,
+      commissionPercent: u.commissionPercent == null ? null : Number(u.commissionPercent),
+      createdAt: u.createdAt ? new Date(u.createdAt).toISOString() : null,
+    }));
 }
 
 export async function createAdminUser(name: string, email: string, password: string) {
@@ -162,7 +180,8 @@ export async function deleteUserByForm(formData: FormData) {
   const target = await prisma.user.findUnique({ where: { id }, select: { id: true, email: true } });
   if (!target) throw new Error('Usuario no encontrado');
   const email = String(target.email || '').toLowerCase();
-  if (email === 'root@carpihogar.ai') {
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  if (email === rootEmail) {
     throw new Error('No se puede eliminar el usuario root');
   }
   if (String((session?.user as any)?.id || '') === id) {

@@ -196,7 +196,7 @@ async function main() {
   console.log('Seeding ventas/órdenes/envíos ...');
 
   const customer = await prisma.user.findUnique({ where: { email: 'cliente@carpihogar.ai' } });
-  const seller = await prisma.user.findUnique({ where: { email: 'root@carpihogar.ai' } });
+  const seller = await prisma.user.findUnique({ where: { email: String(process.env.ROOT_EMAIL || 'root@carpihogar.com') } });
   if (!customer || !seller) {
     throw new Error('Usuarios base no encontrados. Ejecuta primero npm run seed');
   }
@@ -281,4 +281,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

@@ -170,7 +170,7 @@ async function main() {
   await prisma.siteSettings.upsert({ where: { id: 1 }, update: { lowStockThreshold: 5 as any, sellerCommissionPercent: 5 as any }, create: { id: 1, brandName: 'Carpihogar.ai', whatsappPhone: '+58 000-0000000', contactPhone: '+58 000-0000000', contactEmail: 'contacto@carpihogar.ai', ivaPercent: 16 as any, tasaVES: 40 as any, lowStockThreshold: 5 as any, sellerCommissionPercent: 5 as any } });
 
   // Usuarios base
-  const admin = await prisma.user.findUnique({ where: { email: 'root@carpihogar.ai' } });
+  const admin = await prisma.user.findUnique({ where: { email: String(process.env.ROOT_EMAIL || 'root@carpihogar.com') } });
   const customer1 = await prisma.user.findUnique({ where: { email: 'cliente@carpihogar.ai' } });
   if (!admin || !customer1) throw new Error('Ejecuta primero npm run seed para usuarios base');
   const seller1 = await ensureUser('vendedor1@carpihogar.ai', Role.VENDEDOR, 'Vendedor Uno');
@@ -257,4 +257,3 @@ async function main() {
 main()
   .catch((e) => { console.error(e); process.exit(1); })
   .finally(async () => { await prisma.$disconnect(); });
-
