@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -206,35 +207,42 @@ export async function updateUserPasswordByForm(formData: FormData) {
   const role = String((session?.user as any)?.role || '');
   const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
   if (!(role === 'ADMIN' && email === rootEmail)) {
-    throw new Error('Not authorized');
+    redirect('/dashboard/admin/usuarios?pw=err');
   }
 
   const id = String(formData.get('id') || '');
   const newPassword = String(formData.get('newPassword') || '').trim();
   const confirm = String(formData.get('confirm') || '').trim();
-  if (!id) throw new Error('User id requerido');
-  if (!newPassword || newPassword.length < 6) throw new Error('Contraseña inválida (mínimo 6)');
-  if (newPassword !== confirm) throw new Error('Las contraseñas no coinciden');
+  if (!id) redirect('/dashboard/admin/usuarios?pw=err');
+  const hasNumber = /\d/.test(newPassword);
+  if (!newPassword || newPassword.length < 8 || !hasNumber) {
+    redirect('/dashboard/admin/usuarios?pw=err');
+  }
+  if (newPassword !== confirm) {
+    redirect('/dashboard/admin/usuarios?pw=err');
+  }
 
   const target = await prisma.user.findUnique({ where: { id }, select: { id: true, email: true } });
-  if (!target) throw new Error('Usuario no encontrado');
-
-  const bcrypt = (await import('bcrypt')).default;
-  const hashed = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({ where: { id }, data: { password: hashed } });
+  if (!target) redirect('/dashboard/admin/usuarios?pw=err');
 
   try {
-    await prisma.auditLog.create({
-      data: {
-        userId: (session?.user as any)?.id,
-        action: 'USER_PASSWORD_RESET',
-        details: `target:${id};by:${email}`,
-      },
-    });
-  } catch {}
-
-  revalidatePath('/dashboard/admin/usuarios');
-  return { ok: true } as any;
+    const bcrypt = (await import('bcrypt')).default;
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { id }, data: { password: hashed } });
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: (session?.user as any)?.id,
+          action: 'USER_PASSWORD_RESET',
+          details: `target:${id};by:${email}`,
+        },
+      });
+    } catch {}
+    revalidatePath('/dashboard/admin/usuarios');
+    redirect('/dashboard/admin/usuarios?pw=ok');
+  } catch (e) {
+    redirect('/dashboard/admin/usuarios?pw=err');
+  }
 }
 
 

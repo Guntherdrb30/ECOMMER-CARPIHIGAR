@@ -1,5 +1,6 @@
 
 import { getUsers, approveAlly, createAdminUser, updateUser, deleteUserByForm, updateUserPasswordByForm } from "@/server/actions/users";
+import ShowToastFromSearch from '@/components/show-toast-from-search';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -13,6 +14,7 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="container mx-auto p-4">
+      <ShowToastFromSearch />
       <h1 className="text-2xl font-bold mb-4">Gestionar Usuarios</h1>
       <div className="bg-white p-4 rounded-lg shadow mb-4">
         <h2 className="text-lg font-bold mb-2">Crear usuario Administrador</h2>
@@ -100,8 +102,8 @@ export default async function AdminUsersPage() {
                     {isRoot && (
                       <form action={updateUserPasswordByForm} className="flex flex-wrap gap-2 items-center">
                         <input type="hidden" name="id" value={user.id} />
-                        <input name="newPassword" type="password" placeholder="Nueva clave (min 6)" className="border rounded px-2 py-1 w-48" required minLength={6} />
-                        <input name="confirm" type="password" placeholder="Confirmar clave" className="border rounded px-2 py-1 w-48" required minLength={6} />
+                        <input name="newPassword" type="password" placeholder="Nueva clave (min 8 + número)" className="border rounded px-2 py-1 w-56" required minLength={8} pattern="(?=.*\d).{8,}" />
+                        <input name="confirm" type="password" placeholder="Confirmar clave" className="border rounded px-2 py-1 w-56" required minLength={8} />
                         <button className="px-3 py-1 bg-blue-600 text-white rounded" title="Cambiar clave">Cambiar clave</button>
                       </form>
                     )}
