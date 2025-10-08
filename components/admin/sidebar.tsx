@@ -2,32 +2,39 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
-const links = [
-  { href: '/dashboard/admin', label: 'Resumen' },
-  { href: '/dashboard/admin/productos', label: 'Productos' },
-  { href: '/dashboard/admin/categorias', label: 'Categorías' },
-  { href: '/dashboard/admin/ventas', label: 'Ventas' },
-  { href: '/dashboard/admin/cuentas-por-cobrar', label: 'Cuentas por Cobrar' },
-  { href: '/dashboard/admin/inventario', label: 'Inventario' },
-  { href: '/dashboard/admin/inventario/valuacion', label: 'Valuación' },
-  { href: '/dashboard/admin/inventario/valuacion/por-proveedor', label: 'Val. por Proveedor' },
-  { href: '/dashboard/admin/inventario/productos-por-proveedor', label: 'Prod. por Proveedor' },
-  { href: '/dashboard/admin/ventas/nueva', label: 'Nueva Venta' },
-  { href: '/dashboard/admin/presupuestos', label: 'Presupuestos' },
-  { href: '/dashboard/admin/compras', label: 'Compras' },
-  { href: '/dashboard/admin/proveedores', label: 'Proveedores' },
-  { href: '/dashboard/admin/usuarios', label: 'Usuarios' },
-  { href: '/dashboard/admin/envios', label: 'Envíos' },
-  { href: '/dashboard/admin/envios/online', label: 'Envíos Online' },
-  { href: '/dashboard/admin/envios/tienda', label: 'Envíos en Tienda' },
-  { href: '/dashboard/admin/ajustes', label: 'Ajustes' },
-  { href: '/dashboard/admin/reportes', label: 'Reportes' },
-  { href: '/dashboard/admin/mensajeria', label: 'Mensajería' },
-];
+import { useSession } from 'next-auth/react';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const email = String((session?.user as any)?.email || '').toLowerCase();
+  const role = String((session?.user as any)?.role || '');
+  const rootEmail = String(process.env.NEXT_PUBLIC_ROOT_EMAIL || process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  const isRoot = role === 'ADMIN' && email === rootEmail;
+
+  const links = [
+    { href: '/dashboard/admin', label: 'Resumen' },
+    { href: '/dashboard/admin/productos', label: 'Productos' },
+    { href: '/dashboard/admin/categorias', label: 'Categorías' },
+    { href: '/dashboard/admin/ventas', label: 'Ventas' },
+    { href: '/dashboard/admin/cuentas-por-cobrar', label: 'Cuentas por Cobrar' },
+    { href: '/dashboard/admin/inventario', label: 'Inventario' },
+    { href: '/dashboard/admin/inventario/valuacion', label: 'Valuación' },
+    { href: '/dashboard/admin/inventario/valuacion/por-proveedor', label: 'Val. por Proveedor' },
+    { href: '/dashboard/admin/inventario/productos-por-proveedor', label: 'Prod. por Proveedor' },
+    { href: '/dashboard/admin/ventas/nueva', label: 'Nueva Venta' },
+    { href: '/dashboard/admin/presupuestos', label: 'Presupuestos' },
+    { href: '/dashboard/admin/compras', label: 'Compras' },
+    { href: '/dashboard/admin/proveedores', label: 'Proveedores' },
+    { href: '/dashboard/admin/usuarios', label: 'Usuarios' },
+    { href: '/dashboard/admin/envios', label: 'Envíos' },
+    { href: '/dashboard/admin/envios/online', label: 'Envíos Online' },
+    { href: '/dashboard/admin/envios/tienda', label: 'Envíos en Tienda' },
+    { href: '/dashboard/admin/ajustes', label: 'Ajustes' },
+    ...(isRoot ? [{ href: '/dashboard/admin/ajustes/sistema', label: 'Ajustes del Sistema (Root)' }] : []),
+    { href: '/dashboard/admin/reportes', label: 'Reportes' },
+    { href: '/dashboard/admin/mensajeria', label: 'Mensajería' },
+  ];
 
   return (
     <aside className="w-64 shrink-0 border-r bg-white min-h-[calc(100vh-64px)] print:hidden">
