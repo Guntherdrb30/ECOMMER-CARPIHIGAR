@@ -1,4 +1,4 @@
-﻿import { getConversations, getConversationWithMessages, sendMessageAction, assignConversation, setConversationStatus, getAgents } from '@/server/actions/messaging';
+﻿import { getConversations, getConversationWithMessages, sendMessageAction, assignConversation, setConversationStatus, getAgents, getConversationStats } from '@/server/actions/messaging';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import PendingButton from '@/components/pending-button';
@@ -15,11 +15,12 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
   const status = (searchParams?.status as string) || '';
   const mine = (searchParams?.mine as string) === '1';
   const unassigned = (searchParams?.unassigned as string) === '1';
-  const convos = await getConversations({ status: status || undefined, mine, unassigned });
+  const q = (searchParams?.q as string) || '';\n  const convos = await getConversations({ status: status || undefined, mine, unassigned, q: q || undefined });
   const selectedId = (searchParams?.id as string) || (convos[0]?.id || '');
-  const [selected, agents] = await Promise.all([
+  const [selected, agents, stats] = await Promise.all([
     selectedId ? getConversationWithMessages(selectedId) : (null as any),
     getAgents(),
+    getConversationStats(),
   ]);
 
   return (
@@ -115,3 +116,9 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
     </div>
   );
 }
+
+
+
+
+
+

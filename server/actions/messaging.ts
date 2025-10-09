@@ -84,7 +84,17 @@ export async function assignConversation(formData: FormData) {
   const assignedToId = String(formData.get('assignedToId') || '') || null;
   await prisma.conversation.update({ where: { id }, data: { assignedToId: assignedToId || null, assignedAt: assignedToId ? (new Date() as any) : null } });
   revalidatePath('/dashboard/admin/mensajeria');
-  redirect(`/dashboard/admin/mensajeria?id=${id}`);
+  const q = String(formData.get('q') || '');
+  const status = String(formData.get('status') || '');
+  const mine = String(formData.get('mine') || '');
+  const unassigned = String(formData.get('unassigned') || '');
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (mine) params.set('mine', '1');
+  if (unassigned) params.set('unassigned', '1');
+  if (q) params.set('q', q);
+  params.set('id', id);
+  redirect(`/dashboard/admin/mensajeria?${params.toString()}`);
 }
 
 export async function setConversationStatus(formData: FormData) {
@@ -99,7 +109,32 @@ export async function setConversationStatus(formData: FormData) {
   if (status === 'RESOLVED' || status === 'CLOSED') data.closedAt = new Date() as any;
   await prisma.conversation.update({ where: { id }, data });
   revalidatePath('/dashboard/admin/mensajeria');
-  redirect(`/dashboard/admin/mensajeria?id=${id}`);
+  const q = String(formData.get('q') || '');
+  const status = String(formData.get('status') || '');
+  const mine = String(formData.get('mine') || '');
+  const unassigned = String(formData.get('unassigned') || '');
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (mine) params.set('mine', '1');
+  if (unassigned) params.set('unassigned', '1');
+  if (q) params.set('q', q);
+  params.set('id', id);
+  redirect(`/dashboard/admin/mensajeria?${params.toString()}`);
+}
+
+export async function getConversationStats() {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as any)?.role as string | undefined;
+  if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) throw new Error('Not authorized');
+  const statuses = ['OPEN','IN_PROGRESS','PENDING','RESOLVED','CLOSED'] as const;
+  const counts: Record<string, number> = {};
+  for (const s of statuses) {
+    counts[s] = await prisma.conversation.count({ where: { status: s as any } });
+  }
+  const unassigned = await prisma.conversation.count({ where: { assignedToId: null as any } });
+  const mine = await prisma.conversation.count({ where: { assignedToId: (session?.user as any)?.id } });
+  const unread = await prisma.conversation.aggregate({ _sum: { unreadAgent: true } });
+  return { counts, unassigned, mine, unread: Number(unread._sum.unreadAgent || 0) } as any;
 }
 
 export async function getAgents() {
