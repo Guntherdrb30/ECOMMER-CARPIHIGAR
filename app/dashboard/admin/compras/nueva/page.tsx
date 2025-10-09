@@ -1,5 +1,6 @@
 import { getSuppliers } from "@/server/actions/procurement";
 import { createPO } from "@/server/actions/procurement";
+import PendingButton from '@/components/pending-button';
 import PoItemsEditor from "@/components/admin/po-items-editor";
 
 export default async function NuevaOCPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
@@ -39,7 +40,7 @@ export default async function NuevaOCPage({ searchParams }: { searchParams?: Pro
           <PoItemsEditor />
 
           <div>
-            <button className="bg-green-600 text-white px-3 py-1 rounded">Crear OC</button>
+            <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creando…">Crear OC</PendingButton>
           </div>
         </form>
       </div>

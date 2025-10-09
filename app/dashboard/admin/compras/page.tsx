@@ -1,4 +1,5 @@
 import { getPOs, getSuppliers } from "@/server/actions/procurement";
+import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 export default async function PurchasesPage({
   searchParams,
@@ -18,6 +19,7 @@ export default async function PurchasesPage({
   const message = (sp as any).message;
   return (
     <div className="container mx-auto p-4 space-y-4">
+      <ShowToastFromSearch successParam="message" errorParam="error" />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Órdenes de Compra</h1>
         <a href="/dashboard/admin/compras/nueva" className="bg-blue-600 text-white px-3 py-1 rounded">Nueva OC</a>
@@ -111,4 +113,3 @@ export default async function PurchasesPage({
     </div>
   );
 }
-

@@ -110,11 +110,11 @@ export async function setConversationStatus(formData: FormData) {
   await prisma.conversation.update({ where: { id }, data });
   revalidatePath('/dashboard/admin/mensajeria');
   const q = String(formData.get('q') || '');
-  const status = String(formData.get('status') || '');
+  const statusFilter = String(formData.get('status') || '');
   const mine = String(formData.get('mine') || '');
   const unassigned = String(formData.get('unassigned') || '');
   const params = new URLSearchParams();
-  if (status) params.set('status', status);
+  if (statusFilter) params.set('status', statusFilter);
   if (mine) params.set('mine', '1');
   if (unassigned) params.set('unassigned', '1');
   if (q) params.set('q', q);
