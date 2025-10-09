@@ -31,9 +31,11 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
   ]);
 
   return (
-    <div className="p-4 sm:p-6 md:p-8">
+    <div className="p-0">
       <UnreadBeacon />
-      <h1 className="text-2xl font-bold mb-2">Mensajeria (WhatsApp)</h1>
+      <div className="px-4 sm:px-6 md:px-8 pt-4">
+        <h1 className="text-2xl font-bold mb-2">Mensajería (WhatsApp)</h1>
+      </div>
 
       {/* Campaigns / Bulk sender */}
       <div className="mb-4 p-3 border rounded bg-white">
@@ -119,7 +121,7 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
         <a href="/dashboard/admin/mensajeria" className="px-3 py-2 border rounded">Limpiar</a>
       </form>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-4 px-4 sm:px-6 md:px-8 pb-4">
         {/* List */}
         <div className="bg-white rounded shadow divide-y max-h-[70vh] overflow-auto">
           {convos.length === 0 ? (
@@ -164,7 +166,7 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
         </div>
 
         {/* Detail */}
-        <div className="md:col-span-2 bg-white rounded shadow flex flex-col max-h-[70vh]">
+        <div className="md:col-span-2 bg-white rounded shadow flex flex-col max-h-[75vh] overflow-hidden">
           {!selected ? (
             <div className="p-4 text-gray-600">Selecciona una conversacion</div>
           ) : (
@@ -207,23 +209,29 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
                 </div>
               </div>
 
-              {/* Messages */}
-              <div className="flex-1 overflow-auto p-3 space-y-2">
-                {selected.messages.map((m: any) => (
-                  <div key={m.id} className={`max-w-[80%] px-3 py-2 rounded ${m.direction === 'OUT' ? 'bg-blue-600 text-white ml-auto' : 'bg-gray-100 text-gray-900'}`}>
-                    <div className="text-sm whitespace-pre-wrap">{m.text}</div>
-                    <div className="text-[10px] opacity-70 mt-1">{new Date(m.createdAt).toLocaleString()}</div>
-                  </div>
-                ))}
+              {/* Messages (estilo WhatsApp) */}
+              <div className="flex-1 overflow-auto p-3 space-y-2 bg-[#efeae2]">
+                {selected.messages.map((m: any) => {
+                  const isOut = m.direction === 'OUT';
+                  const bubble = isOut ? 'bg-[#DCF8C6] border border-green-200 ml-auto' : 'bg-white border border-gray-200';
+                  return (
+                    <div key={m.id} className={`max-w-[85%] px-3 py-2 rounded-2xl ${bubble}`}>
+                      <div className="text-[15px] leading-5 whitespace-pre-wrap text-gray-900">{m.text}</div>
+                      <div className="text-[10px] mt-1 text-gray-500 flex items-center gap-1 justify-end">
+                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Composer */}
-              <div className="p-3 border-t">
+              <div className="p-3 border-t bg-white">
                 <form action={sendMessageAction} className="flex items-center gap-2">
                   <input type="hidden" name="toPhone" value={selected.convo.phone} />
                   {selected.convo.userId && <input type="hidden" name="userId" value={selected.convo.userId} />}
-                  <input name="text" placeholder="Escribe un mensaje" className="flex-1 border rounded px-3 py-2" />
-                  <PendingButton className="bg-blue-600 text-white px-3 py-2 rounded" pendingText="Enviando...">Enviar</PendingButton>
+                  <input name="text" placeholder="Escribe un mensaje" className="flex-1 border rounded-full px-4 py-2" />
+                  <PendingButton className="bg-green-600 text-white px-4 py-2 rounded-full" pendingText="Enviando...">Enviar</PendingButton>
                 </form>
               </div>
             </div>
