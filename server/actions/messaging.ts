@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { sendWhatsAppText } from '@/lib/whatsapp';
 import { redirect } from 'next/navigation';
 
-export async function getConversations(params?: { status?: 'OPEN'|'IN_PROGRESS'|'PENDING'|'RESOLVED'|'CLOSED'|string; mine?: boolean; unassigned?: boolean }) {
+export async function getConversations(params?: { status?: 'OPEN'|'IN_PROGRESS'|'PENDING'|'RESOLVED'|'CLOSED'|string; mine?: boolean; unassigned?: boolean; q?: string }) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;
   if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) throw new Error('Not authorized');
@@ -15,6 +15,19 @@ export async function getConversations(params?: { status?: 'OPEN'|'IN_PROGRESS'|
   if (params?.status) where.status = params.status as any;
   if (params?.mine) where.assignedToId = (session?.user as any)?.id;
   if (params?.unassigned) where.assignedToId = null as any;
+  if (params?.q) {
+    const q = String(params.q).trim();
+    const digits = q.replace(/[^0-9]/g, '');
+    const or: any[] = [];
+    if (q) {
+      or.push({ user: { is: { name: { contains: q, mode: 'insensitive' } } } });
+      or.push({ user: { is: { email: { contains: q, mode: 'insensitive' } } } });
+      or.push({ phone: { contains: digits || q, mode: 'insensitive' } });
+    }
+    if (or.length) {
+      (where.AND ||= []).push({ OR: or });
+    }
+  }
   const convos = await prisma.conversation.findMany({ where, orderBy: { lastMessageAt: 'desc' }, include: { user: true, assignedTo: true }, take: 200 });
   return convos as any;
 }

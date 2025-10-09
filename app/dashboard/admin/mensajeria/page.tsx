@@ -1,4 +1,4 @@
-import { getConversations, getConversationWithMessages, sendMessageAction, assignConversation, setConversationStatus, getAgents } from '@/server/actions/messaging';
+﻿import { getConversations, getConversationWithMessages, sendMessageAction, assignConversation, setConversationStatus, getAgents } from '@/server/actions/messaging';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import PendingButton from '@/components/pending-button';
@@ -32,27 +32,35 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
         <a className="px-2 py-1 border rounded" href="/dashboard/admin/mensajeria?status=PENDING">Pendientes</a>
         <a className="px-2 py-1 border rounded" href="/dashboard/admin/mensajeria?status=RESOLVED">Finalizadas</a>
         <span className="mx-2">|</span>
-        <a className="px-2 py-1 border rounded" href="/dashboard/admin/mensajeria?mine=1">Asignadas a mí</a>
+        <a className="px-2 py-1 border rounded" href="/dashboard/admin/mensajeria?mine=1">Asignadas a mÃ­</a>
         <a className="px-2 py-1 border rounded" href="/dashboard/admin/mensajeria?unassigned=1">Sin asignar</a>
       </div>
+      <form method="get" className="mb-4 flex items-center gap-2">
+        <input name="q" defaultValue={q} placeholder="Buscar por nombre, email o teléfono" className="border rounded px-3 py-2 flex-1" />
+        {status && <input type="hidden" name="status" value={status} />}
+        {mine && <input type="hidden" name="mine" value="1" />}
+        {unassigned && <input type="hidden" name="unassigned" value="1" />}
+        <button className="px-3 py-2 bg-gray-800 text-white rounded">Buscar</button>
+        <a href="/dashboard/admin/mensajeria" className="px-3 py-2 border rounded">Limpiar</a>
+      </form>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded shadow divide-y max-h-[70vh] overflow-auto">
           {convos.length === 0 ? (
-            <div className="p-4 text-gray-600">Aún no hay conversaciones.</div>
+            <div className="p-4 text-gray-600">AÃºn no hay conversaciones.</div>
           ) : convos.map((c:any) => (
             <a key={c.id} href={`?id=${c.id}`} className={`block p-3 hover:bg-gray-50 ${c.id===selectedId?'bg-gray-100':''}`}>
               <div className="flex justify-between items-center">
                 <div className="text-sm font-medium text-gray-800 truncate">{c.user?.name || c.phone}</div>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-gray-100">{c.status}</span>
               </div>
-              <div className="text-xs text-gray-600">{new Date(c.lastMessageAt || c.createdAt).toLocaleString()} • {c.assignedTo?.name || c.assignedTo?.email || 'Sin asignar'}</div>
+              <div className="text-xs text-gray-600">{new Date(c.lastMessageAt || c.createdAt).toLocaleString()} â€¢ {c.assignedTo?.name || c.assignedTo?.email || 'Sin asignar'}</div>
             </a>
           ))}
         </div>
 
         <div className="md:col-span-2 bg-white rounded shadow flex flex-col max-h-[70vh]">
           {!selected ? (
-            <div className="p-4 text-gray-600">Selecciona una conversación</div>
+            <div className="p-4 text-gray-600">Selecciona una conversaciÃ³n</div>
           ) : (
             <div className="flex flex-col h-full">
               <div className="p-3 border-b flex items-center justify-between gap-3">
@@ -69,7 +77,7 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
                         <option key={a.id} value={a.id}>{a.name || a.email}</option>
                       ))}
                     </select>
-                    <PendingButton className="px-2 py-1 border rounded text-sm" pendingText="Asignando…">Asignar</PendingButton>
+                    <PendingButton className="px-2 py-1 border rounded text-sm" pendingText="Asignandoâ€¦">Asignar</PendingButton>
                   </form>
                   <form action={setConversationStatus} className="flex items-center gap-1">
                     <input type="hidden" name="id" value={selected.convo.id} />
@@ -80,7 +88,7 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
                       <option value="RESOLVED">Finalizada</option>
                       <option value="CLOSED">Cerrada</option>
                     </select>
-                    <PendingButton className="px-2 py-1 border rounded text-sm" pendingText="Actualizando…">Actualizar</PendingButton>
+                    <PendingButton className="px-2 py-1 border rounded text-sm" pendingText="Actualizandoâ€¦">Actualizar</PendingButton>
                   </form>
                 </div>
               </div>
@@ -97,7 +105,7 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
                   <input type="hidden" name="toPhone" value={selected.convo.phone} />
                   {selected.convo.userId && <input type="hidden" name="userId" value={selected.convo.userId} />}
                   <input name="text" placeholder="Escribe un mensaje" className="flex-1 border rounded px-3 py-2" />
-                  <PendingButton className="bg-blue-600 text-white px-3 py-2 rounded" pendingText="Enviando…">Enviar</PendingButton>
+                  <PendingButton className="bg-blue-600 text-white px-3 py-2 rounded" pendingText="Enviandoâ€¦">Enviar</PendingButton>
                 </form>
               </div>
             </div>
