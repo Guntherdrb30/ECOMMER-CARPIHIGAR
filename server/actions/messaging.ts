@@ -28,19 +28,29 @@ export async function getConversations(params?: { status?: 'OPEN'|'IN_PROGRESS'|
       (where.AND ||= []).push({ OR: or });
     }
   }
-  const convos = await prisma.conversation.findMany({ where, orderBy: { lastMessageAt: 'desc' }, include: { user: true, assignedTo: true }, take: 200 });
-  return convos as any;
+  try {
+    const convos = await prisma.conversation.findMany({ where, orderBy: { lastMessageAt: 'desc' }, include: { user: true, assignedTo: true }, take: 200 });
+    return convos as any;
+  } catch (err) {
+    console.warn('[getConversations] DB error', err);
+    return [] as any[];
+  }
 }
 
 export async function getConversationWithMessages(id: string) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;
   if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) throw new Error('Not authorized');
-  const convo = await prisma.conversation.findUnique({ where: { id }, include: { user: true, assignedTo: true } });
-  if (!convo) throw new Error('Conversation not found');
-  const messages = await prisma.message.findMany({ where: { conversationId: id }, orderBy: { createdAt: 'asc' }, take: 500 });
-  try { await prisma.conversation.update({ where: { id }, data: { unreadAgent: 0 } }); } catch {}
-  return { convo, messages } as any;
+  try {
+    const convo = await prisma.conversation.findUnique({ where: { id }, include: { user: true, assignedTo: true } });
+    if (!convo) return null as any;
+    const messages = await prisma.message.findMany({ where: { conversationId: id }, orderBy: { createdAt: 'asc' }, take: 500 });
+    try { await prisma.conversation.update({ where: { id }, data: { unreadAgent: 0 } }); } catch {}
+    return { convo, messages } as any;
+  } catch (err) {
+    console.warn('[getConversationWithMessages] DB error', err);
+    return null as any;
+  }
 }
 
 async function ensureConversation(phone: string, userId?: string | null) {
@@ -126,21 +136,32 @@ export async function getConversationStats() {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;
   if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) throw new Error('Not authorized');
-  const statuses = ['OPEN','IN_PROGRESS','PENDING','RESOLVED','CLOSED'] as const;
-  const counts: Record<string, number> = {};
-  for (const s of statuses) {
-    counts[s] = await prisma.conversation.count({ where: { status: s as any } });
+  try {
+    const statuses = ['OPEN','IN_PROGRESS','PENDING','RESOLVED','CLOSED'] as const;
+    const counts: Record<string, number> = {};
+    for (const s of statuses) {
+      counts[s] = await prisma.conversation.count({ where: { status: s as any } });
+    }
+    const unassigned = await prisma.conversation.count({ where: { assignedToId: null as any } });
+    const mine = await prisma.conversation.count({ where: { assignedToId: (session?.user as any)?.id } });
+    const unread = await prisma.conversation.aggregate({ _sum: { unreadAgent: true } });
+    return { counts, unassigned, mine, unread: Number((unread as any)?._sum?.unreadAgent || 0) } as any;
+  } catch (err) {
+    console.warn('[getConversationStats] DB error', err);
+    const counts = { OPEN: 0, IN_PROGRESS: 0, PENDING: 0, RESOLVED: 0, CLOSED: 0 } as any;
+    return { counts, unassigned: 0, mine: 0, unread: 0 } as any;
   }
-  const unassigned = await prisma.conversation.count({ where: { assignedToId: null as any } });
-  const mine = await prisma.conversation.count({ where: { assignedToId: (session?.user as any)?.id } });
-  const unread = await prisma.conversation.aggregate({ _sum: { unreadAgent: true } });
-  return { counts, unassigned, mine, unread: Number(unread._sum.unreadAgent || 0) } as any;
 }
 
 export async function getAgents() {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;
   if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) throw new Error('Not authorized');
-  const agents = await prisma.user.findMany({ where: { role: { in: ['ADMIN','VENDEDOR'] as any } }, select: { id: true, name: true, email: true } });
-  return agents as any;
+  try {
+    const agents = await prisma.user.findMany({ where: { role: { in: ['ADMIN','VENDEDOR'] as any } }, select: { id: true, name: true, email: true } });
+    return agents as any;
+  } catch (err) {
+    console.warn('[getAgents] DB error', err);
+    return [] as any[];
+  }
 }
