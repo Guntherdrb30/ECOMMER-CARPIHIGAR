@@ -15,7 +15,8 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
   const status = (searchParams?.status as string) || '';
   const mine = (searchParams?.mine as string) === '1';
   const unassigned = (searchParams?.unassigned as string) === '1';
-  const q = (searchParams?.q as string) || '';\n  const convos = await getConversations({ status: status || undefined, mine, unassigned, q: q || undefined });
+  const q = (searchParams?.q as string) || '';
+  const convos = await getConversations({ status: status || undefined, mine, unassigned, q: q || undefined });
   const selectedId = (searchParams?.id as string) || (convos[0]?.id || '');
   const [selected, agents, stats] = await Promise.all([
     selectedId ? getConversationWithMessages(selectedId) : (null as any),
@@ -58,71 +59,8 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
               </div>
               <div className="text-xs text-gray-600">{new Date(c.lastMessageAt || c.createdAt).toLocaleString()} â€¢ {c.assignedTo?.name || c.assignedTo?.email || 'Sin asignar'}</div>
             </a>
-          ))}
-        </div>
-
-        <div className="md:col-span-2 bg-white rounded shadow flex flex-col max-h-[70vh]">
-          {!selected ? (
-            <div className="p-4 text-gray-600">Selecciona una conversaciÃ³n</div>
-          ) : (
-            <div className="flex flex-col h-full">
-              <div className="p-3 border-b flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold">{selected.convo.user?.name || selected.convo.phone}</div>
-                  <div className="text-xs text-gray-600">{selected.convo.phone}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <form action={assignConversation} className="flex items-center gap-1">
-                    <input type="hidden" name="id" value={selected.convo.id} />
-                    <select name="assignedToId" defaultValue={selected.convo.assignedTo?.id || ''} className="border rounded px-2 py-1 text-sm">
-                      <option value="">Sin asignar</option>
-                      {agents.map((a:any) => (
-                        <option key={a.id} value={a.id}>{a.name || a.email}</option>
-                      ))}
-                    </select>
-                    <PendingButton className="px-2 py-1 border rounded text-sm" pendingText="Asignandoâ€¦">Asignar</PendingButton>
-                  </form>
-                  <form action={setConversationStatus} className="flex items-center gap-1">
-                    <input type="hidden" name="id" value={selected.convo.id} />
-                    <select name="status" defaultValue={selected.convo.status} className="border rounded px-2 py-1 text-sm">
-                      <option value="OPEN">Abierta</option>
-                      <option value="IN_PROGRESS">En curso</option>
-                      <option value="PENDING">Pendiente</option>
-                      <option value="RESOLVED">Finalizada</option>
-                      <option value="CLOSED">Cerrada</option>
-                    </select>
-                    <PendingButton className="px-2 py-1 border rounded text-sm" pendingText="Actualizandoâ€¦">Actualizar</PendingButton>
-                  </form>
-                </div>
-              </div>
-              <div className="flex-1 overflow-auto p-3 space-y-2">
-                {selected.messages.map((m:any) => (
-                  <div key={m.id} className={`max-w-[80%] px-3 py-2 rounded ${m.direction==='OUT'?'bg-blue-600 text-white ml-auto':'bg-gray-100 text-gray-900'}`}>
-                    <div className="text-sm whitespace-pre-wrap">{m.text}</div>
-                    <div className="text-[10px] opacity-70 mt-1">{new Date(m.createdAt).toLocaleString()}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="p-3 border-t">
-                <form action={sendMessageAction} className="flex items-center gap-2">
-                  <input type="hidden" name="toPhone" value={selected.convo.phone} />
-                  {selected.convo.userId && <input type="hidden" name="userId" value={selected.convo.userId} />}
-                  <input name="text" placeholder="Escribe un mensaje" className="flex-1 border rounded px-3 py-2" />
-                  <PendingButton className="bg-blue-600 text-white px-3 py-2 rounded" pendingText="Enviandoâ€¦">Enviar</PendingButton>
-                </form>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-
-
-
-
-
-
+            {c.unreadAgent > 0 && (
+              <div className="px-3 pb-2 text-[10px] text-red-600">No leídos: {c.unreadAgent}</div>
+            )}
+            {((!c.assignedToId) || (c.assignedToId !== myId)) && (
+              <form 
