@@ -23,6 +23,8 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
     getConversationStats(),
   ]);
 
+  const myId = (session?.user as any)?.id as string | undefined;
+
   return (
     <div className="p-4 sm:p-6 md:p-8">
       <h1 className="text-2xl font-bold mb-4">Mensajería (WhatsApp)</h1>
@@ -116,6 +118,8 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
     </div>
   );
 }
+
+
 
 
 
