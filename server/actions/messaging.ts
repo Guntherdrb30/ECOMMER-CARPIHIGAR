@@ -86,6 +86,65 @@ export async function ingestInboundMessage(phone: string, text: string, waMessag
   return { ok: true } as any;
 }
 
+export async function sendBulkMessageAction(_prev: any, form: FormData) {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as any)?.role as string | undefined;
+  if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) return { ok: false, error: 'Not authorized' };
+  const rawPhones = String(form.get('phones') || '').trim();
+  const text = String(form.get('text') || '').trim();
+  if (!rawPhones || !text) return { ok: false, error: 'Faltan teléfonos o texto' };
+  const tokens = rawPhones.split(/[\s,;\n]+/g).map(v => v.trim()).filter(Boolean);
+  const uniquePhones = Array.from(new Set(tokens.map(v => v.replace(/[^0-9]/g, '')))).filter(v => v.length >= 8);
+  const results: { phone: string; ok: boolean; error?: string }[] = [];
+  for (const p of uniquePhones) {
+    try {
+      const convo = await ensureConversation(p, undefined);
+      const res = await sendWhatsAppText(p, text);
+      await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id } });
+      await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastOutboundAt: new Date(), unreadCustomer: { increment: 1 } as any } });
+      results.push({ phone: p, ok: res.ok, error: res.ok ? undefined : res.error });
+    } catch (e: any) {
+      results.push({ phone: p, ok: false, error: String(e?.message || e) });
+    }
+  }
+  try { revalidatePath('/dashboard/admin/mensajeria', 'page' as any); } catch {}
+  const failed = results.filter(r => !r.ok).length;
+  return { ok: failed === 0, results } as any;
+}
+
+export async function sendDirectMessageAction(_prev: any, form: FormData) {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as any)?.role as string | undefined;
+  if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) return { ok: false, error: 'Not authorized' };
+  const userId = String(form.get('userId') || '').trim();
+  const text = String(form.get('text') || '').trim();
+  if (!userId || !text) return { ok: false, error: 'Faltan usuario o texto' };
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const phone = (user?.phone || '').replace(/[^0-9]/g, '');
+  if (!user || !phone) return { ok: false, error: 'El usuario no tiene teléfono' };
+  const convo = await ensureConversation(phone, user.id);
+  const res = await sendWhatsAppText(phone, text);
+  await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id } });
+  await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastOutboundAt: new Date(), unreadCustomer: { increment: 1 } as any } });
+  try { revalidatePath('/dashboard/admin/mensajeria', 'page' as any); } catch {}
+  return res.ok ? { ok: true } : { ok: false, error: res.error };
+}
+
+export async function searchUsersForCampaign(q: string) {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as any)?.role as string | undefined;
+  if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) throw new Error('Not authorized');
+  const term = String(q || '').trim();
+  if (!term) return [] as any[];
+  const digits = term.replace(/[^0-9]/g, '');
+  const where: any = { OR: [] };
+  where.OR.push({ name: { contains: term, mode: 'insensitive' } });
+  where.OR.push({ email: { contains: term, mode: 'insensitive' } });
+  if (digits) where.OR.push({ phone: { contains: digits, mode: 'insensitive' } });
+  const users = await prisma.user.findMany({ where, select: { id: true, name: true, email: true, phone: true }, take: 20 });
+  return users as any;
+}
+
 export async function assignConversation(formData: FormData) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;

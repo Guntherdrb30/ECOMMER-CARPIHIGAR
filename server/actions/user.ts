@@ -13,7 +13,11 @@ export async function updateUserProfile(formData: FormData) {
   }
 
   const name = formData.get('name') as string;
-  const phone = formData.get('phone') as string;
+  const phoneRaw = String(formData.get('phone') || '');
+  const phone = phoneRaw.replace(/[^0-9]/g, '');
+  if (!phone) {
+    return { success: false, message: 'El número de teléfono es obligatorio para WhatsApp.' };
+  }
 
   try {
     await prisma.user.update({
@@ -70,3 +74,4 @@ export async function changePassword(formData: FormData) {
     return { success: false, message: 'Error al cambiar la contraseña.' };
   }
 }
+

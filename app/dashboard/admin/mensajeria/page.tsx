@@ -1,4 +1,4 @@
-import { getConversations, getConversationWithMessages, sendMessageAction, assignConversation, setConversationStatus, getAgents, getConversationStats } from '@/server/actions/messaging';
+import { getConversations, getConversationWithMessages, sendMessageAction, assignConversation, setConversationStatus, getAgents, getConversationStats, sendBulkMessageAction, sendDirectMessageAction, searchUsersForCampaign } from '@/server/actions/messaging';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import PendingButton from '@/components/pending-button';
@@ -21,6 +21,8 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
   const q = (searchParams?.q as string) || '';
 
   const convos = await getConversations({ status: status || undefined, mine, unassigned, q: q || undefined });
+  const uq = (searchParams?.uq as string) || '';
+  const userResults = uq ? await searchUsersForCampaign(uq) : ([] as any[]);
   const selectedId = (searchParams?.id as string) || (convos[0]?.id || '');
   const [selected, agents, stats] = await Promise.all([
     selectedId ? getConversationWithMessages(selectedId) : (null as any),
@@ -32,6 +34,58 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
     <div className="p-4 sm:p-6 md:p-8">
       <UnreadBeacon />
       <h1 className="text-2xl font-bold mb-2">Mensajeria (WhatsApp)</h1>
+
+      {/* Campaigns / Bulk sender */}
+      <div className="mb-4 p-3 border rounded bg-white">
+        <h2 className="font-semibold mb-2">Campañas / Envío masivo</h2>
+        <form action={sendBulkMessageAction} className="space-y-2">
+          <div className="grid md:grid-cols-2 gap-2">
+            <div>
+              <label className="text-sm text-gray-600">Teléfonos (uno por línea o separados por coma)</label>
+              <textarea name="phones" className="w-full border rounded p-2 h-24" placeholder="Ej:
+04121234567
+04141234567, 04161234567"></textarea>
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Mensaje</label>
+              <textarea name="text" className="w-full border rounded p-2 h-24" placeholder="Escribe tu mensaje"></textarea>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <PendingButton className="px-3 py-2 bg-green-600 text-white rounded" pendingText="Enviando...">Enviar masivo</PendingButton>
+            <span className="text-xs text-gray-500">Se crearán conversaciones si no existen.</span>
+          </div>
+        </form>
+      </div>
+
+      {/* Direct message to customer (search) */}
+      <div className="mb-4 p-3 border rounded bg-white">
+        <h2 className="font-semibold mb-2">Buscar cliente y escribirle</h2>
+        <form method="get" className="flex items-center gap-2 mb-2">
+          <input name="uq" defaultValue={uq} placeholder="Buscar por nombre, email o teléfono" className="border rounded px-3 py-2 flex-1" />
+          <button className="px-3 py-2 bg-gray-800 text-white rounded">Buscar</button>
+          {uq && <a href="/dashboard/admin/mensajeria" className="px-3 py-2 border rounded">Limpiar</a>}
+        </form>
+        {!!uq && (
+          <div className="divide-y max-h-60 overflow-auto">
+            {userResults.length === 0 ? (
+              <div className="p-2 text-sm text-gray-600">No se encontraron usuarios.</div>
+            ) : userResults.map((u:any) => (
+              <div key={u.id} className="p-2 flex items-center gap-3 justify-between">
+                <div className="text-sm">
+                  <div className="font-medium">{u.name || u.email}</div>
+                  <div className="text-gray-600">{u.email} · {u.phone || 'Sin teléfono'}</div>
+                </div>
+                <form action={sendDirectMessageAction} className="flex items-center gap-2">
+                  <input type="hidden" name="userId" value={u.id} />
+                  <input name="text" placeholder="Escribir mensaje" className="border rounded px-2 py-1 text-sm" />
+                  <PendingButton className="px-2 py-1 bg-blue-600 text-white rounded text-sm" pendingText="Enviando...">Enviar</PendingButton>
+                </form>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Metrics */}
       <div className="mb-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-sm">
@@ -179,4 +233,3 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
     </div>
   );
 }
-
