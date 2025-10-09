@@ -78,6 +78,18 @@ export async function sendMessageAction(_prev: any, form: FormData) {
   return res.ok ? { ok: true } : { ok: false, error: res.error };
 }
 
+// Wrapper tolerante a errores para evitar que una excepción del servidor
+// rompa la renderización de la página cuando se envía un mensaje.
+export async function sendMessageActionSafe(_prev: any, form: FormData) {
+  try {
+    return await sendMessageAction(_prev, form);
+  } catch (e: any) {
+    console.error('[sendMessageActionSafe] error', e);
+    try { revalidatePath('/dashboard/admin/mensajeria', 'page' as any); } catch {}
+    return { ok: false, error: String(e?.message || e) } as any;
+  }
+}
+
 export async function ingestInboundMessage(phone: string, text: string, waMessageId?: string) {
   const convo = await ensureConversation(phone, undefined);
   await prisma.message.create({ data: { conversationId: convo.id, direction: 'IN' as any, status: 'DELIVERED' as any, type: 'TEXT', text, waMessageId } });
