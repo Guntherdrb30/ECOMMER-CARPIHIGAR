@@ -1,0 +1,11 @@
+﻿-- Conversation status and metadata
+DO  BEGIN
+  CREATE TYPE "ConversationStatus" AS ENUM ('OPEN','IN_PROGRESS','PENDING','RESOLVED','CLOSED');
+EXCEPTION WHEN duplicate_object THEN NULL; END ;
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "status" "ConversationStatus" DEFAULT 'OPEN';
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "assignedAt" TIMESTAMP;
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "closedAt" TIMESTAMP;
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "lastInboundAt" TIMESTAMP;
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "lastOutboundAt" TIMESTAMP;
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "unreadAgent" INTEGER DEFAULT 0;
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "unreadCustomer" INTEGER DEFAULT 0;

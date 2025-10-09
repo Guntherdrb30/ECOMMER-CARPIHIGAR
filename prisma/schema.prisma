@@ -441,6 +441,14 @@ enum MessageStatus {
   FAILED
 }
 
+enum ConversationStatus {
+  OPEN
+  IN_PROGRESS
+  PENDING
+  RESOLVED
+  CLOSED
+}
+
 model Conversation {
   id            String    @id @default(cuid())
   userId        String?
@@ -449,6 +457,13 @@ model Conversation {
   channel       Channel   @default(WHATSAPP)
   assignedToId  String?
   assignedTo    User?     @relation("ConversationAssignedTo", fields: [assignedToId], references: [id])
+  status        ConversationStatus @default(OPEN)
+  assignedAt    DateTime?
+  closedAt      DateTime?
+  lastInboundAt DateTime?
+  lastOutboundAt DateTime?
+  unreadAgent   Int       @default(0)
+  unreadCustomer Int      @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   lastMessageAt DateTime?
