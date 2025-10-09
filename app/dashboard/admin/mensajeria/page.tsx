@@ -2,6 +2,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import PendingButton from '@/components/pending-button';
+import UnreadBeacon from '@/components/messaging/unread-beacon';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,7 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
 
   return (
     <div className="p-4 sm:p-6 md:p-8">
+      <UnreadBeacon />
       <h1 className="text-2xl font-bold mb-4">Mensajería (WhatsApp)</h1>
       <div className="mb-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-sm">
         <div className="border rounded p-2 bg-white"><div className="text-gray-500">Abiertas</div><div className="text-xl font-semibold">{stats.counts.OPEN}</div></div>
