@@ -49,6 +49,17 @@ export default async function ReportesPage({ searchParams }: { searchParams?: { 
 
       <KpiCards items={kpiItems} />
 
+      {/* Export toolbar */}
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <a className="underline" href={`/api/reports/analytics/summary/pdf?from=${from}&to=${to}`} target="_blank" rel="noopener noreferrer">Descargar resumen (PDF)</a>
+        <span className="text-gray-400">|</span>
+        <a className="underline" href={`/api/reports/analytics/sales-series?from=${from}&to=${to}`} target="_blank" rel="noopener noreferrer">Series de ventas (CSV)</a>
+        <a className="underline" href={`/api/reports/analytics/top-products?from=${from}&to=${to}`} target="_blank" rel="noopener noreferrer">Top productos (CSV)</a>
+        <a className="underline" href={`/api/reports/analytics/sales-by-category?from=${from}&to=${to}`} target="_blank" rel="noopener noreferrer">Por categoría (CSV)</a>
+        <a className="underline" href={`/api/reports/analytics/sales-by-seller?from=${from}&to=${to}`} target="_blank" rel="noopener noreferrer">Por vendedor (CSV)</a>
+        <a className="underline" href={`/api/reports/analytics/aging`} target="_blank" rel="noopener noreferrer">Antigüedad CxC (CSV)</a>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <SalesOverTimeChart data={series} />
         <ReceivablesAgingChart data={aging} />
@@ -62,4 +73,3 @@ export default async function ReportesPage({ searchParams }: { searchParams?: { 
     </div>
   );
 }
-
