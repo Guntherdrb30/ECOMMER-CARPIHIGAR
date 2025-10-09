@@ -27,17 +27,22 @@ export async function getProducts(filters?: { isNew?: boolean; categorySlug?: st
         where.supplierId = filters.supplierId;
     }
 
-    const products = await prisma.product.findMany({
-        where,
-        include: {
-            category: true,
-            supplier: true,
-        },
-        orderBy: {
-            createdAt: 'desc'
-        }
-    });
-    return products;
+    try {
+        const products = await prisma.product.findMany({
+            where,
+            include: {
+                category: true,
+                supplier: true,
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+        return products;
+    } catch (err) {
+        console.warn('[getProducts] DB not reachable or query failed. Returning empty list.', err);
+        return [] as any[];
+    }
 }
 
 export async function createProduct(data: any) {
