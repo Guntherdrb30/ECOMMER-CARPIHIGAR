@@ -20,6 +20,12 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ConversationStatus') THEN
+    CREATE TYPE "public"."ConversationStatus" AS ENUM ('OPEN','IN_PROGRESS','PENDING','RESOLVED','CLOSED');
+  END IF;
+END $$;
+
 -- Tables
 CREATE TABLE IF NOT EXISTS "public"."Conversation" (
   "id" TEXT PRIMARY KEY,
@@ -27,6 +33,13 @@ CREATE TABLE IF NOT EXISTS "public"."Conversation" (
   "phone" TEXT NOT NULL,
   "channel" "public"."Channel" NOT NULL DEFAULT 'WHATSAPP',
   "assignedToId" TEXT,
+  "status" "public"."ConversationStatus" DEFAULT 'OPEN',
+  "assignedAt" TIMESTAMP,
+  "closedAt" TIMESTAMP,
+  "lastInboundAt" TIMESTAMP,
+  "lastOutboundAt" TIMESTAMP,
+  "unreadAgent" INTEGER DEFAULT 0,
+  "unreadCustomer" INTEGER DEFAULT 0,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL,
   "lastMessageAt" TIMESTAMP(3)
@@ -56,4 +69,3 @@ CREATE INDEX IF NOT EXISTS "Message_conversationId_createdAt_idx" ON "public"."M
 
 ALTER TABLE "public"."Message"
   ADD CONSTRAINT "Message_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "public"."Conversation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
