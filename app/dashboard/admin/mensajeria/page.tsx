@@ -29,6 +29,14 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
   return (
     <div className="p-4 sm:p-6 md:p-8">
       <h1 className="text-2xl font-bold mb-4">Mensajería (WhatsApp)</h1>
+      <div className="mb-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-sm">
+        <div className="border rounded p-2 bg-white"><div className="text-gray-500">Abiertas</div><div className="text-xl font-semibold">{stats.counts.OPEN}</div></div>
+        <div className="border rounded p-2 bg-white"><div className="text-gray-500">En curso</div><div className="text-xl font-semibold">{stats.counts.IN_PROGRESS}</div></div>
+        <div className="border rounded p-2 bg-white"><div className="text-gray-500">Pendientes</div><div className="text-xl font-semibold">{stats.counts.PENDING}</div></div>
+        <div className="border rounded p-2 bg-white"><div className="text-gray-500">Finalizadas</div><div className="text-xl font-semibold">{stats.counts.RESOLVED}</div></div>
+        <div className="border rounded p-2 bg-white"><div className="text-gray-500">Sin asignar</div><div className="text-xl font-semibold">{stats.unassigned}</div></div>
+        <div className="border rounded p-2 bg-white"><div className="text-gray-500">No leídos</div><div className="text-xl font-semibold">{stats.unread}</div></div>
+      </div>
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
         <a className="px-2 py-1 border rounded" href="/dashboard/admin/mensajeria">Todas</a>
         <a className="px-2 py-1 border rounded" href="/dashboard/admin/mensajeria?status=OPEN">Abiertas</a>
