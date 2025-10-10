@@ -1,4 +1,4 @@
-import { getConversations, getConversationWithMessages, sendMessageActionSafe as sendMessageAction, assignConversation, setConversationStatus, getAgents, getConversationStats, sendBulkAdvancedAction, sendDirectMessageAction, searchUsersForCampaign, sendAttachmentAction, sendProductLinkAction } from '@/server/actions/messaging';
+import { getConversations, getConversationWithMessages, sendMessageActionSafe as sendMessageAction, assignConversation, setConversationStatus, getAgents, getConversationStats, sendBulkAdvancedAction, sendDirectMessageAction, searchUsersForCampaign, sendAttachmentAction, sendProductLinkAction, saveConversationAsCustomer } from '@/server/actions/messaging';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import PendingButton from '@/components/pending-button';
@@ -47,7 +47,7 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
       {false && (
       <div className="mb-4 p-3 border rounded bg-white">
         <h2 className="font-semibold mb-2">Campañas / Envío masivo</h2>
-        <form action={sendBulkMessageAction} className="space-y-2">
+        <form action={sendBulkAdvancedAction} className="space-y-2">
           <div className="grid md:grid-cols-2 gap-2">
             <div>
               <label className="text-sm text-gray-600">Teléfonos (uno por línea o separados por coma)</label>
