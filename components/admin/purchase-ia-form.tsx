@@ -17,7 +17,7 @@ export default function PurchaseIAForm({ suppliers, defaultTasa }: { suppliers: 
   const canUpload = useMemo(() => !!file, [file]);
 
   const handleUpload = async () => {
-    if (!file) { toast.error('Selecciona un PDF'); return; }
+    if (!file) { toast.error('Selecciona un archivo'); return; }
     setLoading(true);
     try {
       const fd = new FormData();
@@ -26,11 +26,16 @@ export default function PurchaseIAForm({ suppliers, defaultTasa }: { suppliers: 
       if (currency === 'VES') fd.append('tasaVES', String(tasaVES || 0));
       const up = await fetch('/api/upload-invoice', { method: 'POST', body: fd, credentials: 'include' });
       const parsed = await up.json();
-      if (!up.ok) throw new Error(parsed?.error || 'No se pudo leer el PDF');
+      if (!up.ok) throw new Error(parsed?.error || 'No se pudo leer el archivo');
       const compareRes = await fetch('/api/purchases/compare', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ currency: parsed.currency || currency, tasaVES: parsed.tasaVES || tasaVES, lines: parsed.lines || [] }) });
       const cmp = await compareRes.json();
       if (!compareRes.ok) throw new Error(cmp?.error || 'Error comparando productos');
-      setItems(cmp.items || []);
+      const arr = Array.isArray(cmp.items) ? cmp.items : [];
+      if (!arr.length) {
+        toast.error('No se detectaron productos en el archivo');
+        return;
+      }
+      setItems(arr);
       toast.success('Factura precargada');
     } catch (e: any) {
       toast.error(e?.message || 'Error en carga');
@@ -85,8 +90,8 @@ export default function PurchaseIAForm({ suppliers, defaultTasa }: { suppliers: 
       </div>
 
       <div>
-        <label className="form-label">Factura en PDF</label>
-        <input className="form-input" type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+        <label className="form-label">Factura o lista (PDF/CSV)</label>
+        <input className="form-input" type="file" accept="application/pdf,text/csv,.csv,.txt" onChange={(e) => setFile(e.target.files?.[0] || null)} />
       </div>
 
       <div>
@@ -97,4 +102,3 @@ export default function PurchaseIAForm({ suppliers, defaultTasa }: { suppliers: 
     </div>
   );
 }
-

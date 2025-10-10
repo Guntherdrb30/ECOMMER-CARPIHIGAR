@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const file = form.get('file') as File | null;
     const currency = String(form.get('currency') || 'USD').toUpperCase();
     const tasaInput = form.get('tasaVES');
-    if (!file) return NextResponse.json({ error: 'Archivo PDF requerido' }, { status: 400 });
+    if (!file) return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 });
 
     // Get default tasa from settings if not provided
     let tasaVES = Number(tasaInput ?? 0);
@@ -22,6 +22,8 @@ export async function POST(req: Request) {
     }
 
     const buf = Buffer.from(await file.arrayBuffer());
+    const filename = (file as any)?.name ? String((file as any).name).toLowerCase() : '';
+    const contentType = (file as any)?.type ? String((file as any).type).toLowerCase() : '';
     let parsed: ParsedInvoice | null = null;
 
     // Try OpenAI structured parsing first (if configured)
@@ -101,6 +103,59 @@ export async function POST(req: Request) {
       }
     } catch {}
 
+    // CSV/TXT parser (simple columns: code,name,quantity,unitCost[,total])
+    if (!parsed && (filename.endsWith('.csv') || filename.endsWith('.txt') || contentType.includes('csv') || contentType.includes('text/plain'))) {
+      try {
+        const text = buf.toString('utf8');
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        const out: any[] = [];
+        let header: string[] | null = null;
+        if (lines.length) {
+          const first = lines[0].split(/[;,\t]/).map(s => s.trim().toLowerCase());
+          const hasHeader = first.some(h => ['code','codigo','sku','name','producto','cantidad','quantity','unitcost','costo','precio'].includes(h));
+          if (hasHeader) {
+            header = first;
+            lines.shift();
+          }
+        }
+        for (const raw of lines) {
+          const cols = raw.split(/[;,\t]/).map(s => s.trim());
+          let code: string | null = null;
+          let name = '';
+          let quantity = 0;
+          let unitCost = 0;
+          if (header) {
+            const h = header;
+            const idx = (key: string, alts: string[]) => h.findIndex(x => x === key || alts.includes(x));
+            const iCode = idx('code', ['codigo','sku','código']);
+            const iName = idx('name', ['producto','nombre','descripcion','descripción']);
+            const iQty = idx('quantity', ['cantidad','qty']);
+            const iUnit = idx('unitcost', ['costo','precio','unit_price','unitprice','unit']);
+            if (iCode >= 0) code = cols[iCode] || null;
+            if (iName >= 0) name = cols[iName] || '';
+            if (iQty >= 0) quantity = Number(String(cols[iQty] || '0').replace(',','.')) || 0;
+            if (iUnit >= 0) unitCost = Number(String(cols[iUnit] || '0').replace(',','.')) || 0;
+          } else {
+            const nums = cols.map((v, i) => ({ i, n: Number(String(v).replace(',','.')) }));
+            const idxs = nums.filter(x => !isNaN(x.n) && x.n > 0).map(x => x.i);
+            if (idxs.length >= 2) {
+              const iQty = idxs[0];
+              const iUnit = idxs[idxs.length - 1];
+              quantity = Number(String(cols[iQty]).replace(',','.')) || 0;
+              unitCost = Number(String(cols[iUnit]).replace(',','.')) || 0;
+              const nameParts = cols.filter((_, j) => j !== iQty && j !== iUnit);
+              name = nameParts.join(' ').slice(0, 200);
+              code = (cols[0] && cols[0].length <= 16 && isNaN(Number(cols[0])) ? cols[0] : null) as any;
+            } else {
+              continue;
+            }
+          }
+          if (name && quantity > 0 && unitCost > 0) out.push({ code, name, quantity, unitCost });
+        }
+        parsed = { currency: (currency === 'VES' ? 'VES' : 'USD') as any, tasaVES: tasaVES || undefined, lines: out };
+      } catch {}
+    }
+
     // Fallback naive PDF text parsing (if pdf-parse installed)
     if (!parsed) {
       try {
@@ -124,8 +179,24 @@ export async function POST(req: Request) {
             if (qtyPrice) {
               const quantity = Number(qtyPrice[1]);
               const unitCost = Number(String(qtyPrice[2]).replace(',', '.'));
-              const name = line.replace(qtyPrice[0], '').replace(/[-–·•]+/g, ' ').trim().slice(0, 200);
+              const name = line.replace(qtyPrice[0], '').replace(/[-–—·••\*]+/g, ' ').trim().slice(0, 200);
               if (quantity > 0 && unitCost > 0 && name) lines.push({ name, quantity, unitCost });
+            } else {
+              // Heurística adicional: tokens separados por espacios/tabs con cantidad y precio
+              const tokens = line.split(/\s{2,}|\t|\s-\s/).map(t => t.trim()).filter(Boolean);
+              const nums = tokens.map(t => Number(String(t).replace(',','.')));
+              const qtyIdx = nums.findIndex(n => !isNaN(n) && Number.isFinite(n) && Math.floor(n) === n && n > 0);
+              const priceIdx = (() => {
+                const rev = [...nums].map((n, i) => ({ n, i })).reverse();
+                const found = rev.find(x => !isNaN(x.n) && x.n > 0);
+                return found ? found.i : -1;
+              })();
+              if (qtyIdx >= 0 && priceIdx >= 0 && priceIdx !== qtyIdx) {
+                const quantity = Number(String(tokens[qtyIdx]).replace(',','.'));
+                const unitCost = Number(String(tokens[priceIdx]).replace(',','.'));
+                const name = tokens.filter((_, i) => i !== qtyIdx && i !== priceIdx).join(' ').slice(0, 200);
+                if (name && quantity > 0 && unitCost > 0) lines.push({ name, quantity, unitCost });
+              }
             }
           }
           parsed = { currency: (currency === 'VES' ? 'VES' : 'USD') as any, tasaVES: tasaVES || undefined, lines };
@@ -147,3 +218,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || 'Error al procesar la factura' }, { status: 500 });
   }
 }
+
