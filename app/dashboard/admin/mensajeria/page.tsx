@@ -4,7 +4,8 @@ import { authOptions } from '@/lib/auth';
 import PendingButton from '@/components/pending-button';
 import UnreadBeacon from '@/components/messaging/unread-beacon';
 import ChatMessages from '@/components/messaging/ChatMessages';
-import { saveConversationAsCustomer } from '@/server/actions/messaging';
+import ProductSharePicker from '@/components/messaging/ProductSharePicker';
+import { saveConversationAsCustomer, sendAttachmentAction, sendProductLinkAction, sendBulkAdvancedAction } from '@/server/actions/messaging';
 
 export const dynamic = 'force-dynamic';
 
@@ -180,15 +181,11 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
                 <div>
                   <div className="text-sm font-semibold">{selected.convo.user?.name || selected.convo.phone}</div>
                   <div className="text-xs text-gray-600">{selected.convo.user?.email || selected.convo.phone}</div>
+                  <PhoneDisplay phone={selected.convo.phone} />
                   <details className="mt-1">
                     <summary className="cursor-pointer text-xs text-gray-600">Adjuntar / Compartir</summary>
-                    <div className="mt-2 flex flex-col gap-2">
-                      <form action={sendProductLinkAction as any} className="flex items-center gap-2">
-                        <input type="hidden" name="toPhone" value={selected.convo.phone} />
-                        <input name="productUrl" className="border rounded px-2 py-1 text-xs flex-1" placeholder="URL de producto" />
-                        <input name="text" className="border rounded px-2 py-1 text-xs" placeholder="Texto (opcional)" />
-                        <PendingButton className="px-2 py-1 border rounded text-xs" pendingText="Enviando...">Enviar</PendingButton>
-                      </form>
+                    <div className="mt-2 flex flex-col gap-3">
+                      <ProductSharePicker toPhone={selected.convo.phone} />
                       <form action={sendAttachmentAction as any} className="flex items-center gap-2">
                         <input type="hidden" name="toPhone" value={selected.convo.phone} />
                         <input name="mediaUrl" className="border rounded px-2 py-1 text-xs flex-1" placeholder="URL imagen/video" />

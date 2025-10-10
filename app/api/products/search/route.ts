@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     where,
     take: 20,
     orderBy: { createdAt: 'desc' },
-    select: { id: true, name: true, sku: true, barcode: true, priceUSD: true, priceAllyUSD: true },
+    select: { id: true, name: true, sku: true, barcode: true, priceUSD: true, priceAllyUSD: true, slug: true, images: true },
   });
   return NextResponse.json(items);
 }
