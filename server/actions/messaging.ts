@@ -157,6 +157,24 @@ export async function searchUsersForCampaign(q: string) {
   return users as any;
 }
 
+export async function saveConversationAsCustomer(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as any)?.role as string | undefined;
+  if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) throw new Error('Not authorized');
+  const id = String(formData.get('id') || '');
+  if (!id) return;
+  const convo = await prisma.conversation.findUnique({ where: { id } });
+  if (!convo) return;
+  const phone = (convo.phone || '').replace(/[^0-9]/g, '');
+  if (!phone) return;
+  let user = await prisma.user.findFirst({ where: { phone } });
+  if (!user) {
+    user = await prisma.user.create({ data: { email: `wa_${phone}@carpihogar.ai`, password: '!', role: 'CLIENTE' as any, phone, name: undefined } as any });
+  }
+  await prisma.conversation.update({ where: { id }, data: { userId: user.id } });
+  try { revalidatePath('/dashboard/admin/mensajeria'); } catch {}
+}
+
 export async function assignConversation(formData: FormData) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;

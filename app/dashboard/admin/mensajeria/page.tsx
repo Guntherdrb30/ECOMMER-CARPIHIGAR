@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import PendingButton from '@/components/pending-button';
 import UnreadBeacon from '@/components/messaging/unread-beacon';
+import ChatMessages from '@/components/messaging/ChatMessages';
+import { saveConversationAsCustomer } from '@/server/actions/messaging';
 
 export const dynamic = 'force-dynamic';
 
@@ -171,13 +173,19 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
             <div className="p-4 text-gray-600">Selecciona una conversacion</div>
           ) : (
             <div className="flex flex-col h-full">
-              {/* Header with assign + status */}
+              {/* Header con datos del contacto y acciones */}
               <div className="p-3 border-b flex items-center justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold">{selected.convo.user?.name || selected.convo.phone}</div>
-                  <div className="text-xs text-gray-600">{selected.convo.phone}</div>
+                  <div className="text-xs text-gray-600">{selected.convo.user?.email || selected.convo.phone}</div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {!selected.convo.user && (
+                    <form action={saveConversationAsCustomer}>
+                      <input type="hidden" name="id" value={selected.convo.id} />
+                      <PendingButton className="px-2 py-1 border rounded text-sm" pendingText="Guardando...">Guardar en clientes</PendingButton>
+                    </form>
+                  )}
                   <form action={assignConversation} className="flex items-center gap-1">
                     <input type="hidden" name="id" value={selected.convo.id} />
                     {status && <input type="hidden" name="status" value={status} />}
@@ -209,21 +217,8 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
                 </div>
               </div>
 
-              {/* Messages (estilo WhatsApp) */}
-              <div className="flex-1 overflow-auto p-3 space-y-2 bg-[#efeae2]">
-                {selected.messages.map((m: any) => {
-                  const isOut = m.direction === 'OUT';
-                  const bubble = isOut ? 'bg-[#DCF8C6] border border-green-200 ml-auto' : 'bg-white border border-gray-200';
-                  return (
-                    <div key={m.id} className={`max-w-[85%] px-3 py-2 rounded-2xl ${bubble}`}>
-                      <div className="text-[15px] leading-5 whitespace-pre-wrap text-gray-900">{m.text}</div>
-                      <div className="text-[10px] mt-1 text-gray-500 flex items-center gap-1 justify-end">
-                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              {/* Messages (auto-actualiza) */}
+              <ChatMessages conversationId={selected.convo.id} initial={selected.messages as any} />
 
               {/* Composer */}
               <div className="p-3 border-t bg-white">
