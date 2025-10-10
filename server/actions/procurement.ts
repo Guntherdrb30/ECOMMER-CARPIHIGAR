@@ -6,6 +6,34 @@ import { authOptions } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+export async function getPurchases(filters?: { q?: string; supplierId?: string; from?: string; to?: string }) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const where: any = {};
+  if (filters?.q) {
+    const q = String(filters.q);
+    where.OR = [
+      { id: { contains: q } },
+      { id: { endsWith: q } },
+      { notes: { contains: q, mode: 'insensitive' } },
+    ];
+  }
+  if (filters?.supplierId) where.supplierId = String(filters.supplierId);
+  if (filters?.from || filters?.to) {
+    const createdAt: any = {};
+    if (filters?.from) {
+      const d = new Date(String(filters.from));
+      if (!isNaN(d.getTime())) createdAt.gte = d as any;
+    }
+    if (filters?.to) {
+      const d = new Date(String(filters.to));
+      if (!isNaN(d.getTime())) { const next = new Date(d); next.setDate(next.getDate() + 1); createdAt.lt = next as any; }
+    }
+    if (Object.keys(createdAt).length) where.createdAt = createdAt;
+  }
+  return prisma.purchase.findMany({ where, include: { supplier: true, items: true, createdBy: true }, orderBy: { createdAt: 'desc' }, take: 100 });
+}
+
 export async function getSuppliers() {
   const session = await getServerSession(authOptions);
   if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');

@@ -1,4 +1,4 @@
-import { getPOs, getSuppliers } from "@/server/actions/procurement";
+import { getPOs, getSuppliers, getPurchases } from "@/server/actions/procurement";
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 export default async function PurchasesPage({
@@ -12,9 +12,10 @@ export default async function PurchasesPage({
   const desde = String((sp as any).desde || '');
   const hasta = String((sp as any).hasta || '');
   const estado = String((sp as any).estado || '');
-  const [pos, suppliers] = await Promise.all([
+  const [pos, suppliers, purchases] = await Promise.all([
     getPOs({ q: q || undefined, supplierId: proveedor || undefined, from: desde || undefined, to: hasta || undefined, status: estado || undefined }),
     getSuppliers(),
+    getPurchases({ q: q || undefined, supplierId: proveedor || undefined, from: desde || undefined, to: hasta || undefined }),
   ]);
   const message = (sp as any).message;
   return (
@@ -109,6 +110,41 @@ export default async function PurchasesPage({
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-2">Compras registradas (IA)</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full table-auto text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="px-3 py-2 text-left">Compra</th>
+                <th className="px-3 py-2">Proveedor</th>
+                <th className="px-3 py-2">Creada por</th>
+                <th className="px-3 py-2">Items</th>
+                <th className="px-3 py-2">Total USD</th>
+                <th className="px-3 py-2">Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchases.map((p: any) => (
+                <tr key={p.id}>
+                  <td className="border px-3 py-2">{p.id.slice(-6)}</td>
+                  <td className="border px-3 py-2">{p.supplier?.name || '-'}</td>
+                  <td className="border px-3 py-2">{p.createdBy?.name || p.createdBy?.email || '-'}</td>
+                  <td className="border px-3 py-2 text-center">{p.items?.length || 0}</td>
+                  <td className="border px-3 py-2 text-right">{Number(p.totalUSD || p.subtotalUSD || 0).toFixed(2)}</td>
+                  <td className="border px-3 py-2">{new Date(p.createdAt).toLocaleString()}</td>
+                </tr>
+              ))}
+              {purchases.length === 0 && (
+                <tr>
+                  <td className="px-3 py-2 text-sm text-gray-500" colSpan={6}>No hay compras registradas.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
