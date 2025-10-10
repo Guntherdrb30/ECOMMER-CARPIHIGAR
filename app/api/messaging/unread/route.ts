@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 export async function GET() {
-  const session = await getServerSession(authOptions as any);
+  const session: any = await getServerSession(authOptions as any);
   const role = (session?.user as any)?.role as string | undefined;
   if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) {
     return NextResponse.json({ unread: 0 }, { status: 401 });
@@ -18,3 +18,4 @@ export async function GET() {
   }
 }
 
+export const runtime = 'nodejs';

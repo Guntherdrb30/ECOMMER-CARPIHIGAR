@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
-import { sendWhatsAppText } from '@/lib/whatsapp';
+import { sendWhatsAppText, sendWhatsAppMedia } from '@/lib/whatsapp';
 import { redirect } from 'next/navigation';
 
 export async function getConversations(params?: { status?: 'OPEN'|'IN_PROGRESS'|'PENDING'|'RESOLVED'|'CLOSED'|string; mine?: boolean; unassigned?: boolean; q?: string }) {
