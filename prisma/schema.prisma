@@ -39,6 +39,7 @@ model User {
   createdPOs   PurchaseOrder[] @relation("POCreator")
   receivedPOs  PurchaseOrder[] @relation("POReceiver")
   wishlistItems WishlistItem[]
+  createdPurchases Purchase[] @relation("PurchaseCreatedBy")
 
   // Messaging relations
   conversations Conversation[] @relation("ConversationUser")
@@ -89,8 +90,19 @@ model Product {
   description  String?
   images       String[]
   sku          String?         @unique
+  // Código interno opcional (puede venir de proveedor)
+  code         String?         @unique
   priceUSD     Decimal         @db.Decimal(10, 2)
   priceAllyUSD Decimal?        @db.Decimal(10, 2)
+  // Nuevo: Precio mayorista (calculado)
+  priceWholesaleUSD Decimal?   @db.Decimal(10, 2)
+  // Nuevo: costos y márgenes de referencia
+  costUSD      Decimal?        @db.Decimal(10, 2)
+  marginClientPct   Decimal?   @db.Decimal(5, 2)
+  marginAllyPct     Decimal?   @db.Decimal(5, 2)
+  marginWholesalePct Decimal?  @db.Decimal(5, 2)
+  // Nuevo: precios calculados explícitos (el priceUSD existente se usa como Cliente)
+  priceClientUSD    Decimal?   @db.Decimal(10, 2)
   stock        Int             @default(0)
   supplierId   String?
   supplier     Supplier?       @relation(fields: [supplierId], references: [id])
@@ -110,6 +122,7 @@ model Product {
   purchaseOrderItems PurchaseOrderItem[]
   quoteItems   QuoteItem[]
   wishlistItems WishlistItem[]
+  purchaseItems PurchaseItem[]
 }
 
 enum OrderStatus {
@@ -308,6 +321,7 @@ model Supplier {
   address   String?
   createdAt DateTime @default(now())
   purchaseOrders PurchaseOrder[]
+  purchases  Purchase[]
   products  Product[]
 }
 
@@ -344,6 +358,34 @@ model PurchaseOrderItem {
   quantity   Int
   received   Int      @default(0)
   costUSD    Decimal  @db.Decimal(10, 2)
+}
+
+// Compras (factura recibida)
+model Purchase {
+  id          String    @id @default(cuid())
+  supplierId  String?
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
+  currency    Currency  @default(USD)
+  tasaVES     Decimal   @default(0) @db.Decimal(10, 2)
+  subtotalUSD Decimal   @default(0) @db.Decimal(12, 2)
+  totalUSD    Decimal   @default(0) @db.Decimal(12, 2)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  createdById String?
+  createdBy   User?     @relation("PurchaseCreatedBy", fields: [createdById], references: [id])
+  items       PurchaseItem[]
+}
+
+model PurchaseItem {
+  id           String   @id @default(cuid())
+  purchaseId   String
+  purchase     Purchase @relation(fields: [purchaseId], references: [id])
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  name         String
+  quantity     Int
+  costUSD      Decimal  @db.Decimal(10, 2)
+  subtotalUSD  Decimal  @db.Decimal(12, 2)
 }
 
 enum ShippingCarrier {

@@ -22,7 +22,10 @@ export default async function PurchasesPage({
       <ShowToastFromSearch successParam="message" errorParam="error" />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Órdenes de Compra</h1>
-        <a href="/dashboard/admin/compras/nueva" className="bg-blue-600 text-white px-3 py-1 rounded">Nueva OC</a>
+        <div className="flex gap-2">
+          <a href="/dashboard/admin/compras/registro" className="bg-green-600 text-white px-3 py-1 rounded">Registrar compra (IA)</a>
+          <a href="/dashboard/admin/compras/nueva" className="bg-blue-600 text-white px-3 py-1 rounded">Nueva OC</a>
+        </div>
       </div>
       {message && <div className="border border-green-200 bg-green-50 text-green-800 px-3 py-2 rounded">{message}</div>}
 
