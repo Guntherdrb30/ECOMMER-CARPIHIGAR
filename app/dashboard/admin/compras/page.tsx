@@ -1,12 +1,20 @@
 import { getPOs, getSuppliers, getPurchases } from "@/server/actions/procurement";
 import ShowToastFromSearch from '@/components/show-toast-from-search';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
-export default async function PurchasesPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ message?: string; q?: string; proveedor?: string; desde?: string; hasta?: string; estado?: string }>;
-}) {
-  const sp = (await searchParams) || ({} as any);
+type SearchParamsLike = { message?: string; q?: string; proveedor?: string; desde?: string; hasta?: string; estado?: string };
+
+export const dynamic = 'force-dynamic';
+
+export default async function PurchasesPage({ searchParams }: { searchParams?: SearchParamsLike | Promise<SearchParamsLike> }) {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as any)?.role as string | undefined;
+  if (!session || role !== 'ADMIN') {
+    return <div className="p-4">No autorizado</div> as any;
+  }
+
+  const sp: any = typeof (searchParams as any)?.then === 'function' ? await (searchParams as any) : (searchParams || {});
   const q = String((sp as any).q || '');
   const proveedor = String((sp as any).proveedor || '');
   const desde = String((sp as any).desde || '');
