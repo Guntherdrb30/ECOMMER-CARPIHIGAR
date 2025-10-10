@@ -1,4 +1,4 @@
-import { getConversations, getConversationWithMessages, sendMessageActionSafe as sendMessageAction, assignConversation, setConversationStatus, getAgents, getConversationStats, sendBulkMessageAction, sendDirectMessageAction, searchUsersForCampaign } from '@/server/actions/messaging';
+import { getConversations, getConversationWithMessages, sendMessageActionSafe as sendMessageAction, assignConversation, setConversationStatus, getAgents, getConversationStats, sendBulkAdvancedAction, sendDirectMessageAction, searchUsersForCampaign, sendAttachmentAction, sendProductLinkAction } from '@/server/actions/messaging';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import PendingButton from '@/components/pending-button';
@@ -40,6 +40,7 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
       </div>
 
       {/* Campaigns / Bulk sender */}
+      {false && (
       <div className="mb-4 p-3 border rounded bg-white">
         <h2 className="font-semibold mb-2">Campañas / Envío masivo</h2>
         <form action={sendBulkMessageAction} className="space-y-2">
@@ -61,6 +62,7 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
           </div>
         </form>
       </div>
+      )}
 
       {/* Direct message to customer (search) */}
       <div className="mb-4 p-3 border rounded bg-white">
@@ -178,6 +180,27 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
                 <div>
                   <div className="text-sm font-semibold">{selected.convo.user?.name || selected.convo.phone}</div>
                   <div className="text-xs text-gray-600">{selected.convo.user?.email || selected.convo.phone}</div>
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-xs text-gray-600">Adjuntar / Compartir</summary>
+                    <div className="mt-2 flex flex-col gap-2">
+                      <form action={sendProductLinkAction as any} className="flex items-center gap-2">
+                        <input type="hidden" name="toPhone" value={selected.convo.phone} />
+                        <input name="productUrl" className="border rounded px-2 py-1 text-xs flex-1" placeholder="URL de producto" />
+                        <input name="text" className="border rounded px-2 py-1 text-xs" placeholder="Texto (opcional)" />
+                        <PendingButton className="px-2 py-1 border rounded text-xs" pendingText="Enviando...">Enviar</PendingButton>
+                      </form>
+                      <form action={sendAttachmentAction as any} className="flex items-center gap-2">
+                        <input type="hidden" name="toPhone" value={selected.convo.phone} />
+                        <input name="mediaUrl" className="border rounded px-2 py-1 text-xs flex-1" placeholder="URL imagen/video" />
+                        <select name="mediaType" className="border rounded px-2 py-1 text-xs">
+                          <option value="image">Imagen</option>
+                          <option value="video">Video</option>
+                        </select>
+                        <input name="caption" className="border rounded px-2 py-1 text-xs" placeholder="Caption (opcional)" />
+                        <PendingButton className="px-2 py-1 border rounded text-xs" pendingText="Adjuntando...">Enviar</PendingButton>
+                      </form>
+                    </div>
+                  </details>
                 </div>
                 <div className="flex items-center gap-2">
                   {!selected.convo.user && (
@@ -236,3 +259,5 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
     </div>
   );
 }
+
+
