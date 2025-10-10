@@ -5,7 +5,7 @@ import PendingButton from '@/components/pending-button';
 import UnreadBeacon from '@/components/messaging/unread-beacon';
 import ChatMessages from '@/components/messaging/ChatMessages';
 import ProductSharePicker from '@/components/messaging/ProductSharePicker';
-import { saveConversationAsCustomer, sendAttachmentAction, sendProductLinkAction, sendBulkAdvancedAction } from '@/server/actions/messaging';
+import PhoneDisplay from '@/components/messaging/PhoneDisplay';
 
 export const dynamic = 'force-dynamic';
 
@@ -153,6 +153,7 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
                       <span className="text-[10px] px-2 py-0.5 rounded bg-gray-100">{c.status}</span>
                     </div>
                     <div className="text-xs text-gray-600">{new Date(c.lastMessageAt || c.createdAt).toLocaleString()} • {c.assignedTo?.name || c.assignedTo?.email || 'Sin asignar'}</div>
+                    <div className=" text-xs text-gray-600\>Tel: {c.phone}</div>
                   </a>
                   {showAssign && (
                     <form action={assignConversation} className="px-3 py-2 bg-gray-50 flex items-center gap-2">
