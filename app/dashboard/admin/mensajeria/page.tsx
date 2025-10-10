@@ -9,7 +9,9 @@ import PhoneDisplay from '@/components/messaging/PhoneDisplay';
 
 export const dynamic = 'force-dynamic';
 
-export default async function MensajeriaPage({ searchParams }: { searchParams?: { [k: string]: string | string[] | undefined } }) {
+type SearchParamsLike = { [k: string]: string | string[] | undefined };
+
+export default async function MensajeriaPage(props: { searchParams?: SearchParamsLike | Promise<SearchParamsLike> }) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;
   if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) {
@@ -18,15 +20,16 @@ export default async function MensajeriaPage({ searchParams }: { searchParams?: 
 
   const myId = (session?.user as any)?.id as string | undefined;
 
-  const status = (searchParams?.status as string) || '';
-  const mine = (searchParams?.mine as string) === '1';
-  const unassigned = (searchParams?.unassigned as string) === '1';
-  const q = (searchParams?.q as string) || '';
+  const sp: any = typeof (props.searchParams as any)?.then === 'function' ? await (props.searchParams as any) : (props.searchParams || {});
+  const status = (sp?.status as string) || '';
+  const mine = (sp?.mine as string) === '1';
+  const unassigned = (sp?.unassigned as string) === '1';
+  const q = (sp?.q as string) || '';
 
   const convos = await getConversations({ status: status || undefined, mine, unassigned, q: q || undefined });
-  const uq = (searchParams?.uq as string) || '';
+  const uq = (sp?.uq as string) || '';
   const userResults = uq ? await searchUsersForCampaign(uq) : ([] as any[]);
-  const selectedId = (searchParams?.id as string) || (convos[0]?.id || '');
+  const selectedId = (sp?.id as string) || (convos[0]?.id || '');
   const [selected, agents, stats] = await Promise.all([
     selectedId ? getConversationWithMessages(selectedId) : (null as any),
     getAgents(),
