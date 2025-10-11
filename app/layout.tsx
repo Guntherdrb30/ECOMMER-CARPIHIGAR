@@ -22,12 +22,45 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const settings = await getSettings();
+  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://carpihogar.com';
+
+  const siteJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        'name': (settings as any).brandName || 'Carpihogar',
+        'url': baseUrl,
+        'logo': `${baseUrl}${(settings as any).logoUrl || '/logo-default.svg'}`,
+        'contactPoint': {
+          '@type': 'ContactPoint',
+          'telephone': (settings as any).contactPhone || '',
+          'contactType': 'Customer Service',
+        },
+      },
+      {
+        '@type': 'WebSite',
+        'url': baseUrl,
+        'name': (settings as any).brandName || 'Carpihogar',
+        'potentialAction': {
+          '@type': 'SearchAction',
+          'target': `${baseUrl}/productos?q={search_term_string}`,
+          'query-input': 'required name=search_term_string',
+        },
+      },
+    ],
+  };
+
   return (
     <html lang="es">
       <body
         className={`${inter.className} bg-gray-50 text-gray-800 antialiased`}
         style={{ ["--color-brand" as any]: (settings as any).primaryColor || "#FF4D00", ["--color-secondary" as any]: (settings as any).secondaryColor || "#111827" }}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+        />
         <Providers>
           <Header logoUrl={(settings as any).logoUrl || undefined} brandName={(settings as any).brandName || undefined} />
           <main className="min-h-screen">
