@@ -10,7 +10,7 @@ type Props = {
   title?: string;
 };
 
-export default function PendingButton({ children, pendingText = "Guardando…", className = "", disabled, title }: Props) {
+export function PendingButton({ children, pendingText = "Guardando…", className = "", disabled, title }: Props) {
   const { pending } = useFormStatus();
   return (
     <button type="submit" className={className} disabled={pending || disabled} title={title}>

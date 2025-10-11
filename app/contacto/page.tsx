@@ -1,9 +1,7 @@
 'use client';
 
-import { getSettings } from '@/server/actions/settings';
-import Link from 'next/link';
 import { ContactForm } from './contact-form';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 // Simple Accordion Component for FAQs
 const AccordionItem = ({ question, answer }: { question: string; answer: string }) => {
