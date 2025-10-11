@@ -325,3 +325,25 @@ export async function sendProductLinkAction(_prev: any, form: FormData) {
   try { revalidatePath('/dashboard/admin/mensajeria', 'page' as any); } catch {}
   return res.ok ? { ok: true } : { ok: false, error: res.error };
 }
+
+export async function sendContactMessage(prevState: any, formData: FormData): Promise<{ message: string; error: boolean; }> {
+  try {
+    const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
+    const subject = formData.get('subject') as string;
+    const message = formData.get('message') as string;
+
+    if (!name || !email || !subject || !message) {
+      return { message: 'Todos los campos son requeridos.', error: true };
+    }
+
+    // Aquí se podría añadir la lógica para enviar un email
+    console.log('Nuevo mensaje de contacto:', { name, email, subject, message });
+
+    revalidatePath('/contacto');
+    return { message: '¡Gracias por tu mensaje! Te contactaremos pronto.', error: false };
+  } catch (error) {
+    console.error(error);
+    return { message: 'Ocurrió un error al enviar el mensaje.', error: true };
+  }
+}
