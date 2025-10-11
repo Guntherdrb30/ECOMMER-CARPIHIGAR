@@ -1,5 +1,7 @@
 'use client';
 
+'use client';
+
 import { notFound } from 'next/navigation';
 import Price from '@/components/price';
 import { ProductActions } from '@/components/product-actions';
@@ -7,6 +9,43 @@ import type { Product } from '@prisma/client';
 import { getProductPageData } from '@/server/actions/products';
 import { useState, useEffect, use, useRef } from 'react';
 import RelatedProductsCarousel from '@/components/related-products-carousel';
+import Head from 'next/head';
+import Breadcrumb from '@/components/breadcrumb'; // Importar Breadcrumb
+
+// Componente para el JSON-LD del producto
+function ProductJsonLd({ product, baseUrl }: { product: Product; baseUrl: string }) {
+  const productUrl = `${baseUrl}/productos/${product.slug}`;
+  
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description,
+    image: product.images[0] || `${baseUrl}/logo-default.svg`,
+    sku: product.sku,
+    brand: {
+      '@type': 'Brand',
+      name: product.brand?.name || 'Carpihogar',
+    },
+    offers: {
+      '@type': 'Offer',
+      price: product.priceUSD.toString(),
+      priceCurrency: 'USD',
+      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: productUrl,
+    },
+  };
+
+  return (
+    <Head>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+    </Head>
+  );
+}
+
 
 function ProductImageGallery({ images }: { images: string[] }) {
   const [selectedImage, setSelectedImage] = useState(images[0] || 'https://via.placeholder.com/400');
@@ -102,38 +141,53 @@ export default function ProductoDetallePage({ params }: { params: { slug: string
     return <div>Cargando...</div>;
   }
 
+  // Construir items para el Breadcrumb
+  const breadcrumbItems = [
+    { name: 'Inicio', href: '/' },
+  ];
+  if (product.category) {
+    breadcrumbItems.push({ name: product.category.name, href: `/categorias/${product.category.slug}` });
+  }
+  breadcrumbItems.push({ name: product.name, href: `/productos/${product.slug}` });
+
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        {/* Image Gallery */}
-        <ProductImageGallery images={product.images} />
+    <>
+      {product && <ProductJsonLd product={product} baseUrl="https://carpihogar.com" />}
+      <div className="container mx-auto px-4 py-12">
+        <div className="mb-8">
+          <Breadcrumb items={breadcrumbItems} baseUrl="https://carpihogar.com" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          {/* Image Gallery */}
+          <ProductImageGallery images={product.images} />
 
-        {/* Product Info */}
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
-          <div className="mb-4">
-            <Price priceUSD={product.priceUSD} priceAllyUSD={product.priceAllyUSD} tasa={settings.tasaVES} moneda="USD" className="text-3xl font-bold text-gray-900" />
-            <Price priceUSD={product.priceUSD} priceAllyUSD={product.priceAllyUSD} tasa={settings.tasaVES} moneda="VES" className="text-lg text-gray-600 block" />
+          {/* Product Info */}
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
+            <div className="mb-4">
+              <Price priceUSD={product.priceUSD} priceAllyUSD={product.priceAllyUSD} tasa={settings.tasaVES} moneda="USD" className="text-3xl font-bold text-gray-900" />
+              <Price priceUSD={product.priceUSD} priceAllyUSD={product.priceAllyUSD} tasa={settings.tasaVES} moneda="VES" className="text-lg text-gray-600 block" />
+            </div>
+            <p className="text-gray-700 leading-relaxed mb-8">
+              {product.description || 'Descripcion no disponible.'}
+            </p>
+            
+            <ProductActions product={{
+              ...product,
+              priceUSD: product.priceUSD,
+              priceAllyUSD: product.priceAllyUSD || null,
+              avgCost: product.avgCost || null,
+              lastCost: product.lastCost || null,
+            }} />
+
           </div>
-          <p className="text-gray-700 leading-relaxed mb-8">
-            {product.description || 'Descripcion no disponible.'}
-          </p>
-          
-          <ProductActions product={{
-            ...product,
-            priceUSD: product.priceUSD,
-            priceAllyUSD: product.priceAllyUSD || null,
-            avgCost: product.avgCost || null,
-            lastCost: product.lastCost || null,
-          }} />
+        </div>
 
+        <div className="mt-16">
+          <AnimatedTitle>Productos Relacionados</AnimatedTitle>
+          <RelatedProductsCarousel products={relatedProducts} settings={settings} />
         </div>
       </div>
-
-      <div className="mt-16">
-        <AnimatedTitle>Productos Relacionados</AnimatedTitle>
-        <RelatedProductsCarousel products={relatedProducts} settings={settings} />
-      </div>
-    </div>
+    </>
   );
 }
