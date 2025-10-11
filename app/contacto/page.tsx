@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { getTopAllies } from '@/server/actions/allies';
 
 // Simple Accordion Component for FAQs
-const AccordionItem = ({ question, answer }: { question: string; answer: string }) => {
+const AccordionItem = ({ question, answer }: { question: string; answer: string | React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -19,9 +20,9 @@ const AccordionItem = ({ question, answer }: { question: string; answer: string 
         </span>
       </button>
       <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 mt-4' : 'max-h-0'}`}>
-        <p className="text-gray-600 pl-2">
+        <div className="text-gray-600 pl-2">
           {answer}
-        </p>
+        </div>
       </div>
     </div>
   );
@@ -33,111 +34,102 @@ const WhatsAppIcon = () => (
     </svg>
 );
 
-export default function ContactoPage() {
+const GuaranteesSection = () => {
+    const guaranteeData = [
+        {
+            question: "¿Cuál es la política de garantía?",
+            answer: "Ofrecemos una garantía de 1 año en todos nuestros productos por defectos de fabricación. Esta garantía no cubre daños por mal uso, accidentes o desgaste normal."
+        },
+        {
+            question: "¿Cómo puedo solicitar una devolución?",
+            answer: (
+                <p>
+                    Para solicitar una devolución, por favor contáctanos a través de WhatsApp con tu número de orden y una descripción del problema. Tienes hasta 7 días después de recibir tu producto para iniciar el proceso de devolución.
+                </p>
+            )
+        },
+        {
+            question: "¿Qué productos no tienen devolución?",
+            answer: "Los productos en liquidación o personalizados no son elegibles para devolución. Te recomendamos revisar bien las especificaciones antes de comprar."
+        }
+    ];
 
-  const faqData = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "¿Cuánto tarda el envío nacional?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "De 3 a 7 días."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "¿Aceptan pagos en bolívares?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Sí, se aceptan pagos en bolívares (Bs)."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "¿Cuál es la garantía de los muebles?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "La garantía es la que el fabricante otorga para cada pieza. Se aceptan devoluciones inmediatas hasta 2 días después de recibir el producto si presenta desperfectos de fábrica."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "¿Cómo convertirse en aliado (arquitecto/diseñador)?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Simplemente regístrate y marca la casilla de aliado o arquitecto, coloca tus datos y teléfono obligatorio en el perfil y te contactaremos. También puedes contactarnos vía WhatsApp."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "¿Puedo pagar en cuotas?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Actualmente estamos implementando esta función."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "¿Qué materiales usan?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Para los muebles utilizamos materiales de primera calidad."
-        }
-      }
-    ]
-  };
-
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData) }}
-        key="faq-jsonld"
-      />
-      <div className="bg-white">
-        {/* Header Section */}
-        <div className="text-center py-16 md:py-24 bg-gray-50">
-          <div className="container mx-auto px-4">
-            <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight">Hablemos</h1>
-            <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-              Nos encantaría saber de ti. Conéctate con nosotros a través de WhatsApp para una atención rápida y personalizada.
-            </p>
-          </div>
-        </div>
-
-        {/* WhatsApp Contact Section */}
-        <div className="container mx-auto px-4 py-16 md:py-24 max-w-6xl">
-            <div className="grid md:grid-cols-2 gap-16 items-center">
-                <div className="order-2 md:order-1">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Atención Inmediata por WhatsApp</h2>
-                    <p className="text-gray-600 mb-6">
-                        ¿Tienes preguntas sobre nuestros productos, tu pedido o simplemente quieres saludar? Nuestro equipo está listo para ayudarte. Haz clic en el botón para iniciar una conversación.
-                    </p>
-                    <a 
-                        href="https://wa.me/582121234567" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center px-8 py-4 bg-green-500 text-white font-bold rounded-full shadow-lg hover:bg-green-600 transition-transform transform hover:scale-105"
-                    >
-                        <WhatsAppIcon />
-                        <span className="ml-3">Chatea con nosotros</span>
-                    </a>
-                    <p className="mt-4 text-sm text-gray-500">Nuestro horario de atención es de 9:00 a.m. a 6:00 p.m.</p>
+    return (
+        <div className="bg-gray-50">
+            <div className="container mx-auto px-4 py-16 md:py-24 max-w-4xl">
+                <div className="text-center mb-12">
+                    <h2 className="text-4xl font-bold text-gray-900">Garantías y Devoluciones</h2>
+                    <p className="mt-4 text-lg text-gray-600">Tu satisfacción es nuestra prioridad. Aquí te explicamos cómo te respaldamos.</p>
                 </div>
-                <div className="order-1 md:order-2 flex justify-center">
-                    <Image 
-                        src="/images/hero-carpinteria-1.svg"
-                        alt="Contacto Carpihogar"
-                        width={500}
-                        height={500}
-                        className="rounded-lg"
-                    />
+                <div className="space-y-4">
+                    {guaranteeData.map((item, index) => (
+                        <AccordionItem key={index} question={item.question} answer={item.answer} />
+                    ))}
                 </div>
             </div>
         </div>
+    );
+}
+
+const TopAllies = ({ allies }: { allies: { id: string; name: string | null; totalSales: number }[] }) => (
+    <div className="bg-white">
+        <div className="container mx-auto px-4 py-16 md:py-24 max-w-4xl">
+            <div className="text-center mb-12">
+                <h2 className="text-4xl font-bold text-gray-900">Nuestros Aliados Destacados</h2>
+                <p className="mt-4 text-lg text-gray-600">Reconocemos a los profesionales que confían en nosotros para sus proyectos.</p>
+            </div>
+            <div className="space-y-4">
+                {allies.map((ally, index) => (
+                    <div key={ally.id} className="bg-gray-100 rounded-lg p-4 flex items-center justify-between">
+                        <div className="flex items-center">
+                            <span className="text-2xl font-bold text-gray-500 mr-4">{index + 1}</span>
+                            <p className="text-lg font-medium text-gray-800">{ally.name}</p>
+                        </div>
+                        <p className="text-lg font-bold text-green-500">${ally.totalSales.toLocaleString()}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
+
+export default function ContactoPage() {
+  const [topAllies, setTopAllies] = useState<Awaited<ReturnType<typeof getTopAllies>>>([]);
+
+  useEffect(() => {
+    getTopAllies().then(setTopAllies);
+  }, []);
+
+  return (
+    <>
+      <div className="bg-white">
+        {/* Header Section */}
+        <div className="relative text-center py-24 md:py-32 bg-gray-900 text-white">
+            <Image 
+                src="/images/hero-carpinteria-3.svg"
+                alt="Contacto Carpihogar"
+                layout="fill"
+                objectFit="cover"
+                className="opacity-20"
+            />
+            <div className="relative container mx-auto px-4">
+                <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">Estamos para ayudarte</h1>
+                <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto">
+                    La mejor atención, a un mensaje de distancia. Contáctanos por WhatsApp y resolvamos tus dudas al instante.
+                </p>
+                <a 
+                    href="https://wa.me/582121234567" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="mt-8 inline-flex items-center justify-center px-10 py-4 bg-green-500 font-bold rounded-full shadow-lg hover:bg-green-600 transition-transform transform hover:scale-105"
+                >
+                    <WhatsAppIcon />
+                    <span className="ml-3">Iniciar Conversación</span>
+                </a>
+            </div>
+        </div>
+
+        <GuaranteesSection />
 
         {/* Architects and Designers Section */}
         <div className="bg-gray-100">
@@ -171,18 +163,8 @@ export default function ContactoPage() {
             </div>
         </div>
 
-        {/* FAQ Section */}
-        <div className="container mx-auto px-4 py-16 md:py-24 max-w-4xl">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900">Preguntas Frecuentes</h2>
-            <p className="mt-4 text-lg text-gray-600">Encuentra respuestas rápidas a las dudas más comunes.</p>
-          </div>
-          <div className="space-y-4">
-            {faqData.mainEntity.map((faq, index) => (
-              <AccordionItem key={index} question={faq.name} answer={faq.acceptedAnswer.text} />
-            ))}
-          </div>
-        </div>
+        {topAllies.length > 0 && <TopAllies allies={topAllies} />}
+
       </div>
     </>
   );
