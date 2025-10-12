@@ -9,7 +9,8 @@ export default function HeroMediaUploader({ targetInputName, defaultUrl }: { tar
   const [ok, setOk] = useState<boolean>(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const isVideo = (url: string) => {
+  const isVideo = (url: string | undefined) => {
+    if (!url) return false;
     return url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.webm');
   }
 
