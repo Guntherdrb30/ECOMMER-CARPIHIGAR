@@ -15,7 +15,7 @@ export default function LogoUploader({ targetInputName, defaultUrl }: { targetIn
     const file = fileRef.current?.files?.[0];
     if (!file) { setError('Selecciona un archivo'); setOk(false); return; }
     // Client-side validation
-    const MAX = 2 * 1024 * 1024;
+    const MAX = 4 * 1024 * 1024;
     const allowed = ['image/png','image/jpeg','image/webp','image/svg+xml'];
     const name = (file as any).name ? String((file as any).name).toLowerCase() : '';
     const okExt = ['.png','.jpg','.jpeg','.webp','.svg'].some((ext) => name.endsWith(ext));

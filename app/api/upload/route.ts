@@ -6,6 +6,10 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import sharp from 'sharp';
 
+// Note: The default body size limit for Next.js API routes is 4MB.
+// To handle larger files, especially videos, consider using a third-party storage service like Vercel Blob.
+// This would involve streaming the upload directly to the blob storage provider.
+
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!m) return null;
@@ -32,6 +36,8 @@ export async function POST(req: Request) {
     }
     const form = await req.formData();
     const file: any = form.get('file');
+    const fileType = form.get('type') as string || 'image';
+
     if (!file || typeof file.arrayBuffer !== 'function') {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
@@ -55,27 +61,34 @@ export async function POST(req: Request) {
 
     const urlPath = `/uploads/${year}/${month}/${filename}`;
 
-    // Color detection (best-effort). If the file is not an image, sharp will fail and we ignore.
-    let dominant: string | undefined = undefined;
-    let secondary: string | undefined = undefined;
-    try {
-      const { data } = await sharp(filePath)
-        .resize(1, 1, { fit: 'cover' })
-        .toColourspace('srgb')
-        .raw()
-        .toBuffer({ resolveWithObject: true }) as any;
-      const r = data[0];
-      const g = data[1];
-      const b = data[2];
-      const hex = '#' + [r, g, b].map((x: number) => x.toString(16).padStart(2, '0')).join('');
-      dominant = hex;
-      secondary = darken(hex, 0.6);
-    } catch {}
+    if (fileType === 'image') {
+        // Color detection (best-effort). If the file is not an image, sharp will fail and we ignore.
+        let dominant: string | undefined = undefined;
+        let secondary: string | undefined = undefined;
+        try {
+          const { data } = await sharp(filePath)
+            .resize(1, 1, { fit: 'cover' })
+            .toColourspace('srgb')
+            .raw()
+            .toBuffer({ resolveWithObject: true }) as any;
+          const r = data[0];
+          const g = data[1];
+          const b = data[2];
+          const hex = '#' + [r, g, b].map((x: number) => x.toString(16).padStart(2, '0')).join('');
+          dominant = hex;
+          secondary = darken(hex, 0.6);
+        } catch {}
+        return NextResponse.json({ url: urlPath, name: filename, dominant, secondary });
+    } else {
+        return NextResponse.json({ url: urlPath, name: filename });
+    }
 
-    return NextResponse.json({ url: urlPath, name: filename, dominant, secondary });
   } catch (err) {
     console.error('Upload error', err);
+    // Check if the error is due to body size limit
+    if ((err as any).type === 'entity.too.large') {
+        return NextResponse.json({ error: 'File is too large. Max size is 4MB.' }, { status: 413 });
+    }
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }
-
