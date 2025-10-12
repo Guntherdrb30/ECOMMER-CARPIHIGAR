@@ -2,6 +2,7 @@ import { getSettings, updateSettings, getAuditLogs } from "@/server/actions/sett
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import PendingButton from '@/components/pending-button';
 
 export default async function AdminSettingsPage() {
   const session = await getServerSession(authOptions);
@@ -145,9 +146,9 @@ export default async function AdminSettingsPage() {
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
-          <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
+          <PendingButton className="w-full bg-blue-500 text-white py-2 rounded-lg" pendingText="Guardando...">
             Guardar Cambios
-          </button>
+          </PendingButton>
         </form>
       </div>
       {isRoot && (
