@@ -1,7 +1,4 @@
 import { getSettings, updateSettings, getAuditLogs } from "@/server/actions/settings";
-import LogoUploader from "@/components/admin/logo-uploader";
-import ShowToastFromSearch from '@/components/show-toast-from-search';
-import PendingButton from '@/components/pending-button';
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -127,9 +124,6 @@ export default async function AdminSettingsPage() {
                 defaultValue={(settings as any)?.primaryColor || '#FF4D00'}
                 className="w-full h-10 border rounded"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Al subir un logo, detectamos su color y lo aplicamos automáticamente.
-              </p>
             </div>
             <div>
               <label className="block text-gray-700">Color secundario</label>
@@ -139,16 +133,6 @@ export default async function AdminSettingsPage() {
                 defaultValue={(settings as any)?.secondaryColor || '#111827'}
                 className="w-full h-10 border rounded"
               />
-            </div>
-            <div>
-              <label className="block text-gray-700">Logo</label>
-              <p className="text-xs text-gray-500 mb-1">
-                Sube una imagen desde tu PC. Se guardará y usará como logo.
-              </p>
-              <div className="mt-2">
-                <LogoUploader targetInputName="logoUrl" defaultUrl={(settings as any)?.logoUrl || ''} />
-              </div>
-              <input type="hidden" name="logoUrl" defaultValue={(settings as any)?.logoUrl || ''} />
             </div>
           </div>
           <div className="mb-4">
@@ -161,16 +145,11 @@ export default async function AdminSettingsPage() {
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
-          <PendingButton className="w-full bg-blue-500 text-white py-2 rounded-lg" pendingText="Guardando...">
+          <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
             Guardar Cambios
-          </PendingButton>
+          </button>
         </form>
       </div>
-      <ShowToastFromSearch
-        param="ajustes"
-        okMessage="Ajustes guardados"
-        errMessage="No se pudieron guardar los ajustes"
-      />
       {isRoot && (
         <div className="bg-white p-4 rounded-lg shadow mt-6">
           <h2 className="text-lg font-bold mb-2">Ajustes del Sistema (Root)</h2>
