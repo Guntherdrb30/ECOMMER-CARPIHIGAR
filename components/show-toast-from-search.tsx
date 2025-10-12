@@ -18,33 +18,35 @@ export default function ShowToastFromSearch({ param = "pw", okMessage = "Clave a
   const sp = useSearchParams();
   const router = useRouter();
   useEffect(() => {
-    // Mode B takes precedence if provided
-    if (successParam || errorParam) {
-      const s = successParam ? sp.get(successParam) : null;
-      const e = errorParam ? sp.get(errorParam) : null;
-      if (s) {
-        toast.success(decodeURIComponent(s));
+    if (typeof window !== 'undefined') {
+      // Mode B takes precedence if provided
+      if (successParam || errorParam) {
+        const s = successParam ? sp.get(successParam) : null;
+        const e = errorParam ? sp.get(errorParam) : null;
+        if (s) {
+          toast.success(decodeURIComponent(s));
+        }
+        if (e) {
+          toast.error(decodeURIComponent(e));
+        }
+        if (s || e) {
+          const url = new URL(window.location.href);
+          if (s) url.searchParams.delete(successParam!);
+          if (e) url.searchParams.delete(errorParam!);
+          router.replace(url.pathname + (url.search || "") + (url.hash || ""));
+        }
+        return;
       }
-      if (e) {
-        toast.error(decodeURIComponent(e));
-      }
-      if (s || e) {
-        const url = new URL(window.location.href);
-        if (s) url.searchParams.delete(successParam!);
-        if (e) url.searchParams.delete(errorParam!);
-        router.replace(url.pathname + (url.search || "") + (url.hash || ""));
-      }
-      return;
-    }
 
-    // Mode A: ok/err flags
-    const v = sp.get(param);
-    if (!v) return;
-    if (v === "ok") toast.success(okMessage);
-    else toast.error(errMessage);
-    const url = new URL(window.location.href);
-    url.searchParams.delete(param);
-    router.replace(url.pathname + (url.search || "") + (url.hash || ""));
+      // Mode A: ok/err flags
+      const v = sp.get(param);
+      if (!v) return;
+      if (v === "ok") toast.success(okMessage);
+      else toast.error(errMessage);
+      const url = new URL(window.location.href);
+      url.searchParams.delete(param);
+      router.replace(url.pathname + (url.search || "") + (url.hash || ""));
+    }
   }, [sp, router, param, okMessage, errMessage, successParam, errorParam]);
   return null;
 }
