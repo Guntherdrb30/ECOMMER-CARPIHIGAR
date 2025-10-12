@@ -42,7 +42,6 @@ export default async function AdminSettingsPage() {
               secondaryColor: (formData.get('secondaryColor') as string) || undefined,
               logoUrl: (formData.get('logoUrl') as string) || undefined,
               lowStockThreshold: parseInt(String(formData.get('lowStockThreshold') ?? '5'), 10),
-              homeHeroUrls: [],
               sellerCommissionPercent: parseFloat(String(formData.get('sellerCommissionPercent') || '5')),
             };
             try {
