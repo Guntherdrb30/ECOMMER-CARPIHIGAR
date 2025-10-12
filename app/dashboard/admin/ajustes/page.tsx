@@ -1,5 +1,4 @@
 import { getSettings, updateSettings, getAuditLogs } from "@/server/actions/settings";
-import HeroMediaUploader from "@/components/admin/hero-media-uploader";
 import LogoUploader from "@/components/admin/logo-uploader";
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import PendingButton from '@/components/pending-button';
@@ -32,11 +31,6 @@ export default async function AdminSettingsPage() {
           noValidate
           action={async (formData) => {
             'use server';
-            const homeHeroUrls: string[] = [];
-            for (let i = 1; i <= 3; i++) {
-              const url = formData.get(`homeHeroUrl${i}`) as string;
-              if (url) homeHeroUrls.push(url);
-            }
             const data = {
               brandName: formData.get('brandName') as string,
               whatsappPhone: formData.get('whatsappPhone') as string,
@@ -48,7 +42,7 @@ export default async function AdminSettingsPage() {
               secondaryColor: (formData.get('secondaryColor') as string) || undefined,
               logoUrl: (formData.get('logoUrl') as string) || undefined,
               lowStockThreshold: parseInt(String(formData.get('lowStockThreshold') ?? '5'), 10),
-              homeHeroUrls,
+              homeHeroUrls: [],
               sellerCommissionPercent: parseFloat(String(formData.get('sellerCommissionPercent') || '5')),
             };
             try {
@@ -156,31 +150,6 @@ export default async function AdminSettingsPage() {
                 <LogoUploader targetInputName="logoUrl" defaultUrl={(settings as any).logoUrl || ''} />
               </div>
               <input type="hidden" name="logoUrl" defaultValue={(settings as any).logoUrl || ''} />
-            </div>
-          </div>
-          <div className="mt-6 p-4 border rounded-lg bg-gray-50">
-            <h3 className="text-lg font-semibold mb-2">Carrusel Principal (Hero)</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Gestiona los videos o imágenes que se muestran en el carrusel de la página de inicio. Puedes subir hasta 3 archivos.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 3 }).map((_, i) => {
-                const index = i + 1;
-                const fieldName = `homeHeroUrl${index}`;
-                const defaultUrl = (settings.homeHeroUrls && settings.homeHeroUrls[i]) || '';
-                return (
-                  <div key={fieldName} className="border p-4 rounded-lg bg-white shadow-sm">
-                    <label className="block text-gray-800 font-medium mb-2">Media #{index}</label>
-                    <p className="text-xs text-gray-500 mb-3">
-                      Sube el video o imagen para la posición #{index}.
-                    </p>
-                    <div className="mt-2">
-                      <HeroMediaUploader targetInputName={fieldName} defaultUrl={defaultUrl} />
-                    </div>
-                    <input type="hidden" name={fieldName} defaultValue={defaultUrl} />
-                  </div>
-                );
-              })}
             </div>
           </div>
           <div className="mb-4">
