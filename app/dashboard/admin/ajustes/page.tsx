@@ -2,7 +2,7 @@ import { getSettings, updateSettings, getAuditLogs } from "@/server/actions/sett
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import PendingButton from '@/components/pending-button';
+import { PendingButton } from '@/components/pending-button';
 
 export default async function AdminSettingsPage() {
   const session = await getServerSession(authOptions);

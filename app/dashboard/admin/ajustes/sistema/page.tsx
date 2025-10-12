@@ -3,7 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { getDeleteSecret, setDeleteSecret, getSettings } from '@/server/actions/settings';
 import { setRootRecoverySettings } from '@/server/actions/root-recovery';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
-import PendingButton from '@/components/pending-button';
+import { PendingButton } from '@/components/pending-button';
 import { redirect } from 'next/navigation';
 
 export default async function SystemSettingsPage() {
