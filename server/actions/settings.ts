@@ -31,7 +31,12 @@ export async function getSettings() {
       });
     }
 
-    return settings;
+    return {
+      ...settings,
+      ivaPercent: settings.ivaPercent.toNumber(),
+      tasaVES: settings.tasaVES.toNumber(),
+      sellerCommissionPercent: settings.sellerCommissionPercent.toNumber(),
+    };
   } catch (err) {
     console.warn('[getSettings] DB not reachable, using defaults.', err);
     return {
@@ -40,14 +45,14 @@ export async function getSettings() {
       whatsappPhone: '584120000000',
       contactPhone: '584120000000',
       contactEmail: 'contacto@carpihogar.ai',
-      ivaPercent: { toNumber: () => 16, toString: () => '16' } as any,
-      tasaVES: { toNumber: () => 40, toString: () => '40' } as any,
+      ivaPercent: 16,
+      tasaVES: 40,
       primaryColor: '#FF4D00',
       secondaryColor: '#111827',
       logoUrl: '/logo-default.svg',
       homeHeroUrls: [],
       lowStockThreshold: 5,
-      sellerCommissionPercent: { toNumber: () => 5, toString: () => '5' } as any,
+      sellerCommissionPercent: 5,
     } as any;
   }
 }
