@@ -57,7 +57,7 @@ export default async function AdminSettingsPage() {
             <input
               type="text"
               name="brandName"
-              defaultValue={settings.brandName}
+              defaultValue={settings?.brandName || ''}
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
@@ -66,7 +66,7 @@ export default async function AdminSettingsPage() {
             <input
               type="text"
               name="whatsappPhone"
-              defaultValue={settings.whatsappPhone}
+              defaultValue={settings?.whatsappPhone || ''}
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
@@ -75,7 +75,7 @@ export default async function AdminSettingsPage() {
             <input
               type="text"
               name="contactPhone"
-              defaultValue={settings.contactPhone}
+              defaultValue={settings?.contactPhone || ''}
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
@@ -84,7 +84,7 @@ export default async function AdminSettingsPage() {
             <input
               type="email"
               name="contactEmail"
-              defaultValue={settings.contactEmail}
+              defaultValue={settings?.contactEmail || ''}
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
@@ -94,7 +94,7 @@ export default async function AdminSettingsPage() {
               type="number"
               name="ivaPercent"
               step="0.01"
-              defaultValue={settings.ivaPercent.toString()}
+              defaultValue={settings?.ivaPercent?.toString() || '0'}
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
@@ -104,7 +104,7 @@ export default async function AdminSettingsPage() {
               type="number"
               name="tasaVES"
               step="0.01"
-              defaultValue={settings.tasaVES.toString()}
+              defaultValue={settings?.tasaVES?.toString() || '0'}
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
@@ -114,7 +114,7 @@ export default async function AdminSettingsPage() {
               type="number"
               name="sellerCommissionPercent"
               step="0.01"
-              defaultValue={(settings as any).sellerCommissionPercent?.toString?.() || '5'}
+              defaultValue={(settings as any)?.sellerCommissionPercent?.toString() || '5'}
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
@@ -124,7 +124,7 @@ export default async function AdminSettingsPage() {
               <input
                 type="color"
                 name="primaryColor"
-                defaultValue={(settings as any).primaryColor || '#FF4D00'}
+                defaultValue={(settings as any)?.primaryColor || '#FF4D00'}
                 className="w-full h-10 border rounded"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -136,7 +136,7 @@ export default async function AdminSettingsPage() {
               <input
                 type="color"
                 name="secondaryColor"
-                defaultValue={(settings as any).secondaryColor || '#111827'}
+                defaultValue={(settings as any)?.secondaryColor || '#111827'}
                 className="w-full h-10 border rounded"
               />
             </div>
@@ -146,9 +146,9 @@ export default async function AdminSettingsPage() {
                 Sube una imagen desde tu PC. Se guardará y usará como logo.
               </p>
               <div className="mt-2">
-                <LogoUploader targetInputName="logoUrl" defaultUrl={(settings as any).logoUrl || ''} />
+                <LogoUploader targetInputName="logoUrl" defaultUrl={(settings as any)?.logoUrl || ''} />
               </div>
-              <input type="hidden" name="logoUrl" defaultValue={(settings as any).logoUrl || ''} />
+              <input type="hidden" name="logoUrl" defaultValue={(settings as any)?.logoUrl || ''} />
             </div>
           </div>
           <div className="mb-4">
@@ -157,7 +157,7 @@ export default async function AdminSettingsPage() {
               type="number"
               name="lowStockThreshold"
               min={0}
-              defaultValue={(settings as any).lowStockThreshold ?? 5}
+              defaultValue={(settings as any)?.lowStockThreshold ?? 5}
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
