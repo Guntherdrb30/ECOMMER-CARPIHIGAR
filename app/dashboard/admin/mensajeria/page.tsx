@@ -43,6 +43,11 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
         <h1 className="text-2xl font-bold mb-2">Mensajería (WhatsApp)</h1>
       </div>
 
+      {!(process.env.MANYCHAT_API_KEY) && (
+        <div className="mb-2 mx-4 text-xs border border-yellow-300 bg-yellow-50 text-yellow-900 px-3 py-2 rounded">
+          Envío deshabilitado: falta configurar MANYCHAT_API_KEY. Los mensajes que envíes se guardarán en la conversación pero no se enviarán por WhatsApp.
+        </div>
+      )}
       {/* Campaigns / Bulk sender */}
       {false && (
       <div className="mb-4 p-3 border rounded bg-white">
