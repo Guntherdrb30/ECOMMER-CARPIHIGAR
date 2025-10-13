@@ -46,7 +46,24 @@ export async function getConversationWithMessages(id: string) {
     if (!convo) return null as any;
     const messages = await prisma.message.findMany({ where: { conversationId: id }, orderBy: { createdAt: 'asc' }, take: 500 });
     try { await prisma.conversation.update({ where: { id }, data: { unreadAgent: 0 } }); } catch {}
-    return { convo, messages } as any;
+    
+    const serializableConvo = {
+      ...convo,
+      assignedAt: convo.assignedAt?.toISOString() || null,
+      closedAt: convo.closedAt?.toISOString() || null,
+      lastInboundAt: convo.lastInboundAt?.toISOString() || null,
+      lastOutboundAt: convo.lastOutboundAt?.toISOString() || null,
+      createdAt: convo.createdAt.toISOString(),
+      updatedAt: convo.updatedAt.toISOString(),
+      lastMessageAt: convo.lastMessageAt?.toISOString() || null,
+    };
+
+    const serializableMessages = messages.map(m => ({
+      ...m,
+      createdAt: m.createdAt.toISOString(),
+    }));
+
+    return { convo: serializableConvo, messages: serializableMessages } as any;
   } catch (err) {
     console.warn('[getConversationWithMessages] DB error', err);
     return null as any;

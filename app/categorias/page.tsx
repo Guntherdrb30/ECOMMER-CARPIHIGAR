@@ -19,15 +19,6 @@ export default async function CategoriasPage() {
           {categories.map((category: any) => (
             <Link key={category.id} href={`/productos?categoria=${category.slug}`}>
               <div className="group block bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1">
-                <div className="relative h-48 w-full">
-                  <Image
-                    src={category.image || 'https://via.placeholder.com/400x300'}
-                    alt={category.name}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300"></div>
-                </div>
                 <div className="p-5">
                   <h3 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-300">
                     {category.name}

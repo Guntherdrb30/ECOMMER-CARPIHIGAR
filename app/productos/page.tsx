@@ -5,6 +5,9 @@ import { getProducts } from '@/server/actions/products';
 import { getSettings } from '@/server/actions/settings';
 import { getCategories } from '@/server/actions/categories';
 import ProductCard from '@/components/product-card';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 
 export default async function ProductosPage({
   searchParams,
@@ -14,9 +17,17 @@ export default async function ProductosPage({
   const sp = (await searchParams) || {};
   const categorySlug = typeof sp.categoria === 'string' ? sp.categoria : undefined;
   
-  const products = await getProducts({ categorySlug });
-  const settings = await getSettings();
-  const categories = await getCategories();
+  const session = await getServerSession(authOptions);
+  const userId = (session?.user as any)?.id;
+
+  const [products, settings, categories, wishlistItems] = await Promise.all([
+    getProducts({ categorySlug }),
+    getSettings(),
+    getCategories(),
+    userId ? prisma.wishlistItem.findMany({ where: { userId } }) : Promise.resolve([]),
+  ]);
+
+  const wishlistedProductIds = new Set(wishlistItems.map(item => item.productId));
   
   const selectedCategory = categorySlug ? categories.find(c => c.slug === categorySlug) : null;
 
@@ -48,7 +59,12 @@ export default async function ProductosPage({
       {products.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} tasa={settings.tasaVES.toNumber()} />
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              tasa={settings.tasaVES} 
+              isWishlisted={wishlistedProductIds.has(product.id)}
+            />
           ))}
         </div>
       ) : (

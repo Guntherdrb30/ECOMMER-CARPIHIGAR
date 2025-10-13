@@ -38,7 +38,13 @@ export async function getProducts(filters?: { isNew?: boolean; categorySlug?: st
                 createdAt: 'desc'
             }
         });
-        return products;
+        return products.map(p => ({
+            ...p,
+            priceUSD: p.priceUSD.toNumber(),
+            priceAllyUSD: p.priceAllyUSD?.toNumber() || null,
+            avgCost: p.avgCost?.toNumber() || null,
+            lastCost: p.lastCost?.toNumber() || null,
+        }));
     } catch (err) {
         console.warn('[getProducts] DB not reachable or query failed. Returning empty list.', err);
         return [] as any[];
