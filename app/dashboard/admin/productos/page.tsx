@@ -29,6 +29,10 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
     <div className="container mx-auto p-4">
       <ShowToastFromSearch successParam="message" errorParam="error" />
       <h1 className="text-2xl font-bold mb-4">Gestionar Productos</h1>
+      <div className="mb-2 flex items-center gap-3 text-sm">
+        <a href="/samples/products_template.csv" className="text-blue-600 underline" download>Descargar plantilla CSV de productos</a>
+        <a href="/api/reports/products-csv" className="text-blue-600 underline" target="_blank">Exportar productos (CSV)</a>
+      </div>
       <div className="mb-4 p-4 bg-white rounded shadow">
         <h2 className="text-lg font-semibold mb-2">Carga masiva (CSV)</h2>
         <p className="text-sm text-gray-600 mb-2">Columnas sugeridas: <code>name</code>, <code>code</code>/<code>sku</code>/<code>barcode</code>, <code>brand</code>, <code>description</code>, <code>category</code>, <code>supplierId</code>, <code>stock</code>, <code>costUSD</code>. Si hay costo, calculamos precios con los márgenes por defecto.</p>
