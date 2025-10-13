@@ -117,7 +117,7 @@ export default async function AdminSettingsPage() {
               <label className="block text-gray-700">Logo</label>
               <p className="text-xs text-gray-500 mb-1">Sube una imagen desde tu PC. Se guardará y usará como logo.</p>
               <div className="mt-2">
-                <LogoUploader targetInputName="logoUrl" defaultUrl={(settings as any).logoUrl || ''} maxSize={Infinity} />
+                <LogoUploader targetInputName="logoUrl" defaultUrl={(settings as any).logoUrl || ''} />
               </div>
               <input type="hidden" name="logoUrl" defaultValue={(settings as any).logoUrl || ''} />
             </div>
@@ -138,7 +138,7 @@ export default async function AdminSettingsPage() {
                     <label className="block text-gray-700 font-medium">Imagen del Carrusel #{index}</label>
                     <p className="text-xs text-gray-500 mb-2">Sube la imagen que aparecerá en la posición #{index} del carrusel.</p>
                     <div className="mt-2">
-                      <LogoUploader targetInputName={fieldName} defaultUrl={defaultUrl} maxSize={Infinity} />
+                      <LogoUploader targetInputName={fieldName} defaultUrl={defaultUrl} />
                     </div>
                     <input type="hidden" name={fieldName} defaultValue={defaultUrl} />
                   </div>

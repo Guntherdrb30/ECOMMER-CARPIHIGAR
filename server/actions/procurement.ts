@@ -6,38 +6,48 @@ import { authOptions } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-export async function getPurchases(filters?: { q?: string; supplierId?: string; from?: string; to?: string }) {
-  const session = await getServerSession(authOptions);
-  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
-  const where: any = {};
-  if (filters?.q) {
-    const q = String(filters.q);
-    where.OR = [
-      { id: { contains: q } },
-      { id: { endsWith: q } },
-      { notes: { contains: q, mode: 'insensitive' } },
-    ];
-  }
-  if (filters?.supplierId) where.supplierId = String(filters.supplierId);
-  if (filters?.from || filters?.to) {
-    const createdAt: any = {};
-    if (filters?.from) {
-      const d = new Date(String(filters.from));
-      if (!isNaN(d.getTime())) createdAt.gte = d as any;
+export async function getPurchases(filters?: { q?: string; supplierId?: string; from?: string; to?:string }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+    const where: any = {};
+    if (filters?.q) {
+      const q = String(filters.q);
+      where.OR = [
+        { id: { contains: q } },
+        { id: { endsWith: q } },
+        { notes: { contains: q, mode: 'insensitive' } },
+      ];
     }
-    if (filters?.to) {
-      const d = new Date(String(filters.to));
-      if (!isNaN(d.getTime())) { const next = new Date(d); next.setDate(next.getDate() + 1); createdAt.lt = next as any; }
+    if (filters?.supplierId) where.supplierId = String(filters.supplierId);
+    if (filters?.from || filters?.to) {
+      const createdAt: any = {};
+      if (filters?.from) {
+        const d = new Date(String(filters.from));
+        if (!isNaN(d.getTime())) createdAt.gte = d as any;
+      }
+      if (filters?.to) {
+        const d = new Date(String(filters.to));
+        if (!isNaN(d.getTime())) { const next = new Date(d); next.setDate(next.getDate() + 1); createdAt.lt = next as any; }
+      }
+      if (Object.keys(createdAt).length) where.createdAt = createdAt;
     }
-    if (Object.keys(createdAt).length) where.createdAt = createdAt;
+    return prisma.purchase.findMany({ where, include: { supplier: true, items: true, createdBy: true }, orderBy: { createdAt: 'desc' }, take: 100 });
+  } catch (error) {
+    console.error("Error fetching purchases:", error);
+    return [];
   }
-  return prisma.purchase.findMany({ where, include: { supplier: true, items: true, createdBy: true }, orderBy: { createdAt: 'desc' }, take: 100 });
 }
 
 export async function getSuppliers() {
-  const session = await getServerSession(authOptions);
-  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
-  return prisma.supplier.findMany({ orderBy: { createdAt: 'desc' } });
+  try {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+    return prisma.supplier.findMany({ orderBy: { createdAt: 'desc' } });
+  } catch (error) {
+    console.error("Error fetching suppliers:", error);
+    return [];
+  }
 }
 
 export async function createSupplier(formData: FormData) {
@@ -55,41 +65,46 @@ export async function createSupplier(formData: FormData) {
 }
 
 export async function getPOs(filters?: { q?: string; supplierId?: string; from?: string; to?: string; status?: 'DRAFT'|'ORDERED'|'RECEIVED'|'CANCELLED'|string }) {
-  const session = await getServerSession(authOptions);
-  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
-  const where: any = {};
-  if (filters?.q) {
-    const q = String(filters.q);
-    where.OR = [
-      { id: { contains: q } },
-      { id: { endsWith: q } },
-    ];
-  }
-  if (filters?.supplierId) {
-    where.supplierId = String(filters.supplierId);
-  }
-  if (filters?.status) {
-    const st = String(filters.status).toUpperCase();
-    if (['DRAFT','ORDERED','RECEIVED','CANCELLED'].includes(st)) {
-      where.status = st as any;
+  try {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+    const where: any = {};
+    if (filters?.q) {
+      const q = String(filters.q);
+      where.OR = [
+        { id: { contains: q } },
+        { id: { endsWith: q } },
+      ];
     }
-  }
-  if (filters?.from || filters?.to) {
-    const createdAt: any = {};
-    if (filters?.from) {
-      const d = new Date(String(filters.from));
-      if (!isNaN(d.getTime())) createdAt.gte = d as any;
+    if (filters?.supplierId) {
+      where.supplierId = String(filters.supplierId);
     }
-    if (filters?.to) {
-      const d = new Date(String(filters.to));
-      if (!isNaN(d.getTime())) {
-        const next = new Date(d); next.setDate(next.getDate() + 1);
-        createdAt.lt = next as any;
+    if (filters?.status) {
+      const st = String(filters.status).toUpperCase();
+      if (['DRAFT','ORDERED','RECEIVED','CANCELLED'].includes(st)) {
+        where.status = st as any;
       }
     }
-    if (Object.keys(createdAt).length) where.createdAt = createdAt;
+    if (filters?.from || filters?.to) {
+      const createdAt: any = {};
+      if (filters?.from) {
+        const d = new Date(String(filters.from));
+        if (!isNaN(d.getTime())) createdAt.gte = d as any;
+      }
+      if (filters?.to) {
+        const d = new Date(String(filters.to));
+        if (!isNaN(d.getTime())) {
+          const next = new Date(d); next.setDate(next.getDate() + 1);
+          createdAt.lt = next as any;
+        }
+      }
+      if (Object.keys(createdAt).length) where.createdAt = createdAt;
+    }
+    return prisma.purchaseOrder.findMany({ where, include: { supplier: true, items: true, createdBy: true, receivedBy: true }, orderBy: { createdAt: 'desc' } });
+  } catch (error) {
+    console.error("Error fetching POs:", error);
+    return [];
   }
-  return prisma.purchaseOrder.findMany({ where, include: { supplier: true, items: true, createdBy: true, receivedBy: true }, orderBy: { createdAt: 'desc' } });
 }
 
 export async function createPO(formData: FormData) {
