@@ -6,6 +6,146 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { generateEan13, normalizeBarcode } from '@/lib/barcode';
+import { getSettings } from '@/server/actions/settings';
+
+function parseCsvSimple(text: string, delimiter?: string): Array<Record<string,string>> {
+    const dl = delimiter && delimiter.length ? delimiter : (text.indexOf(';') > -1 ? ';' : ',');
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim().length > 0);
+    if (!lines.length) return [];
+    const header = lines[0];
+    const headers: string[] = [];
+    let cur = '';
+    let inQ = false;
+    for (let i = 0; i < header.length; i++) {
+        const ch = header[i];
+        if (ch === '"') { inQ = !inQ; continue; }
+        if (!inQ && ch === dl) { headers.push(cur.trim()); cur = ''; }
+        else { cur += ch; }
+    }
+    headers.push(cur.trim());
+    const rows: Array<Record<string,string>> = [];
+    for (let li = 1; li < lines.length; li++) {
+        const line = lines[li]; cur=''; inQ=false; const cols: string[]=[];
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') { inQ = !inQ; continue; }
+            if (!inQ && ch === dl) { cols.push(cur); cur=''; }
+            else { cur += ch; }
+        }
+        cols.push(cur);
+        const rec: Record<string,string> = {};
+        for (let i=0;i<headers.length;i++) { rec[headers[i]] = (cols[i] ?? '').trim(); }
+        rows.push(rec);
+    }
+    return rows;
+}
+
+function pick(obj: Record<string,string>, names: string[]): string | undefined {
+    for (const n of names) {
+        const k = Object.keys(obj).find(h => h.toLowerCase().replace(/\s+/g,'') === n.toLowerCase().replace(/\s+/g,''));
+        if (k && obj[k]) return obj[k];
+    }
+    return undefined;
+}
+
+export async function importProductsCsv(formData: FormData) {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+    const file = formData.get('file') as unknown as File | null;
+    if (!file) throw new Error('Archivo CSV requerido');
+    const delimiter = String(formData.get('delimiter') || '') || undefined;
+    const defaultSupplierId = String(formData.get('supplierId') || '') || undefined;
+
+    const text = await (file as any).text();
+    const rows = parseCsvSimple(text, delimiter);
+    if (!rows.length) throw new Error('CSV vacío');
+
+    const settings = await getSettings();
+    const defClient = Number((settings as any).defaultMarginClientPct ?? 40);
+    const defAlly = Number((settings as any).defaultMarginAllyPct ?? 30);
+    const defWholesale = Number((settings as any).defaultMarginWholesalePct ?? 20);
+
+    for (const r of rows) {
+        const name = (pick(r, ['name','producto','product']) || '').trim();
+        if (!name) continue;
+        const code = pick(r, ['code','sku','codigo','código']) || null;
+        const barcodeIn = pick(r, ['barcode','ean','ean13']) || '';
+        const barcode = normalizeBarcode(barcodeIn || '') || null;
+        const brand = pick(r, ['brand','marca']) || 'Sin marca';
+        const description = pick(r, ['description','descripcion','descripción']) || '';
+        const categorySlug = pick(r, ['category','categoria','categoría','categorySlug']) || '';
+        const supplierId = (pick(r, ['supplierId','proveedorId']) || defaultSupplierId || '') || undefined;
+        const stockStr = pick(r, ['stock','existencia','cantidad']) || '0';
+        const costStr = pick(r, ['costUSD','costo','costoUSD']) || '';
+        const priceStr = pick(r, ['priceUSD','precio','precioUSD']) || '';
+        const imagesStr = pick(r, ['images','imagenes','imágenes']) || '';
+        const images = imagesStr ? imagesStr.split(/[|;,\s]+/g).map(s => s.trim()).filter(Boolean).slice(0,4) : [];
+        const stock = Number(String(stockStr).replace(',','.')) || 0;
+        const costUSD = costStr ? Number(String(costStr).replace(',','.')) : undefined;
+        let priceUSD = priceStr ? Number(String(priceStr).replace(',','.')) : undefined;
+        let priceAllyUSD: number | undefined = undefined;
+        let priceWholesaleUSD: number | undefined = undefined;
+        let marginClientPct = defClient;
+        let marginAllyPct = defAlly;
+        let marginWholesalePct = defWholesale;
+        if (typeof costUSD === 'number' && !isNaN(costUSD)) {
+            priceUSD = Number((costUSD * (1 + marginClientPct/100)).toFixed(2));
+            priceAllyUSD = Number((costUSD * (1 + marginAllyPct/100)).toFixed(2));
+            priceWholesaleUSD = Number((costUSD * (1 + marginWholesalePct/100)).toFixed(2));
+        }
+
+        // Find existing
+        let product = null as any;
+        if (code) {
+            const digits = code.replace(/\D/g,'');
+            product = await prisma.product.findFirst({ where: { OR: [ { sku: code }, { code: code }, ...(digits.length>=6 ? [{ barcode: digits }] : []) ] } });
+        }
+        if (!product) {
+            product = await prisma.product.findFirst({ where: { name: { equals: name, mode: 'insensitive' } } });
+        }
+
+        const data: any = {
+            name,
+            brand,
+            description: description || null,
+            images,
+            sku: code || null,
+            code: code || null,
+            barcode: barcode || null,
+            stock,
+            supplierId: supplierId || null,
+        };
+        if (categorySlug) {
+            try {
+                const cat = await prisma.category.findFirst({ where: { slug: categorySlug } });
+                if (cat) data.categoryId = cat.id;
+            } catch {}
+        }
+        if (typeof costUSD === 'number' && !isNaN(costUSD)) {
+            data.costUSD = costUSD as any;
+            data.lastCost = costUSD as any;
+            data.avgCost = costUSD as any;
+            data.marginClientPct = marginClientPct as any;
+            data.marginAllyPct = marginAllyPct as any;
+            data.marginWholesalePct = marginWholesalePct as any;
+        }
+        if (typeof priceUSD === 'number' && !isNaN(priceUSD)) {
+            data.priceUSD = priceUSD as any;
+            data.priceClientUSD = priceUSD as any;
+            if (typeof priceAllyUSD === 'number') data.priceAllyUSD = priceAllyUSD as any;
+            if (typeof priceWholesaleUSD === 'number') data.priceWholesaleUSD = priceWholesaleUSD as any;
+        }
+
+        if (product) {
+            await prisma.product.update({ where: { id: product.id }, data });
+        } else {
+            const slug = (pick(r, ['slug']) || `${name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${Math.random().toString(36).slice(2,7)}`).replace(/^-+|-+$/g,'');
+            await prisma.product.create({ data: { ...data, slug } });
+        }
+    }
+    revalidatePath('/dashboard/admin/productos');
+    return { ok: true } as any;
+}
 
 export async function getProducts(filters?: { isNew?: boolean; categorySlug?: string; q?: string; supplierId?: string }) {
     const where: any = {};

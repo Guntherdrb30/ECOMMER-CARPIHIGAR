@@ -69,6 +69,10 @@ model SiteSettings {
   rootRecoveryHash        String?
   rootResetCode           String?
   rootResetCodeExpiresAt  DateTime?
+  // Defaults for product margins (root configurable)
+  defaultMarginClientPct   Decimal? @db.Decimal(5, 2)
+  defaultMarginAllyPct     Decimal? @db.Decimal(5, 2)
+  defaultMarginWholesalePct Decimal? @db.Decimal(5, 2)
 }
 
 model Category {

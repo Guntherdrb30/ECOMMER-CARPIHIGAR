@@ -36,7 +36,10 @@ export async function getSettings() {
       ivaPercent: settings.ivaPercent.toNumber(),
       tasaVES: settings.tasaVES.toNumber(),
       sellerCommissionPercent: settings.sellerCommissionPercent.toNumber(),
-    };
+      defaultMarginClientPct: (settings as any).defaultMarginClientPct?.toNumber?.() ?? 40,
+      defaultMarginAllyPct: (settings as any).defaultMarginAllyPct?.toNumber?.() ?? 30,
+      defaultMarginWholesalePct: (settings as any).defaultMarginWholesalePct?.toNumber?.() ?? 20,
+    } as any;
   } catch (err) {
     console.warn('[getSettings] DB not reachable, using defaults.', err);
     return {
@@ -53,6 +56,9 @@ export async function getSettings() {
       homeHeroUrls: [],
       lowStockThreshold: 5,
       sellerCommissionPercent: 5,
+      defaultMarginClientPct: 40,
+      defaultMarginAllyPct: 30,
+      defaultMarginWholesalePct: 20,
     } as any;
   }
 }
@@ -111,6 +117,29 @@ export async function setDeleteSecret(formData: FormData) {
   }
   await prisma.siteSettings.update({ where: { id: 1 }, data: { deleteSecret: newSecret } });
   try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'SYSTEM_DELETE_SECRET_UPDATED', details: `by:${email}` } }); } catch {}
+  revalidatePath('/dashboard/admin/ajustes/sistema');
+  return { ok: true };
+}
+
+export async function setDefaultMargins(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  const email = (session?.user as any)?.email as string | undefined;
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  if ((session?.user as any)?.role !== 'ADMIN' || String(email || '').toLowerCase() !== rootEmail) {
+    throw new Error('Not authorized');
+  }
+  const clientPct = Number(String(formData.get('defaultMarginClientPct') || ''));
+  const allyPct = Number(String(formData.get('defaultMarginAllyPct') || ''));
+  const wholesalePct = Number(String(formData.get('defaultMarginWholesalePct') || ''));
+  if ([clientPct, allyPct, wholesalePct].some(v => isNaN(v) || v < 0)) {
+    throw new Error('Valores inválidos');
+  }
+  await prisma.siteSettings.update({ where: { id: 1 }, data: {
+    defaultMarginClientPct: clientPct as any,
+    defaultMarginAllyPct: allyPct as any,
+    defaultMarginWholesalePct: wholesalePct as any,
+  }});
+  try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'DEFAULT_MARGINS_SET', details: `client:${clientPct};ally:${allyPct};wholesale:${wholesalePct}` } }); } catch {}
   revalidatePath('/dashboard/admin/ajustes/sistema');
   return { ok: true };
 }

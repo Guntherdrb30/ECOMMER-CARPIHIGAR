@@ -1,4 +1,4 @@
-import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm } from "@/server/actions/products";
+import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm, importProductsCsv } from "@/server/actions/products";
 import SecretDeleteButton from "@/components/admin/secret-delete-button";
 import { getCategories } from "@/server/actions/categories";
 import { getSuppliers } from "@/server/actions/procurement";
@@ -29,6 +29,26 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
     <div className="container mx-auto p-4">
       <ShowToastFromSearch successParam="message" errorParam="error" />
       <h1 className="text-2xl font-bold mb-4">Gestionar Productos</h1>
+      <div className="mb-4 p-4 bg-white rounded shadow">
+        <h2 className="text-lg font-semibold mb-2">Carga masiva (CSV)</h2>
+        <p className="text-sm text-gray-600 mb-2">Columnas sugeridas: <code>name</code>, <code>code</code>/<code>sku</code>/<code>barcode</code>, <code>brand</code>, <code>description</code>, <code>category</code>, <code>supplierId</code>, <code>stock</code>, <code>costUSD</code>. Si hay costo, calculamos precios con los márgenes por defecto.</p>
+        <form action={async (formData) => { 'use server'; try { await importProductsCsv(formData); } finally { /* Always refresh */ } }} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <div className="md:col-span-2">
+            <label className="block text-sm text-gray-700">Archivo CSV</label>
+            <input name="file" type="file" accept=".csv,text/csv" required />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">Separador</label>
+            <select name="delimiter" className="form-select" defaultValue=",">
+              <option value=",">, (coma)</option>
+              <option value=";">; (punto y coma)</option>
+            </select>
+          </div>
+          <div className="md:col-span-3">
+            <PendingButton className="bg-emerald-600 text-white px-3 py-1 rounded" pendingText="Importando…">Importar CSV</PendingButton>
+          </div>
+        </form>
+      </div>
       <div className="mb-4">
         <label className="block text-sm text-gray-700 mb-1">Búsqueda rápida</label>
         <ProductQuickSearch />

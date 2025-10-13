@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getDeleteSecret, setDeleteSecret, getSettings } from '@/server/actions/settings';
+import { getDeleteSecret, setDeleteSecret, getSettings, setDefaultMargins } from '@/server/actions/settings';
 import { setRootRecoverySettings } from '@/server/actions/root-recovery';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import { PendingButton } from '@/components/pending-button';
@@ -73,6 +73,28 @@ export default async function SystemSettingsPage() {
           </div>
         </form>
         <p className="text-xs text-gray-500 mt-3">Para envío automático por WhatsApp, configura variables: <code>WHATSAPP_CLOUD_ACCESS_TOKEN</code> y <code>WHATSAPP_CLOUD_PHONE_ID</code>. Sin ellas, se registra en consola (modo desarrollo).</p>
+      </div>
+      <div className="bg-white p-4 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-2">Ganancias de productos (márgenes %)</h2>
+        <p className="text-sm text-gray-600 mb-3">Se usan para calcular precios a partir del costo al importar compras o productos por CSV.</p>
+        <form action={async (formData) => { 'use server'; try { await setDefaultMargins(formData); redirect('/dashboard/admin/ajustes/sistema?sys=ok'); } catch { redirect('/dashboard/admin/ajustes/sistema?sys=err'); } }} className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl">
+          <div>
+            <label className="block text-sm text-gray-700">Cliente (%)</label>
+            <input name="defaultMarginClientPct" type="number" step="0.01" min="0" defaultValue={Number((siteSettings as any).defaultMarginClientPct ?? 40)} className="border rounded px-2 py-1 w-full" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">Aliado (%)</label>
+            <input name="defaultMarginAllyPct" type="number" step="0.01" min="0" defaultValue={Number((siteSettings as any).defaultMarginAllyPct ?? 30)} className="border rounded px-2 py-1 w-full" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">Mayorista (%)</label>
+            <input name="defaultMarginWholesalePct" type="number" step="0.01" min="0" defaultValue={Number((siteSettings as any).defaultMarginWholesalePct ?? 20)} className="border rounded px-2 py-1 w-full" />
+          </div>
+          <div className="md:col-span-3 flex gap-2">
+            <PendingButton className="px-3 py-2 bg-blue-600 text-white rounded" pendingText="Guardando…">Guardar márgenes</PendingButton>
+            <a className="px-3 py-2 border rounded" href="/dashboard/admin/ajustes">Volver a ajustes</a>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -32,6 +32,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams?: S
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Órdenes de Compra</h1>
         <div className="flex gap-2">
+          <a href="/dashboard/admin/compras/carga" className="bg-emerald-600 text-white px-3 py-1 rounded">Carga CSV</a>
           <a href="/dashboard/admin/compras/registro" className="bg-green-600 text-white px-3 py-1 rounded">Registrar compra (IA)</a>
           <a href="/dashboard/admin/compras/nueva" className="bg-blue-600 text-white px-3 py-1 rounded">Nueva OC</a>
         </div>
