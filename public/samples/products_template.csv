@@ -1,4 +1,4 @@
-name,code,brand,description,category,stock,costUSD,images
-Tornillo 1/2",ABC123,Genérico,Tornillo galvanizado,ferreteria,100,0.10,
-Puerta Madera,SKU-456,Genérico,Puerta maciza para interior,puertas,5,35.50,https://via.placeholder.com/600
-Pegamento PVA 1L,,Genérico,Adhesivo PVA uso general,adhesivos,12,3.20,
+name,slug,sku,barcode,brand,priceUSD,priceAllyUSD,stock,categoryId,supplierId,image,images
+"Tornillo 1/2",tornillo-1-2,ABC123,1234567890123,Generico,0.50,,100,,,,
+"Puerta Madera",puerta-madera,SKU-456,9876543210123,Generico,120.00,99.00,5,,,https://via.placeholder.com/800,https://via.placeholder.com/600|https://via.placeholder.com/400
+"Pegamento PVA 1L",pegamento-pva-1l,,,,3.90,,12,,,,
