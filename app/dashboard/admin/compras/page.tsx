@@ -1,4 +1,4 @@
-import { getPOs, getSuppliers, getPurchases } from "@/server/actions/procurement";
+﻿import { getPOs, getSuppliers, getPurchases } from "@/server/actions/procurement";
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -8,7 +8,8 @@ type SearchParamsLike = { message?: string; q?: string; proveedor?: string; desd
 export const dynamic = 'force-dynamic';
 
 export default async function PurchasesPage({ searchParams }: { searchParams?: SearchParamsLike | Promise<SearchParamsLike> }) {
-  const session = await getServerSession(authOptions);
+  let session: any = null;
+  try { session = await getServerSession(authOptions); } catch {}
   const role = (session?.user as any)?.role as string | undefined;
   if (!session || role !== 'ADMIN') {
     return <div className="p-4">No autorizado</div> as any;
@@ -20,11 +21,19 @@ export default async function PurchasesPage({ searchParams }: { searchParams?: S
   const desde = String((sp as any).desde || '');
   const hasta = String((sp as any).hasta || '');
   const estado = String((sp as any).estado || '');
-  const [pos, suppliers, purchases] = await Promise.all([
-    getPOs({ q: q || undefined, supplierId: proveedor || undefined, from: desde || undefined, to: hasta || undefined, status: estado || undefined }),
-    getSuppliers(),
-    getPurchases({ q: q || undefined, supplierId: proveedor || undefined, from: desde || undefined, to: hasta || undefined }),
-  ]);
+  let pos: any[] = [];
+  let suppliers: any[] = [];
+  let purchases: any[] = [];
+  try {
+    const r = await Promise.all([
+      getPOs({ q: q || undefined, supplierId: proveedor || undefined, from: desde || undefined, to: hasta || undefined, status: estado || undefined }),
+      getSuppliers(),
+      getPurchases({ q: q || undefined, supplierId: proveedor || undefined, from: desde || undefined, to: hasta || undefined }),
+    ]);
+    pos = Array.isArray(r[0]) ? r[0] : [];
+    suppliers = Array.isArray(r[1]) ? r[1] : [];
+    purchases = Array.isArray(r[2]) ? r[2] : [];
+  } catch {}
   const message = (sp as any).message;
   return (
     <div className="container mx-auto p-4 space-y-4">
@@ -41,7 +50,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams?: S
 
       <form method="get" className="bg-white p-4 rounded-lg shadow grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
         <div>
-          <label className="block text-sm text-gray-700">N° Orden / ID</label>
+          <label className="block text-sm text-gray-700">NÂ° Orden / ID</label>
           <input name="q" defaultValue={q} placeholder="Ej: 1a2b3c o 9F8E7D" className="form-input" />
         </div>
         <div>
@@ -108,7 +117,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams?: S
                 <tr key={po.id}>
                   <td className="border px-3 py-2">{po.id.slice(-6)}</td>
                   <td className="border px-3 py-2">{po.supplier?.name}</td>
-                  <td className="border px-3 py-2">{po.createdBy?.name || po.createdBy?.email || '—'}</td>
+                  <td className="border px-3 py-2">{po.createdBy?.name || po.createdBy?.email || 'â€”'}</td>
                   <td className="border px-3 py-2 text-center">{po.status}</td>
                   <td className="border px-3 py-2 text-right">{Number(po.totalUSD).toFixed(2)}</td>
                   <td className="border px-3 py-2">{new Date(po.createdAt).toLocaleString()}</td>
