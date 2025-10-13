@@ -2,6 +2,7 @@ import { DashboardSidebar } from "@/components/cliente/dashboard-sidebar";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import DashboardShell from "@/components/dashboard-shell";
 
 export default async function ClienteDashboardLayout({
   children,
@@ -16,11 +17,8 @@ export default async function ClienteDashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <DashboardSidebar />
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        {children}
-      </main>
-    </div>
+    <DashboardShell sidebar={<DashboardSidebar />} title="Mi Cuenta">
+      {children}
+    </DashboardShell>
   );
 }
