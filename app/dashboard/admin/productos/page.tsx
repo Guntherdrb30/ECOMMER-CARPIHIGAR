@@ -1,4 +1,5 @@
-import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm, importProductsCsv } from "@/server/actions/products";
+import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm } from "@/server/actions/products";
+import ProductCsvUploader from '@/components/admin/product-csv-uploader';
 import SecretDeleteButton from "@/components/admin/secret-delete-button";
 import { getCategories } from "@/server/actions/categories";
 import { getSuppliers } from "@/server/actions/procurement";
@@ -34,24 +35,9 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         <a href="/api/reports/products-csv" className="text-blue-600 underline" target="_blank">Exportar productos (CSV)</a>
       </div>
       <div className="mb-4 p-4 bg-white rounded shadow">
-        <h2 className="text-lg font-semibold mb-2">Carga masiva (CSV)</h2>
-        <p className="text-sm text-gray-600 mb-2">Columnas sugeridas: <code>name</code>, <code>code</code>/<code>sku</code>/<code>barcode</code>, <code>brand</code>, <code>description</code>, <code>category</code>, <code>supplierId</code>, <code>stock</code>, <code>costUSD</code>. Si hay costo, calculamos precios con los márgenes por defecto.</p>
-        <form action={async (formData) => { 'use server'; try { await importProductsCsv(formData); } finally { /* Always refresh */ } }} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-          <div className="md:col-span-2">
-            <label className="block text-sm text-gray-700">Archivo CSV</label>
-            <input name="file" type="file" accept=".csv,text/csv" required />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700">Separador</label>
-            <select name="delimiter" className="form-select" defaultValue=",">
-              <option value=",">, (coma)</option>
-              <option value=";">; (punto y coma)</option>
-            </select>
-          </div>
-          <div className="md:col-span-3">
-            <PendingButton className="bg-emerald-600 text-white px-3 py-1 rounded" pendingText="Importando…">Importar CSV</PendingButton>
-          </div>
-        </form>
+        <h2 className="text-lg font-semibold mb-2">Carga masiva (CSV) con previsualización</h2>
+        <p className="text-sm text-gray-600 mb-2">Columnas sugeridas: <code>name</code>, <code>code</code>/<code>sku</code>/<code>barcode</code>, <code>brand</code>, <code>description</code>, <code>category</code>, <code>supplierId</code>, <code>stock</code>, <code>costUSD</code>, <code>images</code>. Si hay costo, calculamos precios con los márgenes por defecto.</p>
+        <ProductCsvUploader />
       </div>
       <div className="mb-4">
         <label className="block text-sm text-gray-700 mb-1">Búsqueda rápida</label>
