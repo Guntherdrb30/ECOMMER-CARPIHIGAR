@@ -1,6 +1,6 @@
 import { getCategories, getCategoryTree, createCategoryByForm, deleteCategoryByForm } from "@/server/actions/categories";
 import SecretDeleteButton from "@/components/admin/secret-delete-button";
-import PendingButton from '@/components/pending-button';
+import { PendingButton } from '@/components/pending-button';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 export default async function AdminCategoriesPage({ searchParams }: { searchParams?: Promise<{ error?: string; message?: string }> }) {

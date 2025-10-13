@@ -3,7 +3,7 @@ import { getUsers, approveAlly, createAdminUser, updateUser, deleteUserByForm, u
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import PendingButton from '@/components/pending-button';
+import { PendingButton } from '@/components/pending-button';
 
 export default async function AdminUsersPage() {
   const users = await getUsers();

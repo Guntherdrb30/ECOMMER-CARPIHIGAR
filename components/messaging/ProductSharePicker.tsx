@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from 'react';
-import PendingButton from '@/components/pending-button';
+import { PendingButton } from '@/components/pending-button';
 import { sendProductLinkAction } from '@/server/actions/messaging';
 
 type Product = { id: string; name: string; sku?: string|null; slug: string; images?: string[] };
@@ -62,4 +62,3 @@ export default function ProductSharePicker({ toPhone }: { toPhone: string }) {
     </div>
   );
 }
-

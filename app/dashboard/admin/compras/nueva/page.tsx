@@ -1,6 +1,6 @@
 import { getSuppliers } from "@/server/actions/procurement";
 import { createPO } from "@/server/actions/procurement";
-import PendingButton from '@/components/pending-button';
+import { PendingButton } from '@/components/pending-button';
 import PoItemsEditor from "@/components/admin/po-items-editor";
 
 export default async function NuevaOCPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {

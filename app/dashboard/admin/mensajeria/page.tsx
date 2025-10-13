@@ -1,7 +1,7 @@
 import { getConversations, getConversationWithMessages, sendMessageActionSafe as sendMessageAction, assignConversation, setConversationStatus, getAgents, getConversationStats, sendBulkAdvancedAction, sendDirectMessageAction, searchUsersForCampaign, sendAttachmentAction, sendProductLinkAction, saveConversationAsCustomer } from '@/server/actions/messaging';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import PendingButton from '@/components/pending-button';
+import { PendingButton } from '@/components/pending-button';
 import UnreadBeacon from '@/components/messaging/unread-beacon';
 import ChatMessages from '@/components/messaging/ChatMessages';
 import ProductSharePicker from '@/components/messaging/ProductSharePicker';

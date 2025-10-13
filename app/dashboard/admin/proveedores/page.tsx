@@ -1,5 +1,5 @@
 import { getSuppliers, createSupplier } from "@/server/actions/procurement";
-import PendingButton from '@/components/pending-button';
+import { PendingButton } from '@/components/pending-button';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 export default async function SuppliersPage({ searchParams }: { searchParams?: Promise<{ error?: string; message?: string }> }) {

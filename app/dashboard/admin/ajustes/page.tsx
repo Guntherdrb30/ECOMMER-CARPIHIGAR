@@ -2,11 +2,24 @@
 ﻿﻿﻿﻿
 import { getSettings, updateSettings, getAuditLogs } from "@/server/actions/settings";
 import LogoUploader from "@/components/admin/logo-uploader";
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export default async function AdminSettingsPage() {
+  const session = await getServerSession(authOptions);
+  const isAdmin = ((session?.user as any)?.role) === 'ADMIN';
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Ajustes del Sitio</h1>
+        <div className="border border-red-200 bg-red-50 text-red-800 px-3 py-2 rounded">No autorizado</div>
+      </div>
+    );
+  }
+
   const [settings, logs] = await Promise.all([
     getSettings(),
-    getAuditLogs({ take: 50 }),
+    (async () => { try { return await getAuditLogs({ take: 50 }); } catch { return [] as any[]; } })(),
   ]);
 
   return (

@@ -8,7 +8,7 @@ import ImagesUploader from "@/components/admin/images-uploader";
 import MainImageUploader from "@/components/admin/main-image-uploader";
 import { redirect } from "next/navigation";
 import ProductQuickSearch from "@/components/admin/product-quick-search";
-import PendingButton from '@/components/pending-button';
+import { PendingButton } from '@/components/pending-button';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 export default async function AdminProductsPage({ searchParams }: { searchParams?: Promise<{ q?: string; categoria?: string; proveedor?: string; message?: string }> }) {
