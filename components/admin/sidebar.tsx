@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
@@ -53,6 +54,13 @@ export default function AdminSidebar() {
             </Link>
           );
         })}
+        <hr className="my-3" />
+        <button
+          onClick={() => signOut({ callbackUrl: '/auth/login' })}
+          className="w-full text-left block rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        >
+          Cerrar Sesión
+        </button>
       </nav>
     </aside>
   );

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 
 const navItems = [
   { name: 'Resumen', href: '/dashboard/cliente', icon: 'Home' },
@@ -50,7 +51,8 @@ export function DashboardSidebar() {
         <hr className="my-4" />
         {/* This should be a button that triggers signOut() from next-auth */}
         <button
-          className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 w-full"
+          onClick={() => signOut({ callbackUrl: '/auth/login' })}
+          className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
         >
           {icons['LogOut']}
           <span>Cerrar Sesión</span>

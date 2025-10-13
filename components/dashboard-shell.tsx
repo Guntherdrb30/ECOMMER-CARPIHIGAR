@@ -13,6 +13,16 @@ export default function DashboardShell({
 }) {
   const [open, setOpen] = useState(false);
 
+  const handleSidebarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    try {
+      const target = e.target as HTMLElement | null;
+      const link = target?.closest('a');
+      if (link) {
+        setOpen(false);
+      }
+    } catch {}
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Topbar (mobile) */}
@@ -53,7 +63,7 @@ export default function DashboardShell({
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
               </button>
             </div>
-            <div className="overflow-auto h-[calc(100vh-44px)]">
+            <div className="overflow-auto h-[calc(100vh-44px)]" onClick={handleSidebarClick}>
               {sidebar}
             </div>
           </div>
@@ -62,4 +72,3 @@ export default function DashboardShell({
     </div>
   );
 }
-
