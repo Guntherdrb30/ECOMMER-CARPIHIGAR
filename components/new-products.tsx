@@ -19,9 +19,15 @@ export default async function NewProducts() {
 
   const serializableSettings = {
     ...settings,
-    ivaPercent: (settings as any).ivaPercent.toNumber(),
-    tasaVES: (settings as any).tasaVES.toNumber(),
-    sellerCommissionPercent: (settings as any).sellerCommissionPercent.toNumber(),
+    ivaPercent: typeof (settings as any).ivaPercent === 'number'
+      ? (settings as any).ivaPercent
+      : (settings as any).ivaPercent?.toNumber?.() ?? Number((settings as any).ivaPercent),
+    tasaVES: typeof (settings as any).tasaVES === 'number'
+      ? (settings as any).tasaVES
+      : (settings as any).tasaVES?.toNumber?.() ?? Number((settings as any).tasaVES),
+    sellerCommissionPercent: typeof (settings as any).sellerCommissionPercent === 'number'
+      ? (settings as any).sellerCommissionPercent
+      : (settings as any).sellerCommissionPercent?.toNumber?.() ?? Number((settings as any).sellerCommissionPercent),
   };
 
   if (!serializableProducts.length) {
