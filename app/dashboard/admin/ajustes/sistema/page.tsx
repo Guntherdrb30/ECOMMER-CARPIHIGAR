@@ -11,8 +11,9 @@ export default async function SystemSettingsPage() {
   const user = (session?.user as any) || {};
   const email = String(user?.email || '').toLowerCase();
   const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
-  const isRoot = user?.role === 'ADMIN' && email === rootEmail;
-  if (!isRoot) {
+  const isAdmin = user?.role === 'ADMIN';
+  const isRoot = isAdmin && email === rootEmail;
+  if (!isAdmin) {
     return (
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Ajustes del Sistema</h1>
@@ -28,7 +29,7 @@ export default async function SystemSettingsPage() {
   return (
     <div className="container mx-auto p-4 space-y-4">
       <ShowToastFromSearch param="sys" okMessage="Cambios guardados" errMessage="No se pudieron guardar los cambios" />
-      <h1 className="text-2xl font-bold">Ajustes del Sistema (Root)</h1>
+      <h1 className="text-2xl font-bold">Ajustes del Sistema</h1>
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-2">Clave de eliminación</h2>
         <p className="text-sm text-gray-600 mb-3">Esta clave se usa para autorizar eliminaciones sensibles (abonos, productos, categorías, etc.).</p>

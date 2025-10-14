@@ -104,7 +104,8 @@ export async function setDeleteSecret(formData: FormData) {
   const session = await getServerSession(authOptions);
   const email = (session?.user as any)?.email as string | undefined;
   const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
-  if ((session?.user as any)?.role !== 'ADMIN' || String(email || '').toLowerCase() !== rootEmail) {
+  // Permitir a cualquier ADMIN configurar la clave de eliminación
+  if ((session?.user as any)?.role !== 'ADMIN') {
     throw new Error('Not authorized');
   }
   const newSecret = String(formData.get('newSecret') || '').trim();
