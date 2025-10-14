@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import CategorySelect from '@/components/category-select';
+import CategoryCombobox from '@/components/category-combobox';
 
 export default async function ProductosPage({
   searchParams,
@@ -30,6 +31,8 @@ export default async function ProductosPage({
   const wishlistedProductIds = new Set(wishlistItems.map(item => item.productId));
   
   const selectedCategory = categorySlug ? (categories as any[]).find((c: any) => c.slug === categorySlug) : null;
+  const topLevel = (categories as any[]).filter((c: any) => (c.depth || 0) === 0);
+  const childrenOfSelected = selectedCategory ? (categories as any[]).filter((c: any) => c.parentId === selectedCategory.id) : [];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -44,8 +47,34 @@ export default async function ProductosPage({
         </div>
         <div className="flex-shrink-0">
           <label htmlFor="category" className="sr-only">Categoría</label>
-          <CategorySelect categories={categories as any} value={categorySlug || ''} />
+          <CategoryCombobox categories={categories as any} value={categorySlug || ''} />
         </div>
+      </div>
+
+      {/* Chips de navegación por categorías */}
+      <div className="mb-6">
+        {selectedCategory ? (
+          childrenOfSelected.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/productos?categoria=${selectedCategory.slug}`} className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-sm">{selectedCategory.name}</Link>
+              {childrenOfSelected.map((c: any) => (
+                <Link key={c.id} href={`/productos?categoria=${c.slug}`} className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-200 text-sm transition-colors">{c.name}</Link>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {topLevel.map((c: any) => (
+                <Link key={c.id} href={`/productos?categoria=${c.slug}`} className={`inline-flex items-center px-3 py-1.5 rounded-full border text-sm transition-colors ${c.slug===selectedCategory.slug ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border-gray-200'}`}>{c.name}</Link>
+              ))}
+            </div>
+          )
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {topLevel.map((c: any) => (
+              <Link key={c.id} href={`/productos?categoria=${c.slug}`} className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-200 text-sm transition-colors">{c.name}</Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Products Grid */}
@@ -72,4 +101,3 @@ export default async function ProductosPage({
     </div>
   );
 }
-
