@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay, EffectFade } from 'swiper/modules';
@@ -24,7 +24,7 @@ function buildSlides(images?: string[]): HeroSlide[] {
   if (normalized.length) {
     return normalized.map((img, idx) => ({
       image: encodeURI(img),
-      title: idx === 0 ? 'Descubre Carpihogar' : idx === 1 ? 'Renueva tu Hogar con Estilo' : 'Calidad y Diseño',
+      title: idx === 0 ? 'Descubre Carpihogar' : idx === 1 ? 'Renueva tu Hogar con Estilo' : 'Calidad y DiseÃ±o',
       subtitle: 'Encuentra los mejores productos para tus proyectos y tu hogar.',
       href: '/productos',
     }));
@@ -32,14 +32,14 @@ function buildSlides(images?: string[]): HeroSlide[] {
   return [
     {
       image: '/uploads/carpinteria y hogar.png',
-      title: 'Diseño y Calidad para tus Espacios',
-      subtitle: 'Encuentra los mejores acabados y herrajes para tus proyectos de carpintería.',
+      title: 'DiseÃ±o y Calidad para tus Espacios',
+      subtitle: 'Encuentra los mejores acabados y herrajes para tus proyectos de carpinterÃ­a.',
       href: '/productos?categoria=carpinteria',
     },
     {
       image: '/uploads/cocina moderna.png',
       title: 'Renueva tu Hogar con Estilo',
-      subtitle: 'Descubre nuestra selección de productos para darle un nuevo aire a tu hogar.',
+      subtitle: 'Descubre nuestra selecciÃ³n de productos para darle un nuevo aire a tu hogar.',
       href: '/productos?categoria=hogar',
     },
     {
@@ -66,27 +66,36 @@ export default function HeroCarousel({ images }: Props) {
       >
         {slides.map((slide, index) => (
           <SwiperSlide key={index}>
-            <div
-              className="h-full w-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${slide.image})` }}
-            >
-              <div className="absolute inset-0 bg-black/40 flex items-center">
-                <div className="container mx-auto px-4">
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold drop-shadow-md max-w-3xl">
-                    {slide.title}
-                  </h1>
-                  <p className="text-base sm:text-lg md:text-xl mt-3 max-w-2xl">
-                    {slide.subtitle}
-                  </p>
-                  <Link
-                    href={slide.href}
-                    className="mt-6 sm:mt-8 inline-block bg-brand hover:opacity-90 font-semibold text-base sm:text-lg py-2.5 sm:py-3 px-6 sm:px-8 rounded-full transition-all duration-300"
-                  >
-                    Ver más
-                  </Link>
+            {(() => { const src = slide.image.toLowerCase(); const video = src.endsWith(".mp4") || src.endsWith(".webm") || src.endsWith(".ogg"); return video ? (
+              <div className="relative h-full w-full">
+                <video src={slide.image} className="h-full w-full object-cover" autoPlay muted loop playsInline />
+                <div className="absolute inset-0 bg-black/40 flex items-center">
+                  <div className="container mx-auto px-4">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold drop-shadow-md max-w-3xl">
+                      {slide.title}
+                    </h1>
+                    <p className="text-base sm:text-lg md:text-xl mt-3 max-w-2xl">
+                      {slide.subtitle}
+                    </p>
+                    <Link href={slide.href} className="mt-6 sm:mt-8 inline-block bg-brand hover:opacity-90 font-semibold text-base sm:text-lg py-2.5 sm:py-3 px-6 sm:px-8 rounded-full transition-all duration-300">Ver más</Link>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${slide.image})` }}>
+                <div className="absolute inset-0 bg-black/40 flex items-center">
+                  <div className="container mx-auto px-4">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold drop-shadow-md max-w-3xl">
+                      {slide.title}
+                    </h1>
+                    <p className="text-base sm:text-lg md:text-xl mt-3 max-w-2xl">
+                      {slide.subtitle}
+                    </p>
+                    <Link href={slide.href} className="mt-6 sm:mt-8 inline-block bg-brand hover:opacity-90 font-semibold text-base sm:text-lg py-2.5 sm:py-3 px-6 sm:px-8 rounded-full transition-all duration-300">Ver más</Link>
+                  </div>
+                </div>
+              </div>
+            ); })()}
           </SwiperSlide>
         ))}
       </Swiper>
