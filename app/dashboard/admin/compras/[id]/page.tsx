@@ -1,4 +1,4 @@
-import { getPOById, receivePO } from "@/server/actions/procurement";
+﻿import { getPOById, receivePO } from "@/server/actions/procurement";
 import PoReceiveEditor from "@/components/admin/po-receive-editor";
 
 export default async function VerOCPage({
@@ -39,7 +39,7 @@ export default async function VerOCPage({
             href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
               `OC ${po.id}\nProveedor: ${po.supplier?.name}\nTotal: $${Number(po.totalUSD).toFixed(2)}\nItems:\n` +
                 po.items
-                  .map((it: any) => `- ${it.product?.name} · ${it.quantity} x $${Number(it.costUSD).toFixed(2)}`)
+                  .map((it: any) => `- ${it.product?.name} Â· ${it.quantity} x $${Number(it.costUSD).toFixed(2)}`)
                   .join("\n"),
             )}`}
           >
@@ -68,15 +68,15 @@ export default async function VerOCPage({
           </div>
           <div>
             <div className="text-sm text-gray-600">Creada por</div>
-            <div>{po.createdBy?.name || po.createdBy?.email || "—"}</div>
+            <div>{po.createdBy?.name || po.createdBy?.email || "â€”"}</div>
           </div>
           <div>
             <div className="text-sm text-gray-600">Recibida por</div>
-            <div>{po.receivedBy?.name || po.receivedBy?.email || "—"}</div>
+            <div>{po.receivedBy?.name || po.receivedBy?.email || "â€”"}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-600">Recepción</div>
-            <div>{po.receivedAt ? new Date(po.receivedAt as any).toLocaleString() : "—"}</div>
+            <div className="text-sm text-gray-600">RecepciÃ³n</div>
+            <div>{po.receivedAt ? new Date(po.receivedAt as any).toLocaleString() : "â€”"}</div>
           </div>
         </div>
       </div>
@@ -114,16 +114,16 @@ export default async function VerOCPage({
 
       {po.status !== "RECEIVED" && (
         <div className="form-card">
-          <h2 className="text-lg font-bold mb-2">Recepción</h2>
+          <h2 className="text-lg font-bold mb-2">RecepciÃ³n</h2>
           <form action={receivePO} className="space-y-2">
             <input type="hidden" name="poId" value={po.id} />
             <div>
               <label className="form-label">Recibido por</label>
-              <input className="form-input" defaultValue="Se registrará el usuario actual" readOnly />
+              <input className="form-input" defaultValue="Se registrarÃ¡ el usuario actual" readOnly />
             </div>
             <PoReceiveEditor items={po.items} />
             <div className="mt-2">
-              <button className="bg-green-600 text-white px-3 py-1 rounded">Registrar Recepción</button>
+              <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Registrando...">Registrar Recepción</PendingButton>
             </div>
           </form>
         </div>
@@ -131,3 +131,5 @@ export default async function VerOCPage({
     </div>
   );
 }
+
+

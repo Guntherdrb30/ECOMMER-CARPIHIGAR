@@ -9,11 +9,19 @@ export default async function ProductosPorProveedorInventario({
   const proveedor = sp.proveedor || '';
   const categoria = sp.categoria || '';
   const q = sp.q || '';
-  const [suppliers, categories, products] = await Promise.all([
-    getSuppliers(),
-    getCategories(),
-    getProducts({ supplierId: proveedor || undefined, categorySlug: categoria || undefined, q: q || undefined }),
-  ]);
+  let suppliers: any[] = [];
+  let categories: any[] = [];
+  let products: any[] = [];
+  try {
+    const r = await Promise.all([
+      getSuppliers(),
+      getCategories(),
+      getProducts({ supplierId: proveedor || undefined, categorySlug: categoria || undefined, q: q || undefined }),
+    ]);
+    suppliers = Array.isArray(r[0]) ? r[0] : [];
+    categories = Array.isArray(r[1]) ? r[1] : [];
+    products = Array.isArray(r[2]) ? r[2] : [];
+  } catch {}
 
   return (
     <div className="container mx-auto p-4 space-y-4">
@@ -118,4 +126,3 @@ export default async function ProductosPorProveedorInventario({
     </div>
   );
 }
-

@@ -262,10 +262,15 @@ export async function updateProductInline(formData: FormData) {
     if (isNew !== null) data.isNew = String(isNew) === 'on' || String(isNew) === 'true';
     if (image) data.images = { push: image } as any;
 
-    await prisma.product.update({ where: { id }, data });
-    await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'PRODUCT_UPDATE_INLINE', details: id } });
-    revalidatePath('/dashboard/admin/productos');
-    redirect('/dashboard/admin/productos?message=Producto%20actualizado');
+    try {
+        await prisma.product.update({ where: { id }, data });
+        try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'PRODUCT_UPDATE_INLINE', details: id } }); } catch {}
+        revalidatePath('/dashboard/admin/productos');
+        redirect('/dashboard/admin/productos?message=Producto%20actualizado');
+    } catch (e) {
+        revalidatePath('/dashboard/admin/productos');
+        redirect('/dashboard/admin/productos?error=No%20se%20pudo%20actualizar');
+    }
 }
 
 export async function createStockMovement(formData: FormData) {
