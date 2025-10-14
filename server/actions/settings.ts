@@ -116,7 +116,33 @@ export async function setDeleteSecret(formData: FormData) {
   if (newSecret !== confirm) {
     throw new Error('Las claves no coinciden');
   }
-  await prisma.siteSettings.update({ where: { id: 1 }, data: { deleteSecret: newSecret } });
+  // Garantizar que exista el registro de SiteSettings (id=1) y actualizar/crear según sea necesario
+  try {
+    await prisma.siteSettings.update({ where: { id: 1 }, data: { deleteSecret: newSecret } });
+  } catch (err) {
+    try {
+      await prisma.siteSettings.create({
+        data: {
+          id: 1,
+          brandName: 'Carpihogar.ai',
+          whatsappPhone: '584120000000',
+          contactPhone: '584120000000',
+          contactEmail: 'contacto@carpihogar.ai',
+          ivaPercent: 16 as any,
+          tasaVES: 40 as any,
+          primaryColor: '#FF4D00',
+          secondaryColor: '#111827',
+          logoUrl: '/logo-default.svg',
+          homeHeroUrls: [],
+          lowStockThreshold: 5,
+          sellerCommissionPercent: 5 as any,
+          deleteSecret: newSecret,
+        } as any,
+      });
+    } catch (e2) {
+      throw e2;
+    }
+  }
   try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'SYSTEM_DELETE_SECRET_UPDATED', details: `by:${email}` } }); } catch {}
   revalidatePath('/dashboard/admin/ajustes/sistema');
   return { ok: true };
