@@ -1,5 +1,5 @@
-﻿import { getInventorySummary } from "@/server/actions/inventory";
-import { getCategories } from "@/server/actions/categories";
+import { getInventorySummary } from "@/server/actions/inventory";
+import { getCategoriesFlattened } from "@/server/actions/categories";
 import ProductQuickSearch from "@/components/admin/product-quick-search";
 import TopSupplierKPI from "@/components/admin/top-supplier-kpi";
 import LowStockPanel from "@/components/admin/low-stock-panel";
@@ -29,7 +29,7 @@ export default async function AdminInventoryPage({
   try {
     const r = await Promise.all([
       getInventorySummary(),
-      getCategories(),
+      getCategoriesFlattened(),
     ]);
     summary = r[0] || summary;
     categories = Array.isArray(r[1]) ? r[1] : [];
@@ -42,9 +42,9 @@ export default async function AdminInventoryPage({
         <InventoryRefreshButton />
       </div>
 
-      {/* BÃºsqueda rÃ¡pida */}
+      {/* Búsqueda rápida */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-bold mb-2">BÃºsqueda de productos</h2>
+        <h2 className="text-lg font-bold mb-2">Búsqueda de productos</h2>
         <ProductQuickSearch />
       </div>
 
@@ -59,7 +59,7 @@ export default async function AdminInventoryPage({
           <div className="text-2xl font-bold">{summary.totalUnits}</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-sm text-gray-600">ValorizaciÃ³n (USD)</div>
+          <div className="text-sm text-gray-600">Valorización (USD)</div>
           <div className="text-2xl font-bold">
             {Number((summary as any).totalValueUSD ?? 0).toFixed(2)}
           </div>
@@ -78,7 +78,7 @@ export default async function AdminInventoryPage({
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-bold">Reportes de ventas</h2>
           <form method="get" className="flex items-center gap-2 text-sm">
-            <label className="text-gray-700">DÃ­as</label>
+            <label className="text-gray-700">Días</label>
             <input
               type="number"
               name="days"
@@ -99,13 +99,11 @@ export default async function AdminInventoryPage({
               defaultValue={lowLimit}
               className="w-20 border rounded px-2 py-1"
             />
-            <label className="text-gray-700">CategorÃ­a</label>
+            <label className="text-gray-700">Categoría</label>
             <select name="cat" defaultValue={cat} className="border rounded px-2 py-1">
               <option value="">Todas</option>
-              {categories.map((c: any) => (
-                <option key={c.id} value={c.slug}>
-                  {c.name}
-                </option>
+              {(categories as any[]).map((c: any) => (
+                <option key={c.id} value={c.slug}>{`${'— '.repeat(c.depth || 0)}${c.name}`}</option>
               ))}
             </select>
             <button className="bg-blue-600 text-white px-3 py-1 rounded">Aplicar</button>
@@ -133,3 +131,5 @@ export default async function AdminInventoryPage({
     </div>
   );
 }
+
+

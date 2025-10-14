@@ -1,7 +1,7 @@
 ﻿import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm } from "@/server/actions/products";
 import ProductCsvUploader from '@/components/admin/product-csv-uploader';
 import SecretDeleteButton from "@/components/admin/secret-delete-button";
-import { getCategories } from "@/server/actions/categories";
+import { getCategoriesFlattened } from "@/server/actions/categories";
 import { getSuppliers } from "@/server/actions/procurement";
 import { getSettings } from "@/server/actions/settings";
 import StockHistory from "@/components/admin/stock-history";
@@ -20,7 +20,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
   const message = (sp as any).message || '';
   const [products, categories, settings, suppliers] = await Promise.all([
     getProducts({ categorySlug: categoria || undefined, q: q || undefined, supplierId: proveedor || undefined }),
-    getCategories(),
+    getCategoriesFlattened(),
     getSettings(),
     getSuppliers(),
   ]);
@@ -54,8 +54,8 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         <input name="q" placeholder="Buscar por nombre" defaultValue={q} className="border rounded px-2 py-1" />
         <select name="categoria" defaultValue={categoria} className="border rounded px-2 py-1">
           <option value="">Todas las categorias</option>
-          {categories.map((c: any) => (
-            <option key={c.id} value={c.slug}>{c.name}</option>
+          {(categories as any[]).map((c: any) => (
+            <option key={c.id} value={c.slug}>{`${'— '.repeat(c.depth || 0)}${c.name}`}</option>
           ))}
         </select>
         <select name="proveedor" defaultValue={proveedor} className="border rounded px-2 py-1">
@@ -105,8 +105,8 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           <input name="stock" type="number" placeholder="Stock" className="form-input" defaultValue={0} />
           <select name="categoryId" className="form-select">
             <option value="">Sin categoria</option>
-            {categories.map((c: any) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+            {(categories as any[]).map((c: any) => (
+              <option key={c.id} value={c.id}>{`${'— '.repeat(c.depth || 0)}${c.name}`}</option>
             ))}
           </select>
           <select name="supplierId" className="form-select">

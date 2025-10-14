@@ -1,9 +1,9 @@
-import { getCategories } from '@/server/actions/categories';
+import { getCategoryTree } from '@/server/actions/categories';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default async function CategoriasPage() {
-  const categories = await getCategories();
+  const tree = await getCategoryTree();
 
   return (
     <div className="bg-gray-50">
@@ -16,20 +16,41 @@ export default async function CategoriasPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {categories.map((category: any) => (
-            <Link key={category.id} href={`/productos?categoria=${category.slug}`}>
-              <div className="group block bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1">
-                <div className="p-5">
+          {(tree as any[]).map((parent: any) => (
+            <div key={parent.id} className="group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1">
+              <div className="p-5">
+                <Link href={`/productos?categoria=${parent.slug}`} className="block">
                   <h3 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-300">
-                    {category.name}
+                    {parent.name}
                   </h3>
-                </div>
+                </Link>
+                {parent.children?.length > 0 && (
+                  <ul className="mt-3 space-y-1 text-gray-700">
+                    {parent.children.map((child: any) => (
+                      <li key={child.id}>
+                        <Link href={`/productos?categoria=${child.slug}`} className="hover:underline">
+                          {'— '} {child.name}
+                        </Link>
+                        {child.children?.length > 0 && (
+                          <ul className="ml-4 mt-1 space-y-1 text-gray-600">
+                            {child.children.map((sub: any) => (
+                              <li key={sub.id}>
+                                <Link href={`/productos?categoria=${sub.slug}`} className="hover:underline">
+                                  {'—— '} {sub.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>
     </div>
   );
 }
-

@@ -1,13 +1,13 @@
-
 import Link from 'next/link';
 import Price from '@/components/price';
 import { getProducts } from '@/server/actions/products';
 import { getSettings } from '@/server/actions/settings';
-import { getCategories } from '@/server/actions/categories';
+import { getCategoriesFlattened } from '@/server/actions/categories';
 import ProductCard from '@/components/product-card';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import CategorySelect from '@/components/category-select';
 
 export default async function ProductosPage({
   searchParams,
@@ -23,20 +23,20 @@ export default async function ProductosPage({
   const [products, settings, categories, wishlistItems] = await Promise.all([
     getProducts({ categorySlug }),
     getSettings(),
-    getCategories(),
+    getCategoriesFlattened(),
     userId ? prisma.wishlistItem.findMany({ where: { userId } }) : Promise.resolve([]),
   ]);
 
   const wishlistedProductIds = new Set(wishlistItems.map(item => item.productId));
   
-  const selectedCategory = categorySlug ? categories.find(c => c.slug === categorySlug) : null;
+  const selectedCategory = categorySlug ? (categories as any[]).find((c: any) => c.slug === categorySlug) : null;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-2">{selectedCategory ? selectedCategory.name : 'Nuestros Productos'}</h1>
       {/* descripcion de categoria (opcional) */}
 
-      {/* Filter Controls - Non-functional, for display */}
+      {/* Filtros */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-8 flex flex-wrap items-center gap-4">
         <div className="flex-grow">
           <label htmlFor="search" className="sr-only">Búsqueda</label>
@@ -44,14 +44,7 @@ export default async function ProductosPage({
         </div>
         <div className="flex-shrink-0">
           <label htmlFor="category" className="sr-only">Categoría</label>
-          <select id="category" defaultValue={categorySlug || ''} className="border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand">
-            <option value="">Todas las Categorías</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.slug}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+          <CategorySelect categories={categories as any} value={categorySlug || ''} />
         </div>
       </div>
 
@@ -62,7 +55,7 @@ export default async function ProductosPage({
             <ProductCard 
               key={product.id} 
               product={product} 
-              tasa={settings.tasaVES} 
+              tasa={(settings as any).tasaVES} 
               isWishlisted={wishlistedProductIds.has(product.id)}
             />
           ))}
@@ -79,3 +72,4 @@ export default async function ProductosPage({
     </div>
   );
 }
+

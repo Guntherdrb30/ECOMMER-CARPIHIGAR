@@ -1,11 +1,11 @@
-import { getCategories, getCategoryTree, createCategoryByForm, deleteCategoryByForm } from "@/server/actions/categories";
+import { getCategoriesFlattened, getCategoryTree, createCategoryByForm, deleteCategoryByForm } from "@/server/actions/categories";
 import SecretDeleteButton from "@/components/admin/secret-delete-button";
 import { PendingButton } from '@/components/pending-button';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 export default async function AdminCategoriesPage({ searchParams }: { searchParams?: Promise<{ error?: string; message?: string }> }) {
   const [categories, tree, sp] = await Promise.all([
-    getCategories(),
+    getCategoriesFlattened(),
     getCategoryTree(),
     (async () => (await searchParams) || {})(),
   ]);
@@ -26,8 +26,18 @@ export default async function AdminCategoriesPage({ searchParams }: { searchPara
           <input name="slug" placeholder="slug-ejemplo" className="form-input" required />
           <select name="parentId" className="form-select">
             <option value="">Principal</option>
-            {categories.map((c: any) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+            {(tree as any[]).map((p: any) => (
+              <>
+                <option key={p.id} value={p.id}>{p.name}</option>
+                {p.children?.map((c: any) => (
+                  <>
+                    <option key={c.id} value={c.id}>{'— '}{c.name}</option>
+                    {c.children?.map((g: any) => (
+                      <option key={g.id} value={g.id}>{'—— '}{g.name}</option>
+                    ))}
+                  </>
+                ))}
+              </>
             ))}
           </select>
           <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creando…">Crear</PendingButton>
@@ -54,10 +64,11 @@ export default async function AdminCategoriesPage({ searchParams }: { searchPara
             <tbody>
               {categories.map((category: any) => (
                 <tr key={category.id}>
-                  <td className="border px-4 py-2">{category.name}</td>
+                  <td className="border px-4 py-2">{`${'- '.repeat(category.depth || 0)}${category.name}`}</td>
                   <td className="border px-4 py-2">{category.slug}</td>
                   <td className="border px-4 py-2">{category.parentId ? 'Subcategoría' : 'Principal'}</td>
                   <td className="border px-4 py-2">
+                    <a href={`/dashboard/admin/categorias/${category.id}`} className="text-blue-600 hover:underline mr-3">Editar</a>
                     <SecretDeleteButton
                       action={deleteCategoryByForm as any}
                       hidden={{ id: category.id }}

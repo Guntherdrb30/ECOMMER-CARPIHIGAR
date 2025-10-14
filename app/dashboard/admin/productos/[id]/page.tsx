@@ -1,4 +1,4 @@
-import { getCategories } from "@/server/actions/categories";
+import { getCategoriesFlattened } from "@/server/actions/categories";
 import { getSuppliers } from "@/server/actions/procurement";
 import { getProductById, updateProductFull } from "@/server/actions/products";
 import MainImageUploader from "@/components/admin/main-image-uploader";
@@ -6,11 +6,17 @@ import ImagesUploader from "@/components/admin/images-uploader";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [product, categories, suppliers] = await Promise.all([
-    getProductById(id),
-    getCategories(),
-    getSuppliers(),
-  ]);
+  let product: any = null;
+  let categories: any[] = [];
+  let suppliers: any[] = [];
+  try {
+    const r = await Promise.all([
+      getProductById(id),
+      getCategoriesFlattened(),
+      getSuppliers(),
+    ]);
+    product = r[0]; categories = Array.isArray(r[1]) ? r[1] : []; suppliers = Array.isArray(r[2]) ? r[2] : [];
+  } catch {}
 
   if (!product) {
     return <div className="container mx-auto p-4">Producto no encontrado</div>;
@@ -30,8 +36,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         <input name="stock" type="number" defaultValue={product.stock} placeholder="Stock" className="border rounded px-2 py-1" />
         <select name="categoryId" defaultValue={product.categoryId || ''} className="border rounded px-2 py-1">
           <option value="">Sin categoría</option>
-          {categories.map((c: any) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+          {(categories as any[]).map((c: any) => (
+            <option key={c.id} value={c.id}>{`${'— '.repeat(c.depth || 0)}${c.name}`}</option>
           ))}
         </select>
         <select name="supplierId" defaultValue={(product as any).supplierId || ''} className="border rounded px-2 py-1">
