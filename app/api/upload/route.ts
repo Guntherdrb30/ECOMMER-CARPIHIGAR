@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { promises as fs } from 'fs';
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     }
     const form = await req.formData();
     const file: any = form.get('file');
-    const fileType = form.get('type') as string || 'image';
+    const fileType = (form.get('type') as string) || (String((form.get('file') as any)?.type || '').startsWith('video/') ? 'video' : 'image');
 
     if (!file || typeof file.arrayBuffer !== 'function') {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
@@ -84,11 +84,14 @@ export async function POST(req: Request) {
     }
 
   } catch (err) {
+  } catch (err) {
     console.error('Upload error', err);
-    // Check if the error is due to body size limit
-    if ((err as any).type === 'entity.too.large') {
-        return NextResponse.json({ error: 'File is too large. Max size is 4MB.' }, { status: 413 });
+    const msg = String((err as any)?.message || '').toLowerCase();
+    if (msg.includes('input file contains unsupported image format')) {
+      return NextResponse.json({ error: 'Formato de archivo no soportado por el procesador de imágenes' }, { status: 415 });
     }
+    if ((err as any).type === 'entity.too.large') {
+      return NextResponse.json({ error: 'El archivo es demasiado grande para el servidor. Considera subir un video más ligero o usar almacenamiento externo.' }, { status: 413 });
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
-  }
 }
+

@@ -17,15 +17,12 @@ export default function HeroMediaUploader({ targetInputName, defaultUrl }: { tar
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0];
     if (!file) { setError('Selecciona un archivo'); setOk(false); return; }
-    
-    const allowedImage = ['image/png','image/jpeg','image/webp','image/svg+xml'];
-    const allowedVideo = ['video/mp4', 'video/webm'];
+    // Detect tipo por mime o extensión
     const name = (file as any).name ? String((file as any).name).toLowerCase() : '';
-    const okImageExt = ['.png','.jpg','.jpeg','.webp','.svg'].some((ext) => name.endsWith(ext));
-    const okVideoExt = ['.mp4','.webm'].some((ext) => name.endsWith(ext));
-
-    if (!(allowedImage.includes(file.type) || okImageExt || allowedVideo.includes(file.type) || okVideoExt)) {
-      setError('Formato no permitido. Usa PNG, JPG, WEBP, SVG, MP4 o WEBM.');
+    const isVideo = file.type.startsWith('video/') || ['.mp4', '.webm', '.ogg'].some((ext) => name.endsWith(ext));
+    const isImage = file.type.startsWith('image/') || ['.png', '.jpg', '.jpeg', '.webp', '.svg'].some((ext) => name.endsWith(ext));
+    if (!(isVideo || isImage)) {
+      setError('Formato no permitido. Usa PNG, JPG, WEBP, SVG, MP4, WEBM u OGG.');
       setOk(false);
       return;
     }
@@ -35,9 +32,11 @@ export default function HeroMediaUploader({ targetInputName, defaultUrl }: { tar
     setOk(false);
     const form = new FormData();
     form.append('file', file);
+    form.append('type', isVideo ? 'video' : 'image');
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: form });
-      const json = await res.json();
+      let json: any = {};
+      try { json = await res.json(); } catch {}
       if (!res.ok) {
         setError(json?.error || 'Error al subir archivo');
         return;
@@ -63,18 +62,18 @@ export default function HeroMediaUploader({ targetInputName, defaultUrl }: { tar
     <div className="space-y-2">
       {preview && (
         isVideo(preview) ? (
-          <video src={preview} className="h-24 w-auto" controls />
+          <video src={preview} className="w-full rounded" controls />
         ) : (
-          <img src={preview} alt="Preview" className="h-24 w-auto" />
+          <img src={preview} alt="Preview" className="w-full max-h-40 object-cover rounded" />
         )
       )}
-      <div className="flex items-center gap-2">
-        <input ref={fileRef} type="file" accept="image/*,video/mp4,video/webm" onChange={handleChange} />
-        <button type="button" onClick={handleUpload} className="px-3 py-1 rounded bg-gray-800 text-white" disabled={loading}>
+      <div className="flex flex-wrap items-center gap-2">
+        <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleChange} className="flex-1 min-w-0 max-w-full" />
+        <button type="button" onClick={handleUpload} className="px-3 py-1 rounded bg-gray-800 text-white flex-none" disabled={loading}>
           {loading ? 'Subiendo...' : 'Subir'}
         </button>
       </div>
-      <p className="text-xs text-gray-500">Formatos: PNG, JPG, WEBP, SVG, MP4, WEBM.</p>
+      <p className="text-xs text-gray-500">Formatos: PNG, JPG, WEBP, SVG, MP4, WEBM, OGG.</p>
       {error && <div className="text-red-600 text-sm">{error}</div>}
       {ok && !error && <div className="text-green-700 text-sm">Archivo subido</div>}
     </div>
