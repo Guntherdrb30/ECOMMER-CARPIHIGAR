@@ -1,7 +1,6 @@
-﻿﻿
-﻿﻿﻿﻿
-import { getSettings, updateSettings, getAuditLogs } from "@/server/actions/settings";
+﻿import { getSettings, updateSettings, getAuditLogs } from "@/server/actions/settings";
 import LogoUploader from "@/components/admin/logo-uploader";
+import HeroMediaUploader from "@/components/admin/hero-media-uploader";
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -42,10 +41,7 @@ export default async function AdminSettingsPage() {
                 homeHeroUrl1: (formData.get('homeHeroUrl1') as string) || undefined,
                 homeHeroUrl2: (formData.get('homeHeroUrl2') as string) || undefined,
                 homeHeroUrl3: (formData.get('homeHeroUrl3') as string) || undefined,
-                homeHeroUrl4: (formData.get('homeHeroUrl4') as string) || undefined,
-                homeHeroUrl5: (formData.get('homeHeroUrl5') as string) || undefined,
-                homeHeroUrl6: (formData.get('homeHeroUrl6') as string) || undefined,
-                homeHeroUrls: Array.from({ length: 6 }).map((_, i) => formData.get(`homeHeroUrl${i + 1}`) as string).filter(Boolean),
+                homeHeroUrls: Array.from({ length: 3 }).map((_, i) => formData.get(`homeHeroUrl${i + 1}`) as string).filter(Boolean),
                 sellerCommissionPercent: parseFloat(String(formData.get('sellerCommissionPercent') || '5')),
             };
             await updateSettings(data);
@@ -136,22 +132,20 @@ export default async function AdminSettingsPage() {
             </div>
           </div>
           <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-2">Home (Página principal)</h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Sube las 6 imágenes para el carrusel de la página de inicio.
-            </p>
+            <h3 className="text-lg font-semibold mb-2">Home (Pagina principal)</h3>
+            <p className="text-sm text-gray-600 mb-3">Sube hasta 3 archivos (imagen o video) para el carrusel del hero.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, i) => {
+              {Array.from({ length: 3 }).map((_, i) => {
                 const index = i + 1;
                 const fieldName = `homeHeroUrl${index}`;
                 const defaultUrl = ((settings as any).homeHeroUrls?.[i]) || '';
 
                 return (
                   <div key={fieldName} className="border p-3 rounded-lg">
-                    <label className="block text-gray-700 font-medium">Imagen del Carrusel #{index}</label>
-                    <p className="text-xs text-gray-500 mb-2">Sube la imagen que aparecerá en la posición #{index} del carrusel.</p>
+                    <label className="block text-gray-700 font-medium">Medio del Carrusel #{index}</label>
+                    <p className="text-xs text-gray-500 mb-2">Esta sera la posicion #{index} del hero.</p>
                     <div className="mt-2">
-                      <LogoUploader targetInputName={fieldName} defaultUrl={defaultUrl} />
+                      <HeroMediaUploader targetInputName={fieldName} defaultUrl={defaultUrl} />
                     </div>
                     <input type="hidden" name={fieldName} defaultValue={defaultUrl} />
                   </div>
@@ -176,14 +170,14 @@ export default async function AdminSettingsPage() {
       </div>
       <div className="bg-white p-4 rounded-lg shadow mt-6">
         <h2 className="text-lg font-bold mb-2">Historial de Seguridad (Audit Log)</h2>
-        <p className="text-sm text-gray-600 mb-2">Últimos 50 eventos registrados del sistema.</p>
+        <p className="text-sm text-gray-600 mb-2">Ultimos 50 eventos registrados del sistema.</p>
         <div className="overflow-x-auto">
           <table className="w-full table-auto text-sm">
             <thead>
               <tr className="bg-gray-200">
                 <th className="px-3 py-2 text-left">Fecha</th>
                 <th className="px-3 py-2 text-left">Usuario</th>
-                <th className="px-3 py-2 text-left">Acción</th>
+                <th className="px-3 py-2 text-left">Accion</th>
                 <th className="px-3 py-2 text-left">Detalles</th>
               </tr>
             </thead>
