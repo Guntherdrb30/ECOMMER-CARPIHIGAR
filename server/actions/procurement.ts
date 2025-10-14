@@ -196,6 +196,32 @@ export async function createSupplier(formData: FormData) {
   redirect('/dashboard/admin/proveedores?message=Proveedor%20creado');
 }
 
+export async function updateSupplier(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const id = String(formData.get('id') || '');
+  if (!id) { redirect('/dashboard/admin/proveedores?error=ID%20inv%C3%A1lido'); }
+  const name = String(formData.get('name') || '').trim();
+  const email = String(formData.get('email') || '').trim();
+  const phone = String(formData.get('phone') || '').trim();
+  const taxId = String(formData.get('taxId') || '').trim();
+  const address = String(formData.get('address') || '').trim();
+  if (!name) { redirect('/dashboard/admin/proveedores?error=Nombre%20requerido'); }
+  try {
+    await prisma.supplier.update({ where: { id }, data: {
+      name,
+      email: email || null,
+      phone: phone || null,
+      taxId: taxId || null,
+      address: address || null,
+    }});
+  } catch {
+    redirect('/dashboard/admin/proveedores?error=No%20se%20pudo%20actualizar');
+  }
+  revalidatePath('/dashboard/admin/proveedores');
+  redirect('/dashboard/admin/proveedores?message=Proveedor%20actualizado');
+}
+
 export async function getPOs(filters?: { q?: string; supplierId?: string; from?: string; to?: string; status?: 'DRAFT'|'ORDERED'|'RECEIVED'|'CANCELLED'|string }) {
   try {
     const session = await getServerSession(authOptions);

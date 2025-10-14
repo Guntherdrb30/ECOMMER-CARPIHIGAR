@@ -24,10 +24,16 @@ export default async function AdminInventoryPage({
   const lowLimit = Number(sp.low ?? 10);
   const cat = (sp.cat ?? '') as string;
 
-  const [summary, categories] = await Promise.all([
-    getInventorySummary(),
-    getCategories(),
-  ]);
+  let summary: any = { productsCount: 0, totalUnits: 0, totalValueUSD: 0, lowStockThreshold: 5, lowStockCount: 0 };
+  let categories: any[] = [];
+  try {
+    const r = await Promise.all([
+      getInventorySummary(),
+      getCategories(),
+    ]);
+    summary = r[0] || summary;
+    categories = Array.isArray(r[1]) ? r[1] : [];
+  } catch {}
 
   return (
     <div className="container mx-auto p-4 space-y-4">
@@ -127,4 +133,3 @@ export default async function AdminInventoryPage({
     </div>
   );
 }
-

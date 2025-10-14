@@ -1,4 +1,4 @@
-import { getSuppliers, createSupplier } from "@/server/actions/procurement";
+import { getSuppliers, createSupplier, updateSupplier } from "@/server/actions/procurement";
 import { PendingButton } from '@/components/pending-button';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 
@@ -51,6 +51,24 @@ export default async function SuppliersPage({ searchParams }: { searchParams?: P
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="form-card">
+        <h2 className="text-lg font-bold mb-2">Editar proveedores</h2>
+        <p className="text-sm text-gray-600 mb-2">Edita cualquier campo y guarda para aplicar cambios.</p>
+        <div className="space-y-3">
+          {suppliers.map((s: any) => (
+            <form key={s.id} action={updateSupplier} className="grid grid-cols-1 md:grid-cols-7 gap-2 items-end">
+              <input type="hidden" name="id" value={s.id} />
+              <input name="name" defaultValue={s.name} placeholder="Nombre" className="form-input" />
+              <input name="email" defaultValue={s.email || ''} placeholder="Email" className="form-input" />
+              <input name="phone" defaultValue={s.phone || ''} placeholder="Teléfono" className="form-input" />
+              <input name="taxId" defaultValue={s.taxId || ''} placeholder="RIF/NIT" className="form-input" />
+              <input name="address" defaultValue={s.address || ''} placeholder="Dirección" className="form-input md:col-span-2" />
+              <PendingButton className="bg-gray-800 text-white px-3 py-1 rounded" pendingText="Guardando...">Guardar</PendingButton>
+            </form>
+          ))}
         </div>
       </div>
     </div>
