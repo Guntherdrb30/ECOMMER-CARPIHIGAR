@@ -2,10 +2,24 @@
 
 import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
+
+// Best-effort: ensure SiteSettings has new columns in DBs that missed migrations
+async function ensureSiteSettingsColumns() {
+  try {
+    await prisma.$executeRawUnsafe(
+      'ALTER TABLE "public"."SiteSettings" ' +
+      'ADD COLUMN IF NOT EXISTS "deleteSecret" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "defaultMarginClientPct" DECIMAL(5,2), ' +
+      'ADD COLUMN IF NOT EXISTS "defaultMarginAllyPct" DECIMAL(5,2), ' +
+      'ADD COLUMN IF NOT EXISTS "defaultMarginWholesalePct" DECIMAL(5,2);'
+    );
+  } catch {}
+}
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
 export async function getSettings() {
+  await ensureSiteSettingsColumns();
   try {
     let settings = await prisma.siteSettings.findUnique({
       where: { id: 1 },
@@ -101,6 +115,7 @@ export async function getDeleteSecret(): Promise<string> {
 }
 
 export async function setDeleteSecret(formData: FormData) {
+  await ensureSiteSettingsColumns();
   const session = await getServerSession(authOptions);
   const email = (session?.user as any)?.email as string | undefined;
   const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
@@ -149,6 +164,7 @@ export async function setDeleteSecret(formData: FormData) {
 }
 
 export async function setDefaultMargins(formData: FormData) {
+  await ensureSiteSettingsColumns();
   const session = await getServerSession(authOptions);
   const email = (session?.user as any)?.email as string | undefined;
   const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
