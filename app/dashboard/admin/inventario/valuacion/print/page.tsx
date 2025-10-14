@@ -9,12 +9,22 @@ export default async function PrintValuacionInventario({ searchParams }: { searc
   const proveedor = sp.proveedor || '';
   const categoria = sp.categoria || '';
   const q = sp.q || '';
-  const [suppliers, categories, data, settings] = await Promise.all([
-    getSuppliers(),
-    getCategories(),
-    getInventoryValuation({ supplierId: proveedor || undefined, categorySlug: categoria || undefined, q: q || undefined }),
-    getSettings(),
-  ]);
+  let suppliers: any[] = [];
+  let categories: any[] = [];
+  let data: any = { rows: [], totalValueUSD: 0 };
+  let settings: any = {};
+  try {
+    const r = await Promise.all([
+      getSuppliers(),
+      getCategories(),
+      getInventoryValuation({ supplierId: proveedor || undefined, categorySlug: categoria || undefined, q: q || undefined }),
+      getSettings(),
+    ]);
+    suppliers = Array.isArray(r[0]) ? r[0] : [];
+    categories = Array.isArray(r[1]) ? r[1] : [];
+    data = r[2] || data;
+    settings = r[3] || {};
+  } catch {}
   const supplierName = suppliers.find((s: any) => s.id === proveedor)?.name || 'Todos';
   const categoryName = categories.find((c: any) => c.slug === categoria)?.name || 'Todas';
 

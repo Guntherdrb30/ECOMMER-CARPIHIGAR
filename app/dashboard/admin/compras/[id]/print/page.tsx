@@ -8,8 +8,14 @@ export default async function PrintPOPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [po, settings] = await Promise.all([getPOById(id), getSettings()]);
-  if (!po) return <div className="p-4">OC no encontrada</div>;
+  let po: any = null;
+  let settings: any = {};
+  try {
+    const r = await Promise.all([getPOById(id), getSettings()]);
+    po = r[0];
+    settings = r[1] || {};
+  } catch {}
+  if (!po) return <div className="p-4">OC no encontrada</div> as any;
 
   return (
     <div className="p-6 text-sm">

@@ -9,8 +9,16 @@ export default async function VerOCPage({
   searchParams?: Promise<{ message?: string; error?: string }>;
 }) {
   const { id } = await params;
-  const [po, sp] = await Promise.all([getPOById(id), (async () => (await searchParams) || {})()]);
-  if (!po) return <div className="container mx-auto p-4">OC no encontrada</div>;
+  let po: any = null;
+  let sp: any = {};
+  try {
+    const r = await Promise.all([getPOById(id), (async () => (await searchParams) || {})()]);
+    po = r[0];
+    sp = r[1] || {};
+  } catch {
+    po = null;
+  }
+  if (!po) return <div className="container mx-auto p-4">OC no encontrada</div> as any;
   const message = (sp as any).message;
   const error = (sp as any).error;
 
@@ -123,4 +131,3 @@ export default async function VerOCPage({
     </div>
   );
 }
-
