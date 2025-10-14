@@ -84,14 +84,14 @@ export async function POST(req: Request) {
     }
 
   } catch (err) {
-  } catch (err) {
     console.error('Upload error', err);
     const msg = String((err as any)?.message || '').toLowerCase();
     if (msg.includes('input file contains unsupported image format')) {
-      return NextResponse.json({ error: 'Formato de archivo no soportado por el procesador de imágenes' }, { status: 415 });
+      return NextResponse.json({ error: 'Formato de archivo no soportado por el procesador de imagenes' }, { status: 415 });
     }
     if ((err as any).type === 'entity.too.large') {
-      return NextResponse.json({ error: 'El archivo es demasiado grande para el servidor. Considera subir un video más ligero o usar almacenamiento externo.' }, { status: 413 });
+      return NextResponse.json({ error: 'El archivo es demasiado grande para el servidor. Considera subir un video mas ligero o usar almacenamiento externo.' }, { status: 413 });
+    }
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+  }
 }
-
