@@ -34,7 +34,7 @@ export default async function SystemSettingsPage() {
         <h2 className="text-lg font-semibold mb-2">Clave de eliminación</h2>
         <p className="text-sm text-gray-600 mb-3">Esta clave se usa para autorizar eliminaciones sensibles (abonos, productos, categorías, etc.).</p>
         <div className="mb-3 text-sm text-gray-700">Estado: {current ? 'Configurada' : 'No configurada'}</div>
-        <form action={async (formData) => { 'use server'; try { await (setDeleteSecret as any)(formData); redirect('/dashboard/admin/ajustes/sistema?message=Clave%20actualizada'); } catch (e: any) { const m = encodeURIComponent(String(e?.message || 'No se pudieron guardar los cambios')); redirect('/dashboard/admin/ajustes/sistema?error=' + m); } }} className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl">
+        <form action={async (formData) => { 'use server'; try { await (setDeleteSecret as any)(formData); redirect('/dashboard/admin/ajustes/sistema?message=Clave%20cambiada'); } catch (e: any) { const m = encodeURIComponent(String(e?.message || 'No se pudieron guardar los cambios')); redirect('/dashboard/admin/ajustes/sistema?error=' + m); } }} className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl">
           <div>
             <label className="block text-sm text-gray-700">Nueva clave</label>
             <input name="newSecret" type="password" minLength={6} required className="border rounded px-2 py-1 w-full" placeholder="Mínimo 6 caracteres" />

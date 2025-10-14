@@ -96,7 +96,7 @@ export async function updateCategoryByForm(formData: FormData) {
     try {
         await prisma.category.update({ where: { id }, data: { name, slug, parentId } });
         revalidatePath('/dashboard/admin/categorias');
-        redirect('/dashboard/admin/categorias?message=Categor%C3%ADa%20actualizada');
+        redirect('/dashboard/admin/categorias?message=Categor%C3%ADa%20editada');
     } catch (e) {
         redirect('/dashboard/admin/categorias?error=No%20se%20pudo%20actualizar%20la%20categor%C3%ADa');
     }
