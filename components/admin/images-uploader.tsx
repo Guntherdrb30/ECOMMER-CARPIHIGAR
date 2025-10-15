@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef } from 'react';
 
@@ -16,15 +16,7 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
     try {
       for (const file of Array.from(files)) {
         if (max && (urls.length + next.length) >= max) break;
-        const form = new FormData();
-        form.append('file', file);
-        const res = await fetch('/api/upload', { method: 'POST', body: form, credentials: 'include' });
-        if (!res.ok) {
-          const t = await res.text();
-          throw new Error(`Error ${res.status}: ${t}`);
-        }
-        const json = await res.json();
-        if (json.url) next.push(json.url);
+        const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });\n        const { url } = await urlRes.json();\n        if (!urlRes.ok || !url) {\n          throw new Error('No se pudo crear URL de carga');\n        }\n        const put = await fetch(url, { method: 'PUT', headers: { 'content-type': file.type || 'application/octet-stream' }, body: file });\n        const uploaded = await put.json().catch(() => ({} as any));\n        if (!put.ok) {\n          throw new Error((uploaded as any)?.error || Error );\n        }\n        const finalUrl = (uploaded as any)?.url || url.split('?')[0];\n        next.push(finalUrl);
       }
       setUrls((prev) => [...prev, ...next]);
     } finally {
@@ -52,3 +44,4 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
     </div>
   );
 }
+

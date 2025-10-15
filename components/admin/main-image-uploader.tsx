@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef } from 'react';
 
@@ -11,11 +11,7 @@ export default function MainImageUploader({ targetName = 'mainImage' }: { target
     if (!file) return;
     setBusy(true);
     try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch('/api/upload', { method: 'POST', body: form });
-      const json = await res.json();
-      if (json.url) setUrl(json.url);
+      const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });\n      const { url } = await urlRes.json();\n      if (!urlRes.ok || !url) return;\n      const put = await fetch(url, { method: 'PUT', headers: { 'content-type': file.type || 'application/octet-stream' }, body: file });\n      const uploaded = await put.json().catch(() => ({} as any));\n      if (!put.ok) return;\n      const finalUrl = (uploaded as any)?.url || url.split('?')[0];\n      setUrl(finalUrl);
     } finally {
       setBusy(false);
     }
@@ -38,4 +34,5 @@ export default function MainImageUploader({ targetName = 'mainImage' }: { target
     </div>
   );
 }
+
 
