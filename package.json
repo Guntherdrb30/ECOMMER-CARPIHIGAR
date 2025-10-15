@@ -22,7 +22,8 @@
                  ],
     "author":  "",
     "license":  "ISC",
-    "dependencies": {\n    "@vercel/blob": "^0.24.0",
+    "dependencies": {
+    "@vercel/blob": "^0.24.0",
                          "@next-auth/prisma-adapter":  "^1.0.7",
                          "@prisma/client":  "^6.16.2",
                          "bcrypt":  "^6.0.0",
@@ -62,4 +63,5 @@
                             "typescript":  "^5.9.2"
                         }
 }
+
 
