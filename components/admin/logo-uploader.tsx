@@ -26,33 +26,30 @@ export default function LogoUploader({ targetInputName, defaultUrl }: { targetIn
     setLoading(true);
     setError(undefined);
     setOk(false);
-    const form = new FormData();
-    form.append('file', file);
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: form });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json?.error || 'Error al subir archivo');
+      // Direct upload via Vercel Blob
+      const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });
+      const { url } = await urlRes.json();
+      if (!urlRes.ok || !url) {
+        setError('No se pudo crear URL de carga');
         return;
       }
-      if (json.url) {
-        setPreview(json.url);
-        const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
-        if (input) input.value = json.url;
-        setOk(true);
+      const put = await fetch(url, {
+        method: 'PUT',
+        headers: { 'content-type': file.type || 'application/octet-stream' },
+        body: file,
+      });
+      const uploaded = await put.json().catch(() => ({} as any));
+      if (!put.ok) {
+        setError((uploaded as any)?.error || 'Error al subir archivo');
+        return;
       }
-      if (json.dominant) {
-        setDetectedColor(json.dominant);
-        const colorInput = document.querySelector<HTMLInputElement>('input[name="primaryColor"]');
-        if (colorInput) colorInput.value = json.dominant;
-        try { (document.body as any).style.setProperty('--color-brand', json.dominant); } catch {}
-      }
-      if (json.secondary) {
-        setSecondaryColor(json.secondary);
-        const secInput = document.querySelector<HTMLInputElement>('input[name="secondaryColor"]');
-        if (secInput) secInput.value = json.secondary;
-        try { (document.body as any).style.setProperty('--color-secondary', json.secondary); } catch {}
-      }
+      const finalUrl = (uploaded as any)?.url || url.split('?')[0];
+      setPreview(finalUrl);
+      const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
+      if (input) input.value = finalUrl;
+      setOk(true);
+      // Nota: detección de color ya no aplica en direct upload sin sharp; se puede calcular en servidor si se requiere.
     } finally {
       setLoading(false);
     }
