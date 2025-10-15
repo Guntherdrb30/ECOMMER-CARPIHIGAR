@@ -3,6 +3,7 @@ import LogoUploader from "@/components/admin/logo-uploader";
 import HeroMediaUploader from "@/components/admin/hero-media-uploader";
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 export default async function AdminSettingsPage() {
   const session = await getServerSession(authOptions);
@@ -25,6 +26,7 @@ export default async function AdminSettingsPage() {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Ajustes del Sitio</h1>
       <div className="bg-white p-4 rounded-lg shadow mt-4">
+        <ShowToastFromSearch successParam="message" errorParam="error" />
         <form noValidate action={async (formData) => {
             'use server';
             const data = {
@@ -45,6 +47,8 @@ export default async function AdminSettingsPage() {
                 sellerCommissionPercent: parseFloat(String(formData.get('sellerCommissionPercent') || '5')),
             };
             await updateSettings(data);
+            const { redirect } = await import('next/navigation');
+            redirect('/dashboard/admin/ajustes?message=Cambios%20guardados');
         }}>
           <div className="mb-4">
             <label className="block text-gray-700">Nombre de la Marca</label>

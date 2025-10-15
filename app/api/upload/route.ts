@@ -86,6 +86,9 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error('Upload error', err);
     const msg = String((err as any)?.message || '').toLowerCase();
+    if (msg.includes('read-only file system') || msg.includes('erofs')) {
+      return NextResponse.json({ error: 'El almacenamiento local del servidor es de solo lectura en producción. Activa Vercel Blob o un almacenamiento externo para persistir archivos.' }, { status: 507 });
+    }
     if (msg.includes('input file contains unsupported image format')) {
       return NextResponse.json({ error: 'Formato de archivo no soportado por el procesador de imagenes' }, { status: 415 });
     }
