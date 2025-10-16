@@ -30,22 +30,28 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
     setLoading(true);
     setError(undefined);
     setOk(false);
-    const form = new FormData();
-    form.append('file', file);
-    form.append('type', 'video'); // Add type hint for the server
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: form });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json?.error || 'Error al subir archivo');
+      const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });
+      const { url } = await urlRes.json();
+      if (!urlRes.ok || !url) {
+        setError('No se pudo crear URL de carga');
         return;
       }
-      if (json.url) {
-        setPreview(json.url);
-        const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
-        if (input) input.value = json.url;
-        setOk(true);
+      const put = await fetch(url, {
+        method: 'PUT',
+        headers: { 'content-type': file.type || 'application/octet-stream' },
+        body: file,
+      });
+      const uploaded = await put.json().catch(() => ({} as any));
+      if (!put.ok) {
+        setError((uploaded as any)?.error || 'Error al subir archivo');
+        return;
       }
+      const finalUrl = (uploaded as any)?.url || url.split('?')[0];
+      setPreview(finalUrl);
+      const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
+      if (input) input.value = finalUrl;
+      setOk(true);
     } finally {
       setLoading(false);
     }
@@ -75,3 +81,4 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
     </div>
   );
 }
+
