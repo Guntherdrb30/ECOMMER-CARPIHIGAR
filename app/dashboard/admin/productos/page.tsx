@@ -1,4 +1,4 @@
-import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm } from "@/server/actions/products";
+﻿import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm } from "@/server/actions/products";
 import ProductCsvUploader from '@/components/admin/product-csv-uploader';
 import SecretDeleteButton from "@/components/admin/secret-delete-button";
 import { getCategoriesFlattened } from "@/server/actions/categories";
@@ -7,14 +7,14 @@ import { getSettings } from "@/server/actions/settings";
 import StockHistory from "@/components/admin/stock-history";
 import ImagesUploader from "@/components/admin/images-uploader";
 import MainImageUploader from "@/components/admin/main-image-uploader";
-import RelatedProductsPicker from "@/components/admin/related-products-picker";
 import { redirect } from "next/navigation";
 import ProductQuickSearch from "@/components/admin/product-quick-search";
 import { PendingButton } from '@/components/pending-button';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
+import RelatedProductsPicker from "@/components/admin/related-products-picker";
 
 export default async function AdminProductsPage({ searchParams }: { searchParams?: Promise<{ q?: string; categoria?: string; proveedor?: string; message?: string }> }) {
-  const sp = (await searchParams) || {};
+  const sp = (await searchParams) || {} as any;
   const q = sp.q || '';
   const categoria = sp.categoria || '';
   const proveedor = (sp as any).proveedor || '';
@@ -36,12 +36,12 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         <a href="/api/reports/products-csv" className="text-blue-600 underline" target="_blank">Exportar productos (CSV)</a>
       </div>
       <div className="mb-4 p-4 bg-white rounded shadow">
-        <h2 className="text-lg font-semibold mb-2">Carga masiva (CSV) con previsualización</h2>
-        <p className="text-sm text-gray-600 mb-2">Columnas alineadas con el formulario: <code>name</code>, <code>slug</code>, <code>sku</code>, <code>barcode</code>, <code>brand</code>, <code>priceUSD</code>, <code>priceAllyUSD</code>, <code>stock</code>, <code>categoryId</code>, <code>supplierId</code>, <code>image</code>, <code>images</code>. Puedes omitir precios y solo indicar costo; si no indicas precios, se calculan con los m�rgenes por defecto del sistema.</p>
+        <h2 className="text-lg font-semibold mb-2">Carga masiva (CSV) con previsualizacion</h2>
+        <p className="text-sm text-gray-600 mb-2">Columnas alineadas con el formulario: <code>name</code>, <code>slug</code>, <code>sku</code>, <code>barcode</code>, <code>brand</code>, <code>priceUSD</code>, <code>priceAllyUSD</code>, <code>stock</code>, <code>categoryId</code>, <code>supplierId</code>, <code>image</code>, <code>images</code>. Puedes omitir precios y solo indicar costo; si no indicas precios, se calculan con los margenes por defecto del sistema.</p>
         <ProductCsvUploader />
       </div>
       <div className="mb-4">
-        <label className="block text-sm text-gray-700 mb-1">Búsqueda rápida</label>
+        <label className="block text-sm text-gray-700 mb-1">Busqueda rapida</label>
         <ProductQuickSearch />
       </div>
       {message && (
@@ -56,7 +56,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         <select name="categoria" defaultValue={categoria} className="border rounded px-2 py-1">
           <option value="">Todas las categorias</option>
           {(categories as any[]).map((c: any) => (
-            <option key={c.id} value={c.slug}>{`${'� '.repeat(c.depth || 0)}${c.name}`}</option>
+            <option key={c.id} value={c.slug}>{`${'- '.repeat(c.depth || 0)}${c.name}`}</option>
           ))}
         </select>
         <select name="proveedor" defaultValue={proveedor} className="border rounded px-2 py-1">
@@ -101,11 +101,11 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           <input name="name" placeholder="Nombre" className="form-input" required />
           <input name="slug" placeholder="slug-ejemplo" className="form-input" required />
           <input name="sku" placeholder="SKU (opcional)" className="form-input" />
-          <input name="barcode" placeholder="Código de barras (opcional)" className="form-input" />
+          <input name="barcode" placeholder="Codigo de barras (opcional)" className="form-input" />
           <input name="brand" placeholder="Marca" className="form-input" required />
           <div className="md:col-span-3">
-            <label className="block text-sm text-gray-700 mb-1">Descripci�n</label>
-            <textarea name="description" placeholder="Descripci�n del producto" className="w-full border rounded px-2 py-1 min-h-[80px]"></textarea>
+            <label className="block text-sm text-gray-700 mb-1">Descripcion</label>
+            <textarea name="description" placeholder="Descripcion del producto" className="w-full border rounded px-2 py-1 min-h-[80px]"></textarea>
           </div>
           <input name="priceUSD" type="number" step="0.01" placeholder="Precio USD" className="form-input" required />
           <input name="priceAllyUSD" type="number" step="0.01" placeholder="Precio Aliado USD (opcional)" className="form-input" />
@@ -113,7 +113,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           <select name="categoryId" className="form-select">
             <option value="">Sin categoria</option>
             {(categories as any[]).map((c: any) => (
-              <option key={c.id} value={c.id}>{`${'� '.repeat(c.depth || 0)}${c.name}`}</option>
+              <option key={c.id} value={c.id}>{`${'- '.repeat(c.depth || 0)}${c.name}`}</option>
             ))}
           </select>
           <select name="supplierId" className="form-select">
@@ -137,7 +137,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           </div>
           <div className="md:col-span-3">
             <div className="form-actions">
-              <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creando…">Crear</PendingButton>
+              <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creando...">Crear</PendingButton>
             </div>
           </div>
         </form>
@@ -180,7 +180,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                       <input name="stock" type="number" defaultValue={product.stock} className="w-20 border rounded px-1 py-0.5" />
                       <label className="inline-flex items-center gap-1"><input type="checkbox" name="isNew" defaultChecked={product.isNew} /> Nuevo</label>
                       <input name="image" placeholder="URL img" className="w-40 border rounded px-1 py-0.5" />
-                      <PendingButton className="px-2 py-1 bg-gray-800 text-white rounded" pendingText="Guardando…">Guardar</PendingButton>
+                      <PendingButton className="px-2 py-1 bg-gray-800 text-white rounded" pendingText="Guardando...">Guardar</PendingButton>
                     </form>
                     <form action={createStockMovement} className="flex flex-wrap gap-2 items-center text-sm">
                       <input type="hidden" name="productId" value={product.id} />
@@ -191,12 +191,12 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                       </select>
                       <input name="quantity" type="number" min="1" placeholder="Qty" className="w-20 border rounded px-1 py-0.5" />
                       <input name="reason" placeholder="Motivo" className="w-40 border rounded px-1 py-0.5" />
-                      <PendingButton className="px-2 py-1 border rounded" pendingText="Moviendo…">Mover</PendingButton>
+                      <PendingButton className="px-2 py-1 border rounded" pendingText="Moviendo...">Mover</PendingButton>
                     </form>
                     <form action={updateProductBarcodeByForm} className="flex flex-wrap gap-2 items-center text-sm">
                       <input type="hidden" name="id" value={product.id} />
                       <input name="barcode" defaultValue={(product as any).barcode || ''} placeholder="EAN-13" className="w-40 border rounded px-1 py-0.5" />
-                      <PendingButton className="px-2 py-1 bg-gray-800 text-white rounded" pendingText="Guardando…">Guardar código</PendingButton>
+                      <PendingButton className="px-2 py-1 bg-gray-800 text-white rounded" pendingText="Guardando...">Guardar codigo</PendingButton>
                       {!(product as any).barcode && (
                         <button name="generate" value="1" className="px-2 py-1 border rounded" title="Generar EAN-13">Generar</button>
                       )}
@@ -208,7 +208,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                       hidden={{ id: product.id }}
                       label="Eliminar"
                       title="Eliminar producto"
-                      description="Esta acción eliminará el producto y no se puede deshacer."
+                      description="Esta accion eliminara el producto y no se puede deshacer."
                     />
                   </td>
                 </tr>
@@ -220,6 +220,3 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
     </div>
   );
 }
-
-
-
