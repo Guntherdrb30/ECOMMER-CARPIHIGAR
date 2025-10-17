@@ -176,8 +176,8 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                 <tr key={product.id}>
                   <td className="border px-4 py-2">{product.name}</td>
                   <td className="border px-4 py-2">{product.slug}</td>
-                  <td className="border px-4 py-2">{product.priceUSD.toString()}</td>
-                  <td className="border px-4 py-2">{product.priceAllyUSD?.toString()}</td>
+                  <td className="border px-4 py-2">{Number(product.priceUSD).toFixed ? Number(product.priceUSD).toFixed(2) : String(product.priceUSD)}</td>
+                  <td className="border px-4 py-2">{product.priceAllyUSD != null ? (Number(product.priceAllyUSD).toFixed ? Number(product.priceAllyUSD).toFixed(2) : String(product.priceAllyUSD)) : ''}</td>
                   <td className={`border px-4 py-2 ${product.stock <= lowStock ? 'bg-red-50 text-red-700 font-semibold' : ''}`}>{product.stock}</td>
                   <td className="border px-4 py-2">{product.category?.name}</td>
                   <td className="border px-4 py-2">{product.supplier?.name || '-'}</td>
@@ -185,8 +185,8 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                   <td className="border px-4 py-2 space-y-2">
                     <form action={updateProductInline} className="flex flex-wrap gap-2 items-center text-sm">
                       <input type="hidden" name="id" value={product.id} />
-                      <input name="priceUSD" type="number" step="0.01" defaultValue={product.priceUSD.toNumber()} className="w-24 border rounded px-1 py-0.5" />
-                      <input name="priceAllyUSD" type="number" step="0.01" defaultValue={product.priceAllyUSD?.toNumber()} className="w-24 border rounded px-1 py-0.5" />
+                      <input name="priceUSD" type="number" step="0.01" defaultValue={Number(product.priceUSD)} className="w-24 border rounded px-1 py-0.5" />
+                      <input name="priceAllyUSD" type="number" step="0.01" defaultValue={product.priceAllyUSD != null ? Number(product.priceAllyUSD) : undefined} className="w-24 border rounded px-1 py-0.5" />
                       <input name="stock" type="number" defaultValue={product.stock} className="w-20 border rounded px-1 py-0.5" />
                       <label className="inline-flex items-center gap-1"><input type="checkbox" name="isNew" defaultChecked={product.isNew} /> Nuevo</label>
                       <input name="image" placeholder="URL img" className="w-40 border rounded px-1 py-0.5" />
