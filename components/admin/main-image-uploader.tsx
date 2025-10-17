@@ -23,6 +23,9 @@ export default function MainImageUploader({ targetName = 'mainImage' }: { target
       if (!put.ok) return;
       const finalUrl = (uploaded as any)?.url || url.split('?')[0];
       setUrl(finalUrl);
+    } catch (e: any) {
+      console.error('[MainImageUploader] upload error', e);
+      // stays silent in UI; can be enhanced to show error near the button
     } finally {
       setBusy(false);
     }

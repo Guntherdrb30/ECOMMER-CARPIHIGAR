@@ -34,6 +34,9 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
         next.push(finalUrl);
       }
       setUrls((prev) => [...prev, ...next]);
+    } catch (e: any) {
+      console.error('[ImagesUploader] upload error', e);
+      setError(e?.message || 'Error al subir imágenes');
     } finally {
       setBusy(false);
     }

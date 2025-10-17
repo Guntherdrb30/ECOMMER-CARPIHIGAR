@@ -17,6 +17,11 @@ const nextConfig = {
         hostname: 'www.carpihogar.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'blob.vercel-storage.com',
+        pathname: '/**',
+      },
     ],
   },
   typescript: {
