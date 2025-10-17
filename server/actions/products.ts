@@ -362,9 +362,14 @@ export async function getProductById(id: string) {
 }
 
 export async function getRelatedIds(productId: string) {
-    const rows = await prisma.relatedProduct.findMany({ where: { fromId: productId }, select: { toId: true } });
-    const ids = Array.from(new Set(rows.map(r => r.toId).filter((x) => x !== productId)));
-    return ids;
+    try {
+        const rows = await prisma.relatedProduct.findMany({ where: { fromId: productId }, select: { toId: true } });
+        const ids = Array.from(new Set(rows.map(r => r.toId).filter((x) => x !== productId)));
+        return ids;
+    } catch (e) {
+        // If the join table doesn't exist yet, just return empty
+        return [];
+    }
 }
 
 export async function updateProductFull(formData: FormData) {
@@ -405,19 +410,24 @@ export async function updateProductFull(formData: FormData) {
         data: { name, slug, description, sku, brand, priceUSD, priceAllyUSD, stock, categoryId, supplierId, isNew, images },
     });
 
-    // Update related products if provided
+    // Update related products if provided (tolerant if join table doesn't exist yet)
     const relatedIds = (formData.getAll('relatedIds[]') as string[]).map(String).filter(Boolean);
     if (Array.isArray(relatedIds)) {
-        const unique = Array.from(new Set(relatedIds.filter((rid) => rid && rid !== id)));
-        const rows = [] as Array<{ fromId: string; toId: string }>;
-        for (const rid of unique) {
-            rows.push({ fromId: id, toId: rid });
-            rows.push({ fromId: rid, toId: id });
+        try {
+            const unique = Array.from(new Set(relatedIds.filter((rid) => rid && rid !== id)));
+            const rows = [] as Array<{ fromId: string; toId: string }>;
+            for (const rid of unique) {
+                rows.push({ fromId: id, toId: rid });
+                rows.push({ fromId: rid, toId: id });
+            }
+            await prisma.$transaction([
+                prisma.relatedProduct.deleteMany({ where: { OR: [{ fromId: id }, { toId: id }] } }),
+                (prisma as any).relatedProduct.createMany({ data: rows, skipDuplicates: true }),
+            ]);
+        } catch (e) {
+            // Non-fatal if join table missing
+            console.warn('[updateProductFull] relatedProduct ops skipped', e);
         }
-        await prisma.$transaction([
-            prisma.relatedProduct.deleteMany({ where: { OR: [{ fromId: id }, { toId: id }] } }),
-            (prisma as any).relatedProduct.createMany({ data: rows, skipDuplicates: true }),
-        ]);
     }
     await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'PRODUCT_UPDATE_FULL', details: id } });
     revalidatePath('/dashboard/admin/productos');
@@ -466,15 +476,25 @@ export async function getProductPageData(slug: string) {
   }
 
   // Prefer curated relateds via join; fallback to same-category suggestions
-  const curated = await prisma.relatedProduct.findMany({ where: { fromId: product.id }, select: { toId: true } });
-  const curatedIds = curated.map((r) => r.toId);
-  const relatedProducts = curatedIds.length
-    ? await prisma.product.findMany({ where: { id: { in: curatedIds } }, include: { category: true }, take: 12 })
-    : await prisma.product.findMany({
-        where: { categoryId: product.categoryId, id: { not: product.id } },
-        include: { category: true },
-        take: 10,
-      });
+  let relatedProducts: any[] = [];
+  try {
+    const curated = await prisma.relatedProduct.findMany({ where: { fromId: product.id }, select: { toId: true } });
+    const curatedIds = curated.map((r) => r.toId);
+    relatedProducts = curatedIds.length
+      ? await prisma.product.findMany({ where: { id: { in: curatedIds } }, include: { category: true }, take: 12 })
+      : await prisma.product.findMany({
+          where: { categoryId: product.categoryId, id: { not: product.id } },
+          include: { category: true },
+          take: 10,
+        });
+  } catch (e) {
+    // If related table is missing, just use same-category fallback
+    relatedProducts = await prisma.product.findMany({
+      where: { categoryId: product.categoryId, id: { not: product.id } },
+      include: { category: true },
+      take: 10,
+    });
+  }
 
   const serializableProduct = {
     ...product,
