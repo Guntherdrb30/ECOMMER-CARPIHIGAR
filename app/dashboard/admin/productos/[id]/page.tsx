@@ -1,6 +1,6 @@
 import { getCategoriesFlattened } from "@/server/actions/categories";
 import { getSuppliers } from "@/server/actions/procurement";
-import { getProductById, updateProductFull } from "@/server/actions/products";
+import { getProductById, updateProductFull, getRelatedIds, getProducts } from "@/server/actions/products";
 import MainImageUploader from "@/components/admin/main-image-uploader";
 import ImagesUploader from "@/components/admin/images-uploader";
 
@@ -9,13 +9,21 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   let product: any = null;
   let categories: any[] = [];
   let suppliers: any[] = [];
+  let allProducts: any[] = [];
+  let relatedIds: string[] = [];
   try {
     const r = await Promise.all([
       getProductById(id),
       getCategoriesFlattened(),
       getSuppliers(),
+      getProducts(),
+      getRelatedIds(id),
     ]);
-    product = r[0]; categories = Array.isArray(r[1]) ? r[1] : []; suppliers = Array.isArray(r[2]) ? r[2] : [];
+    product = r[0];
+    categories = Array.isArray(r[1]) ? r[1] : [];
+    suppliers = Array.isArray(r[2]) ? r[2] : [];
+    allProducts = Array.isArray(r[3]) ? r[3] : [];
+    relatedIds = Array.isArray(r[4]) ? r[4] : [];
   } catch {}
 
   if (!product) {
@@ -48,6 +56,16 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         </select>
         <label className="inline-flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" name="isNew" defaultChecked={product.isNew} /> Nuevo</label>
         <textarea name="description" defaultValue={product.description || ''} placeholder="Descripción" className="md:col-span-3 border rounded px-2 py-1" />
+
+        <div className="md:col-span-3">
+          <label className="block text-sm text-gray-700 mb-1">Productos relacionados</label>
+          <select name="relatedIds[]" multiple defaultValue={relatedIds as any} className="w-full border rounded px-2 py-1 min-h-[120px]">
+            {allProducts.filter((p: any) => p.id !== product.id).map((p: any) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-600 mt-1">Mantén presionado Ctrl/Cmd para seleccionar múltiples.</p>
+        </div>
 
         <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -83,4 +101,3 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     </div>
   );
 }
-

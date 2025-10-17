@@ -78,6 +78,8 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           const mainImage = String(formData.get('image') || '').trim() || mainImageUpload;
           if (mainImage) images.unshift(mainImage);
           const limited = images.slice(0, 4);
+          const relatedIds = (formData.getAll('relatedIds[]') as string[]).map(String).filter(Boolean);
+          try {
           await createProduct({
             name: String(formData.get('name') || ''),
             slug: String(formData.get('slug') || ''),
@@ -92,14 +94,23 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             categoryId: String(formData.get('categoryId') || '' ) || null,
             supplierId: String(formData.get('supplierId') || '' ) || null,
             isNew: Boolean(formData.get('isNew')),
+            relatedIds,
           });
           redirect('/dashboard/admin/productos?message=Producto%20creado');
+          } catch (err) {
+            console.error('[createProduct] error', err);
+            redirect('/dashboard/admin/productos?error=No%20se%20pudo%20crear%20el%20producto');
+          }
         }} className="form-grid">
           <input name="name" placeholder="Nombre" className="form-input" required />
           <input name="slug" placeholder="slug-ejemplo" className="form-input" required />
           <input name="sku" placeholder="SKU (opcional)" className="form-input" />
           <input name="barcode" placeholder="CÃ³digo de barras (opcional)" className="form-input" />
           <input name="brand" placeholder="Marca" className="form-input" required />
+          <div className="md:col-span-3">
+            <label className="block text-sm text-gray-700 mb-1">Descripción</label>
+            <textarea name="description" placeholder="Descripción del producto" className="w-full border rounded px-2 py-1 min-h-[80px]"></textarea>
+          </div>
           <input name="priceUSD" type="number" step="0.01" placeholder="Precio USD" className="form-input" required />
           <input name="priceAllyUSD" type="number" step="0.01" placeholder="Precio Aliado USD (opcional)" className="form-input" />
           <input name="stock" type="number" placeholder="Stock" className="form-input" defaultValue={0} />
@@ -115,6 +126,15 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
+          <div className="md:col-span-3">
+            <label className="block text-sm text-gray-700 mb-1">Productos relacionados</label>
+            <select name="relatedIds[]" multiple className="w-full border rounded px-2 py-1 min-h-[100px]">
+              {products.map((p: any) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-600 mt-1">Mantén presionado Ctrl/Cmd para seleccionar múltiples.</p>
+          </div>
           <input name="image" placeholder="URL de imagen principal" className="form-input" />
           <div>
             <label className="block text-sm text-gray-700 mb-1">O subir imagen principal</label>

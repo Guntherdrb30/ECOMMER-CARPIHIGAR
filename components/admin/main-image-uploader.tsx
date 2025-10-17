@@ -11,7 +11,18 @@ export default function MainImageUploader({ targetName = 'mainImage' }: { target
     if (!file) return;
     setBusy(true);
     try {
-      const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });\n      const { url } = await urlRes.json();\n      if (!urlRes.ok || !url) return;\n      const put = await fetch(url, { method: 'PUT', headers: { 'content-type': file.type || 'application/octet-stream' }, body: file });\n      const uploaded = await put.json().catch(() => ({} as any));\n      if (!put.ok) return;\n      const finalUrl = (uploaded as any)?.url || url.split('?')[0];\n      setUrl(finalUrl);
+      const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });
+      const { url } = await urlRes.json();
+      if (!urlRes.ok || !url) return;
+      const put = await fetch(url, {
+        method: 'PUT',
+        headers: { 'content-type': file.type || 'application/octet-stream' },
+        body: file,
+      });
+      const uploaded = await put.json().catch(() => ({} as any));
+      if (!put.ok) return;
+      const finalUrl = (uploaded as any)?.url || url.split('?')[0];
+      setUrl(finalUrl);
     } finally {
       setBusy(false);
     }

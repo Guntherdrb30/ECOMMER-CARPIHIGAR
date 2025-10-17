@@ -196,16 +196,62 @@ export async function createProduct(data: any) {
     if ((session?.user as any)?.role !== 'ADMIN') {
         throw new Error('Not authorized');
     }
+
+    // Normalize and ensure unique slug to avoid server errors on duplicates
+    const baseName = String(data?.name || '').trim();
+    const baseSlug = String(data?.slug || '').trim() || baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    async function ensureUniqueSlug(slug: string) {
+        let candidate = slug.replace(/^-+|-+$/g, '');
+        let i = 1;
+        // Safety cap to avoid infinite loops
+        while (await prisma.product.findUnique({ where: { slug: candidate } })) {
+            i += 1;
+            candidate = `${slug}-${i}`;
+            if (i > 50) { // fallback to random suffix
+                candidate = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+                break;
+            }
+        }
+        return candidate;
+    }
+    const uniqueSlug = await ensureUniqueSlug(baseSlug);
+
+    // Normalize/auto-generate barcode if not provided
     let barcode: string | undefined = normalizeBarcode(data?.barcode);
     if (!barcode) {
-        // generate unique barcode
         for (let i = 0; i < 5; i++) {
             const candidate = generateEan13('200');
             const exists = await prisma.product.findFirst({ where: { barcode: candidate }, select: { id: true } });
             if (!exists) { barcode = candidate; break; }
         }
     }
-    const product = await prisma.product.create({ data: { ...data, barcode } });
+
+    // Extract relatedIds if provided by the form
+    const relatedIds: string[] = Array.isArray(data?.relatedIds)
+        ? (data.relatedIds as string[]).map((x) => String(x)).filter(Boolean)
+        : [];
+    const { relatedIds: _ignore, slug: _slugIn, ...rest } = data || {};
+
+    // Create product first
+    const product = await prisma.product.create({ data: { ...rest, slug: uniqueSlug, barcode } });
+
+    // Persist relationships both directions (A<->B) via join table
+    if (relatedIds.length) {
+        const unique = Array.from(new Set(relatedIds.filter((id) => id && id !== product.id)));
+        const rows = [] as Array<{ fromId: string; toId: string }>;
+        for (const id of unique) {
+            rows.push({ fromId: product.id, toId: id });
+            rows.push({ fromId: id, toId: product.id });
+        }
+        try {
+            // createMany for efficiency; skipDuplicates to avoid collisions
+            await (prisma as any).relatedProduct.createMany({ data: rows, skipDuplicates: true });
+        } catch (e) {
+            // Non-fatal if relations fail; product is created
+            console.warn('[createProduct] relatedProduct.createMany failed', e);
+        }
+    }
+
     revalidatePath('/dashboard/admin/productos');
     return product;
 }
@@ -315,6 +361,12 @@ export async function getProductById(id: string) {
     return product;
 }
 
+export async function getRelatedIds(productId: string) {
+    const rows = await prisma.relatedProduct.findMany({ where: { fromId: productId }, select: { toId: true } });
+    const ids = Array.from(new Set(rows.map(r => r.toId).filter((x) => x !== productId)));
+    return ids;
+}
+
 export async function updateProductFull(formData: FormData) {
     const session = await getServerSession(authOptions);
     if ((session?.user as any)?.role !== 'ADMIN') {
@@ -352,6 +404,21 @@ export async function updateProductFull(formData: FormData) {
         where: { id },
         data: { name, slug, description, sku, brand, priceUSD, priceAllyUSD, stock, categoryId, supplierId, isNew, images },
     });
+
+    // Update related products if provided
+    const relatedIds = (formData.getAll('relatedIds[]') as string[]).map(String).filter(Boolean);
+    if (Array.isArray(relatedIds)) {
+        const unique = Array.from(new Set(relatedIds.filter((rid) => rid && rid !== id)));
+        const rows = [] as Array<{ fromId: string; toId: string }>;
+        for (const rid of unique) {
+            rows.push({ fromId: id, toId: rid });
+            rows.push({ fromId: rid, toId: id });
+        }
+        await prisma.$transaction([
+            prisma.relatedProduct.deleteMany({ where: { OR: [{ fromId: id }, { toId: id }] } }),
+            (prisma as any).relatedProduct.createMany({ data: rows, skipDuplicates: true }),
+        ]);
+    }
     await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'PRODUCT_UPDATE_FULL', details: id } });
     revalidatePath('/dashboard/admin/productos');
     redirect('/dashboard/admin/productos?message=Producto%20actualizado');
@@ -398,18 +465,16 @@ export async function getProductPageData(slug: string) {
     return { product: null, settings: null, relatedProducts: [] };
   }
 
-  const relatedProducts = await prisma.product.findMany({
-    where: {
-      categoryId: product.categoryId,
-      id: {
-        not: product.id,
-      },
-    },
-    include: {
-      category: true,
-    },
-    take: 10,
-  });
+  // Prefer curated relateds via join; fallback to same-category suggestions
+  const curated = await prisma.relatedProduct.findMany({ where: { fromId: product.id }, select: { toId: true } });
+  const curatedIds = curated.map((r) => r.toId);
+  const relatedProducts = curatedIds.length
+    ? await prisma.product.findMany({ where: { id: { in: curatedIds } }, include: { category: true }, take: 12 })
+    : await prisma.product.findMany({
+        where: { categoryId: product.categoryId, id: { not: product.id } },
+        include: { category: true },
+        take: 10,
+      });
 
   const serializableProduct = {
     ...product,

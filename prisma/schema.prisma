@@ -127,6 +127,20 @@ model Product {
   quoteItems   QuoteItem[]
   wishlistItems WishlistItem[]
   purchaseItems PurchaseItem[]
+  // Self-referencing many-to-many for related products
+  relatedFrom  RelatedProduct[] @relation("RelatedFrom")
+  relatedTo    RelatedProduct[] @relation("RelatedTo")
+}
+
+// Join table for Product <-> Product related items
+model RelatedProduct {
+  fromId   String
+  toId     String
+  from     Product @relation("RelatedFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to       Product @relation("RelatedTo", fields: [toId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([fromId, toId])
 }
 
 enum OrderStatus {

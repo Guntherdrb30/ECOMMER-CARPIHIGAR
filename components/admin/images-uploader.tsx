@@ -16,7 +16,22 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
     try {
       for (const file of Array.from(files)) {
         if (max && (urls.length + next.length) >= max) break;
-        const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });\n        const { url } = await urlRes.json();\n        if (!urlRes.ok || !url) {\n          throw new Error('No se pudo crear URL de carga');\n        }\n        const put = await fetch(url, { method: 'PUT', headers: { 'content-type': file.type || 'application/octet-stream' }, body: file });\n        const uploaded = await put.json().catch(() => ({} as any));\n        if (!put.ok) {\n          throw new Error((uploaded as any)?.error || Error );\n        }\n        const finalUrl = (uploaded as any)?.url || url.split('?')[0];\n        next.push(finalUrl);
+        const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });
+        const { url } = await urlRes.json();
+        if (!urlRes.ok || !url) {
+          throw new Error('No se pudo crear URL de carga');
+        }
+        const put = await fetch(url, {
+          method: 'PUT',
+          headers: { 'content-type': file.type || 'application/octet-stream' },
+          body: file,
+        });
+        const uploaded = await put.json().catch(() => ({} as any));
+        if (!put.ok) {
+          throw new Error((uploaded as any)?.error || 'Error al subir');
+        }
+        const finalUrl = (uploaded as any)?.url || url.split('?')[0];
+        next.push(finalUrl);
       }
       setUrls((prev) => [...prev, ...next]);
     } finally {
