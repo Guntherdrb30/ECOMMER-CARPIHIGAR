@@ -7,6 +7,7 @@ import { getSettings } from "@/server/actions/settings";
 import StockHistory from "@/components/admin/stock-history";
 import ImagesUploader from "@/components/admin/images-uploader";
 import MainImageUploader from "@/components/admin/main-image-uploader";
+import RelatedProductsPicker from "@/components/admin/related-products-picker";
 import { redirect } from "next/navigation";
 import ProductQuickSearch from "@/components/admin/product-quick-search";
 import { PendingButton } from '@/components/pending-button';
@@ -79,7 +80,6 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           if (mainImage) images.unshift(mainImage);
           const limited = images.slice(0, 4);
           const relatedIds = (formData.getAll('relatedIds[]') as string[]).map(String).filter(Boolean);
-          try {
           await createProduct({
             name: String(formData.get('name') || ''),
             slug: String(formData.get('slug') || ''),
@@ -97,10 +97,6 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             relatedIds,
           });
           redirect('/dashboard/admin/productos?message=Producto%20creado');
-          } catch (err) {
-            console.error('[createProduct] error', err);
-            redirect('/dashboard/admin/productos?error=No%20se%20pudo%20crear%20el%20producto');
-          }
         }} className="form-grid">
           <input name="name" placeholder="Nombre" className="form-input" required />
           <input name="slug" placeholder="slug-ejemplo" className="form-input" required />
@@ -127,13 +123,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             ))}
           </select>
           <div className="md:col-span-3">
-            <label className="block text-sm text-gray-700 mb-1">Productos relacionados</label>
-            <select name="relatedIds[]" multiple className="w-full border rounded px-2 py-1 min-h-[100px]">
-              {products.map((p: any) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-600 mt-1">Mantén presionado Ctrl/Cmd para seleccionar múltiples.</p>
+            <RelatedProductsPicker products={products as any} name="relatedIds[]" watchCategoryName="categoryId" />
           </div>
           <input name="image" placeholder="URL de imagen principal" className="form-input" />
           <div>

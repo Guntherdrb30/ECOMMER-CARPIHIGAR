@@ -3,6 +3,7 @@ import { getSuppliers } from "@/server/actions/procurement";
 import { getProductById, updateProductFull, getRelatedIds, getProducts } from "@/server/actions/products";
 import MainImageUploader from "@/components/admin/main-image-uploader";
 import ImagesUploader from "@/components/admin/images-uploader";
+import RelatedProductsPicker from "@/components/admin/related-products-picker";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -58,13 +59,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         <textarea name="description" defaultValue={product.description || ''} placeholder="Descripción" className="md:col-span-3 border rounded px-2 py-1" />
 
         <div className="md:col-span-3">
-          <label className="block text-sm text-gray-700 mb-1">Productos relacionados</label>
-          <select name="relatedIds[]" multiple defaultValue={relatedIds as any} className="w-full border rounded px-2 py-1 min-h-[120px]">
-            {allProducts.filter((p: any) => p.id !== product.id).map((p: any) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-          <p className="text-xs text-gray-600 mt-1">Mantén presionado Ctrl/Cmd para seleccionar múltiples.</p>
+          <RelatedProductsPicker products={allProducts as any} name="relatedIds[]" defaultValue={relatedIds as any} watchCategoryName="categoryId" />
         </div>
 
         <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
