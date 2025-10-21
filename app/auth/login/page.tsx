@@ -62,6 +62,13 @@ export default function LoginPage() {
         <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
           Login
         </button>
+        <button
+          type="button"
+          onClick={() => signIn('google', { callbackUrl: '/' })}
+          className="w-full mt-3 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
+        >
+          Continuar con Google
+        </button>
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
             ¿No tienes cuenta?{' '}

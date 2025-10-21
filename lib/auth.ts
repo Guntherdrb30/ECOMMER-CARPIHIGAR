@@ -1,12 +1,12 @@
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import GoogleProvider from "next-auth/providers/google";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import type { AuthOptions } from "next-auth";
+import { randomBytes } from "crypto";
 
 export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
-  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -42,17 +42,45 @@ export const authOptions: AuthOptions = {
         return null;
       },
     }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    }),
   ],
   session: {
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, user }: any) {
+    async jwt({ token, user, account }: any) {
       // On initial sign-in, populate the token
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.alliedStatus = user.alliedStatus;
+        // If signing in with Google, ensure we have a local User record
+        if (account?.provider === "google") {
+          const email = (user as any)?.email as string | undefined;
+          if (email) {
+            let dbUser = await prisma.user.findUnique({ where: { email } });
+            if (!dbUser) {
+              const rawPassword = randomBytes(16).toString("hex");
+              const hashed = await bcrypt.hash(rawPassword, 10);
+              dbUser = await prisma.user.create({
+                data: {
+                  email,
+                  name: (user as any)?.name || undefined,
+                  password: hashed,
+                  // role and alliedStatus use schema defaults
+                },
+              });
+            }
+            token.id = dbUser.id;
+            token.role = dbUser.role;
+            token.alliedStatus = dbUser.alliedStatus;
+          }
+        } else {
+          // Credentials provider path
+          token.id = (user as any).id;
+          token.role = (user as any).role;
+          token.alliedStatus = (user as any).alliedStatus;
+        }
       }
 
       // On subsequent requests, check if the user still exists in the database
