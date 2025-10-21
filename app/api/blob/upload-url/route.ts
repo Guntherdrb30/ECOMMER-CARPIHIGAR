@@ -1,5 +1,5 @@
-﻿import { NextResponse } from 'next/server';
-import { createUploadURL } from '@vercel/blob';
+import { NextResponse } from 'next/server';
+import * as Blob from '@vercel/blob';
 
 export const runtime = 'nodejs';
 
@@ -14,6 +14,10 @@ export async function POST() {
     // if (!session || (session.user as any)?.role !== 'ADMIN') {
     //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     // }
+    const createUploadURL = (Blob as any).createUploadURL as undefined | ((args: any) => Promise<any>);
+    if (!createUploadURL) {
+      return NextResponse.json({ error: 'Blob createUploadURL not available in this version' }, { status: 501 });
+    }
     const { url } = await createUploadURL({ access: 'public' });
     return NextResponse.json({ url });
   } catch (err) {
@@ -24,6 +28,10 @@ export async function POST() {
 
 export async function GET() {
   try {
+    const createUploadURL = (Blob as any).createUploadURL as undefined | ((args: any) => Promise<any>);
+    if (!createUploadURL) {
+      return NextResponse.json({ error: 'Blob createUploadURL not available in this version' }, { status: 501 });
+    }
     const { url } = await createUploadURL({ access: 'public' });
     return NextResponse.json({ ok: true, urlCreated: !!url });
   } catch (err) {
@@ -32,5 +40,7 @@ export async function GET() {
     return NextResponse.json({ ok: false, hasToken, error: 'Blob not available' }, { status: 500 });
   }
 }
+
+
 
 
