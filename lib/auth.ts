@@ -7,8 +7,26 @@ import { randomBytes } from "crypto";
 
 const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
+// Ensure we always have a secret to prevent runtime crashes when
+// NEXTAUTH_SECRET is missing or empty in the environment (common cause
+// of server-side exceptions on public pages). In production, this will
+// log a warning and use an ephemeral secret so the site stays online.
+// For proper session persistence across restarts, set NEXTAUTH_SECRET.
+const derivedSecret = (() => {
+  const envSecret = (process.env.NEXTAUTH_SECRET || "").trim();
+  if (envSecret) return envSecret;
+  const fallback = randomBytes(32).toString("hex");
+  if (process.env.NODE_ENV === "production") {
+    console.warn(
+      "[auth] NEXTAUTH_SECRET is not set. Using an ephemeral fallback secret. " +
+        "Set NEXTAUTH_SECRET in your environment for stable sessions."
+    );
+  }
+  return fallback;
+})();
+
 export const authOptions: AuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: derivedSecret,
   providers: [
     CredentialsProvider({
       name: "Credentials",
