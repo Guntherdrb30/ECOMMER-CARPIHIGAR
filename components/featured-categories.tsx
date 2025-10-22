@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getFeaturedCategoryBanners } from '@/server/actions/products';
+import { getFeaturedCategoryBanners } from '@/server/actions/featured';
 
 type CategoryCard = { name: string; href: string; image: string };
 
