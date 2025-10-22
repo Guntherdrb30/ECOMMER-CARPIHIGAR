@@ -82,6 +82,7 @@ export default function HeroCarousel({ images, autoplayMs }: Props) {
   return (
     <section className="relative h-[45vh] sm:h-[55vh] md:h-[70vh] lg:h-[80vh] min-h-[320px] w-full text-white bg-black" style={sectionStyle}>
       {hasMods ? (
+        <>
         <Swiper
           modules={mods as any}
           // use default slide effect for better stability with videos
@@ -156,6 +157,7 @@ export default function HeroCarousel({ images, autoplayMs }: Props) {
             <div ref={paginationRef} className="px-2 py-1 rounded-full bg-black/30 backdrop-blur-sm" />
           </div>
         )}
+        </>
       ) : (
         (() => {
           const slide = slides[0];
