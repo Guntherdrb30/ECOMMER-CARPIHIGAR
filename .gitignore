@@ -26,3 +26,11 @@ tsconfig.tsbuildinfo
 
 # Windows reserved filename accidentally created; ignore it
 CON
+
+# Local logs and backups
+build*.log
+next_*.log
+*.bak
+*.orig
+prisma/schema.prisma.full
+app/dashboard/admin/ajustes/page.tsx.txt
