@@ -82,7 +82,7 @@ export default function HeroCarousel({ images, autoplayMs }: Props) {
     };
   }, []);
   const hasMods = mods.length > 0;
-  const loopEnabled = slideCount > 1;
+  const loopEnabled = false; // avoid Swiper loop warnings; use rewind instead
   const first = slides[0];
   const firstIsVideo = !!first && (first.image.toLowerCase().endsWith('.mp4') || first.image.toLowerCase().endsWith('.webm') || first.image.toLowerCase().endsWith('.ogg'));
   const sectionStyle = !firstIsVideo && first?.image ? ({ backgroundImage: `url('${first.image}')`, backgroundSize: 'cover', backgroundPosition: 'center' } as CSSProperties) : undefined;
@@ -93,10 +93,11 @@ export default function HeroCarousel({ images, autoplayMs }: Props) {
           modules={mods as any}
           effect={slideCount > 1 ? 'fade' : (undefined as any)}
           loop={loopEnabled}
+          rewind={slideCount > 1}
           autoplay={{ delay: Number(autoplayMs || 5000), disableOnInteraction: false }}
-          navigation={loopEnabled}
-          pagination={loopEnabled ? { clickable: true } : false as any}
-          allowTouchMove={loopEnabled}
+          navigation={slideCount > 1}
+          pagination={slideCount > 1 ? { clickable: true } : false as any}
+          allowTouchMove={slideCount > 1}
           watchOverflow
           className="h-full w-full"
         >
