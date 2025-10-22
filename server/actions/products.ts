@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { generateEan13, normalizeBarcode } from '@/lib/barcode';
 import { getSettings } from '@/server/actions/settings';
+import { unstable_cache as unstableCache } from 'next/cache';
 
 function parseCsvSimple(text: string, delimiter?: string): Array<Record<string,string>> {
     const dl = delimiter && delimiter.length ? delimiter : (text.indexOf(';') > -1 ? ';' : ',');
@@ -371,6 +372,40 @@ export async function getRelatedIds(productId: string) {
         return [];
     }
 }
+
+// Returns banner images for main categories, picking a product image per category
+export const getFeaturedCategoryBanners = unstableCache(async () => {
+    const slugs = ['carpinteria', 'hogar'];
+    const out: Array<{ name: string; slug: string; href: string; image: string }> = [];
+    const nowWin = Math.floor(Date.now() / (6 * 60 * 60 * 1000)); // 6 hours window
+    for (const slug of slugs) {
+        try {
+            const cat = await prisma.category.findUnique({ where: { slug }, select: { id: true, name: true, slug: true } });
+            if (!cat) {
+                // Fallback static
+                out.push({ name: slug === 'hogar' ? 'Hogar' : 'Carpintería', slug, href: `/productos?categoria=${slug}`, image: slug === 'hogar' ? '/images/hero-carpinteria-2.svg' : '/images/hero-carpinteria-1.svg' });
+                continue;
+            }
+            const prods = await prisma.product.findMany({
+                where: { categoryId: cat.id, images: { isEmpty: false } as any },
+                select: { images: true, createdAt: true },
+                orderBy: { createdAt: 'desc' },
+                take: 50,
+            });
+            let image = '';
+            if (prods.length) {
+                const salt = Array.from(slug).reduce((s, ch) => s + ch.charCodeAt(0), 0);
+                const idx = (nowWin + salt) % prods.length;
+                image = prods[idx].images[0] || '';
+            }
+            if (!image) image = slug === 'hogar' ? '/images/hero-carpinteria-2.svg' : '/images/hero-carpinteria-1.svg';
+            out.push({ name: cat.name || (slug === 'hogar' ? 'Hogar' : 'Carpintería'), slug, href: `/productos?categoria=${slug}`, image });
+        } catch {
+            out.push({ name: slug === 'hogar' ? 'Hogar' : 'Carpintería', slug, href: `/productos?categoria=${slug}`, image: slug === 'hogar' ? '/images/hero-carpinteria-2.svg' : '/images/hero-carpinteria-1.svg' });
+        }
+    }
+    return out;
+}, ['featured-category-banners-v1'], { revalidate: 6 * 60 * 60 });
 
 export async function updateProductFull(formData: FormData) {
     const session = await getServerSession(authOptions);

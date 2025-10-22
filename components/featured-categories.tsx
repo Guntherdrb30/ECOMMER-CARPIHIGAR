@@ -1,31 +1,15 @@
 import Link from 'next/link';
+import { getFeaturedCategoryBanners } from '@/server/actions/products';
 
-interface Category {
-  name: string;
-  href: string;
-  image: string;
-}
+type CategoryCard = { name: string; href: string; image: string };
 
-const categories: Category[] = [
-  {
-    name: 'Carpintería',
-    href: '/productos?categoria=carpinteria',
-    image: '/images/hero-carpinteria-1.svg', // Re-using hero images for now
-  },
-  {
-    name: 'Hogar',
-    href: '/productos?categoria=hogar',
-    image: '/images/hero-carpinteria-2.svg', // Re-using hero images for now
-  },
-];
-
-const FeaturedCategoryCard = ({ category }: { category: Category }) => (
+const FeaturedCategoryCard = ({ category }: { category: CategoryCard }) => (
   <Link href={category.href} className="relative block group h-96">
     <div
       className="absolute inset-0 bg-cover bg-center rounded-lg transition-transform duration-500 group-hover:scale-105"
-      style={{ backgroundImage: `url(${category.image})` }}
+      style={{ backgroundImage: `url('${category.image}')` }}
     ></div>
-    <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg"></div>
+    <div className="absolute inset-0 bg-black/40 rounded-lg"></div>
     <div className="relative h-full flex flex-col items-center justify-center text-white text-center p-4">
       <h3 className="text-4xl font-extrabold">{category.name}</h3>
       <p className="mt-2 text-lg">Explorar categoría</p>
@@ -33,7 +17,9 @@ const FeaturedCategoryCard = ({ category }: { category: Category }) => (
   </Link>
 );
 
-export default function FeaturedCategories() {
+export default async function FeaturedCategories() {
+  const banners = await getFeaturedCategoryBanners();
+  const categories: CategoryCard[] = banners.map((b) => ({ name: b.name, href: b.href, image: b.image }));
   return (
     <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
