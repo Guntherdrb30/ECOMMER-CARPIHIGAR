@@ -3,11 +3,14 @@ import { getFeaturedCategoryBanners } from '@/server/actions/products';
 
 type CategoryCard = { name: string; href: string; image: string };
 
-const FeaturedCategoryCard = ({ category }: { category: CategoryCard }) => (
+const FeaturedCategoryCard = ({ category }: { category: CategoryCard }) => {
+  const hasImg = !!category.image && !category.image.includes('/images/hero-');
+  const style = hasImg ? { backgroundImage: `url('${category.image}')` } : undefined;
+  return (
   <Link href={category.href} className="relative block group h-96">
     <div
-      className="absolute inset-0 bg-cover bg-center rounded-lg transition-transform duration-500 group-hover:scale-105"
-      style={{ backgroundImage: `url('${category.image}')` }}
+      className={`absolute inset-0 ${hasImg ? 'bg-cover bg-center' : 'bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_60%)] bg-[length:20px_20px] bg-neutral-700'} rounded-lg transition-transform duration-500 group-hover:scale-105`}
+      style={style}
     ></div>
     <div className="absolute inset-0 bg-black/40 rounded-lg"></div>
     <div className="relative h-full flex flex-col items-center justify-center text-white text-center p-4">
@@ -15,7 +18,7 @@ const FeaturedCategoryCard = ({ category }: { category: CategoryCard }) => (
       <p className="mt-2 text-lg">Explorar categoría</p>
     </div>
   </Link>
-);
+)};
 
 export default async function FeaturedCategories() {
   const banners = await getFeaturedCategoryBanners();
