@@ -74,12 +74,15 @@ export default function HeroCarousel({ images }: Props) {
   }, []);
   const hasMods = mods.length > 0;
   const loopEnabled = slideCount > 1;
+  const first = slides[0];
+  const firstIsVideo = !!first && (first.image.toLowerCase().endsWith('.mp4') || first.image.toLowerCase().endsWith('.webm') || first.image.toLowerCase().endsWith('.ogg'));
+  const sectionStyle = !firstIsVideo && first?.image ? ({ backgroundImage: `url('${first.image}')`, backgroundSize: 'cover', backgroundPosition: 'center' } as React.CSSProperties) : undefined;
   return (
-    <section className="relative h-[45vh] sm:h-[55vh] md:h-[70vh] lg:h-[80vh] min-h-[320px] w-full text-white bg-black">
+    <section className="relative h-[45vh] sm:h-[55vh] md:h-[70vh] lg:h-[80vh] min-h-[320px] w-full text-white bg-black" style={sectionStyle}>
       {hasMods ? (
         <Swiper
           modules={mods as any}
-          effect="fade"
+          effect={slideCount > 1 ? 'fade' : (undefined as any)}
           loop={loopEnabled}
           autoplay={{ delay: 5000, disableOnInteraction: false }}
           navigation={loopEnabled}
