@@ -1,4 +1,4 @@
-import HeroCarousel from '@/components/hero-carousel';
+import HeroCarousel from '@/components/hero-carousel-simple';
 import FeaturedCategories from '@/components/featured-categories';
 import NewProducts from '@/components/new-products';
 import { getSettings } from '@/server/actions/settings';
@@ -16,3 +16,4 @@ export default async function Home() {
     </div>
   );
 }
+
