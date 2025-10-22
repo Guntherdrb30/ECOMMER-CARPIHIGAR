@@ -1,11 +1,11 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
-import 'swiper/css/effect-fade';
+// no fade effect to avoid conflicts with videos
 import Link from 'next/link';
 
 // Dynamically import Swiper parts to avoid SSR issues in production
@@ -38,6 +38,7 @@ export default function HeroCarousel({ images, autoplayMs }: Props) {
   const slides = buildSlides(images);
   const slideCount = slides.length;
   const [mods, setMods] = useState<any[]>([]);
+  const paginationRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     try {
@@ -50,8 +51,8 @@ export default function HeroCarousel({ images, autoplayMs }: Props) {
   useEffect(() => {
     let mounted = true;
     import('swiper/modules')
-      .then(({ Navigation, Pagination, Autoplay, EffectFade }) => {
-        if (mounted) setMods([Navigation, Pagination, Autoplay, EffectFade]);
+      .then(({ Navigation, Pagination, Autoplay }) => {
+        if (mounted) setMods([Navigation, Pagination, Autoplay]);
       })
       .catch((e) => {
         console.error('[HeroCarousel] Failed to load Swiper modules', e);
@@ -83,20 +84,26 @@ export default function HeroCarousel({ images, autoplayMs }: Props) {
       {hasMods ? (
         <Swiper
           modules={mods as any}
-          effect={slideCount > 1 ? 'fade' : (undefined as any)}
+          // use default slide effect for better stability with videos
           loop={loopEnabled}
           rewind={slideCount > 1}
           autoplay={{ delay: Number(autoplayMs || 5000), disableOnInteraction: false }}
           navigation={slideCount > 1}
-          pagination={slideCount > 1 ? ({
-            clickable: true,
-            renderBullet: (index: number, className: string) => (
-              `<span class='${className} w-6 h-6 inline-flex items-center justify-center rounded-full bg-white/80 text-black text-xs mx-1'>${index + 1}</span>`
-            ),
-          } as any) : (false as any)}
+          pagination={slideCount > 1 ? ({ clickable: true } as any) : (false as any)}
+          onBeforeInit={(swiper) => {
+            if (paginationRef.current) {
+              const params = swiper.params as any;
+              params.pagination = params.pagination || {};
+              params.pagination.el = paginationRef.current;
+              params.pagination.clickable = true;
+              params.pagination.renderBullet = (index: number, className: string) => (
+                `<span class="${className} w-6 h-6 inline-flex items-center justify-center rounded-full bg-white/90 text-black text-xs mx-1">${index + 1}</span>`
+              );
+            }
+          }}
           allowTouchMove={slideCount > 1}
           watchOverflow
-          className="h-full w-full pb-10"
+          className="h-full w-full"
           key={slides.map((s) => s.image).join('|')}
         >
           {slides.map((slide, index) => (
@@ -144,6 +151,11 @@ export default function HeroCarousel({ images, autoplayMs }: Props) {
             </SwiperSlide>
           ))}
         </Swiper>
+        {slideCount > 1 && (
+          <div className="absolute bottom-3 left-0 right-0 z-20 flex justify-center pointer-events-auto">
+            <div ref={paginationRef} className="px-2 py-1 rounded-full bg-black/30 backdrop-blur-sm" />
+          </div>
+        )}
       ) : (
         (() => {
           const slide = slides[0];
@@ -177,4 +189,3 @@ export default function HeroCarousel({ images, autoplayMs }: Props) {
     </section>
   );
 }
-
