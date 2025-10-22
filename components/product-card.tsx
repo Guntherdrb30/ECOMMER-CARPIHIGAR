@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Price from '@/components/price';
-import { Product } from '@prisma/client';
+import type { Product } from '@prisma/client';
 import WishlistButton from './wishlist-button';
 
 type ProductWithCategory = Product & {

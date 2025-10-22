@@ -1,12 +1,16 @@
-﻿'use client';
+'use client';
 
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination, Autoplay, EffectFade } from 'swiper/modules';
+import dynamic from 'next/dynamic';
+import { useEffect, useState } from 'react';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import Link from 'next/link';
+
+// Dynamically import Swiper parts to avoid SSR issues in production
+const Swiper = dynamic(() => import('swiper/react').then((m) => m.Swiper), { ssr: false });
+const SwiperSlide = dynamic(() => import('swiper/react').then((m) => m.SwiperSlide), { ssr: false });
 
 export interface HeroSlide {
   image: string;
@@ -24,7 +28,7 @@ function buildSlides(images?: string[]): HeroSlide[] {
   if (normalized.length) {
     return normalized.map((img, idx) => ({
       image: encodeURI(img),
-      title: idx === 0 ? 'Descubre Carpihogar' : idx === 1 ? 'Renueva tu Hogar con Estilo' : 'Calidad y DiseÃ±o',
+      title: idx === 0 ? 'Descubre Carpihogar' : idx === 1 ? 'Renueva tu Hogar con Estilo' : 'Calidad y Diseño',
       subtitle: 'Encuentra los mejores productos para tus proyectos y tu hogar.',
       href: '/productos',
     }));
@@ -32,14 +36,14 @@ function buildSlides(images?: string[]): HeroSlide[] {
   return [
     {
       image: '/uploads/carpinteria y hogar.png',
-      title: 'DiseÃ±o y Calidad para tus Espacios',
-      subtitle: 'Encuentra los mejores acabados y herrajes para tus proyectos de carpinterÃ­a.',
+      title: 'Diseño y Calidad para tus Espacios',
+      subtitle: 'Encuentra los mejores acabados y herrajes para tus proyectos de carpintería.',
       href: '/productos?categoria=carpinteria',
     },
     {
       image: '/uploads/cocina moderna.png',
       title: 'Renueva tu Hogar con Estilo',
-      subtitle: 'Descubre nuestra selecciÃ³n de productos para darle un nuevo aire a tu hogar.',
+      subtitle: 'Descubre nuestra selección de productos para darle un nuevo aire a tu hogar.',
       href: '/productos?categoria=hogar',
     },
     {
@@ -53,52 +57,75 @@ function buildSlides(images?: string[]): HeroSlide[] {
 
 export default function HeroCarousel({ images }: Props) {
   const slides = buildSlides(images);
+  const [mods, setMods] = useState<any[]>([]);
+  useEffect(() => {
+    let mounted = true;
+    import('swiper/modules').then(({ Navigation, Pagination, Autoplay, EffectFade }) => {
+      if (mounted) setMods([Navigation, Pagination, Autoplay, EffectFade]);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <section className="relative h-[45vh] sm:h-[55vh] md:h-[70vh] lg:h-[80vh] min-h-[320px] w-full text-white">
-      <Swiper
-        modules={[Navigation, Pagination, Autoplay, EffectFade]}
-        effect="fade"
-        loop
-        autoplay={{ delay: 5000, disableOnInteraction: false }}
-        navigation
-        pagination={{ clickable: true }}
-        className="h-full w-full"
-      >
-        {slides.map((slide, index) => (
-          <SwiperSlide key={index}>
-            {(() => { const src = slide.image.toLowerCase(); const video = src.endsWith(".mp4") || src.endsWith(".webm") || src.endsWith(".ogg"); return video ? (
-              <div className="relative h-full w-full">
-                <video src={slide.image} className="h-full w-full object-cover" autoPlay muted loop playsInline />
-                <div className="absolute inset-0 bg-black/40 flex items-center">
-                  <div className="container mx-auto px-4">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold drop-shadow-md max-w-3xl">
-                      {slide.title}
-                    </h1>
-                    <p className="text-base sm:text-lg md:text-xl mt-3 max-w-2xl">
-                      {slide.subtitle}
-                    </p>
-                    <Link href={slide.href} className="mt-6 sm:mt-8 inline-block bg-brand hover:opacity-90 font-semibold text-base sm:text-lg py-2.5 sm:py-3 px-6 sm:px-8 rounded-full transition-all duration-300">Ver más</Link>
+      {mods.length > 0 && (
+        <Swiper
+          modules={mods as any}
+          effect="fade"
+          loop
+          autoplay={{ delay: 5000, disableOnInteraction: false }}
+          navigation
+          pagination={{ clickable: true }}
+          className="h-full w-full"
+        >
+          {slides.map((slide, index) => (
+            <SwiperSlide key={index}>
+              {(() => {
+                const src = slide.image.toLowerCase();
+                const video = src.endsWith('.mp4') || src.endsWith('.webm') || src.endsWith('.ogg');
+                return video ? (
+                  <div className="relative h-full w-full">
+                    <video src={slide.image} className="h-full w-full object-cover" autoPlay muted loop playsInline />
+                    <div className="absolute inset-0 bg-black/40 flex items-center">
+                      <div className="container mx-auto px-4">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold drop-shadow-md max-w-3xl">
+                          {slide.title}
+                        </h1>
+                        <p className="text-base sm:text-lg md:text-xl mt-3 max-w-2xl">{slide.subtitle}</p>
+                        <Link
+                          href={slide.href}
+                          className="mt-6 sm:mt-8 inline-block bg-brand hover:opacity-90 font-semibold text-base sm:text-lg py-2.5 sm:py-3 px-6 sm:px-8 rounded-full transition-all duration-300"
+                        >
+                          Ver más
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${slide.image})` }}>
-                <div className="absolute inset-0 bg-black/40 flex items-center">
-                  <div className="container mx-auto px-4">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold drop-shadow-md max-w-3xl">
-                      {slide.title}
-                    </h1>
-                    <p className="text-base sm:text-lg md:text-xl mt-3 max-w-2xl">
-                      {slide.subtitle}
-                    </p>
-                    <Link href={slide.href} className="mt-6 sm:mt-8 inline-block bg-brand hover:opacity-90 font-semibold text-base sm:text-lg py-2.5 sm:py-3 px-6 sm:px-8 rounded-full transition-all duration-300">Ver más</Link>
+                ) : (
+                  <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${slide.image})` }}>
+                    <div className="absolute inset-0 bg-black/40 flex items-center">
+                      <div className="container mx-auto px-4">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold drop-shadow-md max-w-3xl">
+                          {slide.title}
+                        </h1>
+                        <p className="text-base sm:text-lg md:text-xl mt-3 max-w-2xl">{slide.subtitle}</p>
+                        <Link
+                          href={slide.href}
+                          className="mt-6 sm:mt-8 inline-block bg-brand hover:opacity-90 font-semibold text-base sm:text-lg py-2.5 sm:py-3 px-6 sm:px-8 rounded-full transition-all duration-300"
+                        >
+                          Ver más
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ); })()}
-          </SwiperSlide>
-        ))}
-      </Swiper>
+                );
+              })()}
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      )}
     </section>
   );
 }
+
