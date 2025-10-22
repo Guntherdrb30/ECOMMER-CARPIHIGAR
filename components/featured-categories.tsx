@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getFeaturedCategoryBanners } from '@/server/actions/featured';
+import { getFeaturedCategoryBannersNoCache } from '@/server/actions/featured';
 
 type CategoryCard = { name: string; href: string; image: string };
 
@@ -21,7 +21,7 @@ const FeaturedCategoryCard = ({ category }: { category: CategoryCard }) => {
 )};
 
 export default async function FeaturedCategories() {
-  const banners = await getFeaturedCategoryBanners();
+  const banners = await getFeaturedCategoryBannersNoCache();
   const categories: CategoryCard[] = banners.map((b) => ({ name: b.name, href: b.href, image: b.image }));
   return (
     <section className="py-16 bg-gray-50">
@@ -36,3 +36,4 @@ export default async function FeaturedCategories() {
     </section>
   );
 }
+

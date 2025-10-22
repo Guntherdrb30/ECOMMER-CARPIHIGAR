@@ -5,7 +5,7 @@ import { unstable_cache as unstableCache } from 'next/cache';
 
 type Banner = { name: string; slug: string; href: string; image: string };
 
-export const getFeaturedCategoryBanners = unstableCache(async (): Promise<Banner[]> => {
+async function computeBanners(): Promise<Banner[]> {
   const slugs = ['carpinteria', 'hogar'];
   const out: Banner[] = [];
   const windowKey = Math.floor(Date.now() / (2 * 60 * 60 * 1000)); // 2h window
@@ -34,5 +34,10 @@ export const getFeaturedCategoryBanners = unstableCache(async (): Promise<Banner
     }
   }
   return out;
-}, ['featured-category-banners-v3'], { revalidate: 2 * 60 * 60 });
+}
 
+export async function getFeaturedCategoryBannersNoCache(): Promise<Banner[]> {
+  return computeBanners();
+}
+
+export const getFeaturedCategoryBanners = unstableCache(computeBanners, ['featured-category-banners-v3'], { revalidate: 2 * 60 * 60, tags: ['featured-category-banners'] });
