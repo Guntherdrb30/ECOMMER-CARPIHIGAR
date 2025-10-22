@@ -1,6 +1,7 @@
-﻿'use client';
+'use client';
 
 import { useState, useRef } from 'react';
+import { upload } from '@vercel/blob/client';
 
 export default function LogoUploader({ targetInputName, defaultUrl }: { targetInputName: string; defaultUrl?: string }) {
   const [preview, setPreview] = useState<string | undefined>(defaultUrl);
@@ -14,7 +15,7 @@ export default function LogoUploader({ targetInputName, defaultUrl }: { targetIn
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0];
     if (!file) { setError('Selecciona un archivo'); setOk(false); return; }
-    // Client-side validation
+    // Validación de formato
     const allowed = ['image/png','image/jpeg','image/webp','image/svg+xml'];
     const name = (file as any).name ? String((file as any).name).toLowerCase() : '';
     const okExt = ['.png','.jpg','.jpeg','.webp','.svg'].some((ext) => name.endsWith(ext));
@@ -27,36 +28,29 @@ export default function LogoUploader({ targetInputName, defaultUrl }: { targetIn
     setError(undefined);
     setOk(false);
     try {
-      // Direct upload via Vercel Blob
-      const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });
-      const { url } = await urlRes.json();
-      if (!urlRes.ok || !url) {
-        setError('No se pudo crear URL de carga');
-        return;
-      }
-      const put = await fetch(url, {
-        method: 'PUT',
-        headers: { 'content-type': file.type || 'application/octet-stream' },
-        body: file,
+      const now = new Date();
+      const year = String(now.getFullYear());
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const nameGuess = name;
+      let ext = nameGuess.match(/\.([a-z0-9]+)$/)?.[1] || '';
+      if (!ext) ext = (file.type && file.type.includes('/')) ? file.type.split('/')[1] : 'bin';
+      const base = (nameGuess || 'logo').replace(/[^a-z0-9._-]+/g, '-');
+      const pathname = `uploads/${year}/${month}/${base}.${ext}`;
+
+      const res = await upload(pathname, file, {
+        handleUploadUrl: '/api/blob/handle-upload',
+        access: 'public',
       });
-      const uploaded = await put.json().catch(() => ({} as any));
-      if (!put.ok) {
-        setError((uploaded as any)?.error || 'Error al subir archivo');
-        return;
-      }
-      const finalUrl = (uploaded as any)?.url || url.split('?')[0];
-      setPreview(finalUrl);
+      setPreview(res.url);
       const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
-      if (input) input.value = finalUrl;
+      if (input) input.value = res.url;
       setOk(true);
-      // Nota: detección de color ya no aplica en direct upload sin sharp; se puede calcular en servidor si se requiere.
     } finally {
       setLoading(false);
     }
   };
 
   const handleChange = async () => {
-    // Autocargar en cuanto se seleccione el archivo
     if (fileRef.current?.files?.length) {
       await handleUpload();
     }
@@ -91,7 +85,7 @@ export default function LogoUploader({ targetInputName, defaultUrl }: { targetIn
           {loading ? 'Subiendo...' : 'Subir'}
         </button>
       </div>
-      <p className="text-xs text-gray-500">Formatos permitidos: PNG, JPG, WEBP, SVG. TamaÃ±o mÃ¡ximo: 2MB.</p>
+      <p className="text-xs text-gray-500">Formatos permitidos: PNG, JPG, WEBP, SVG. Tamaño máximo: 2MB.</p>
       {error && <div className="text-red-600 text-sm">{error}</div>}
       {ok && !error && <div className="text-green-700 text-sm">Imagen subida</div>}
     </div>

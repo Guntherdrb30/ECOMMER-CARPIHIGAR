@@ -15,10 +15,10 @@ export default function BlobDiagnostics() {
     async function check() {
       setLoading(true);
       try {
-        const r = await fetch('/api/blob/upload-url', { method: 'GET' });
+        const r = await fetch('/api/blob/handle-upload', { method: 'GET' });
         const data = await r.json();
         if (!mounted) return;
-        setHealth({ ok: r.ok && !!data.ok, urlCreated: !!data.urlCreated, hasToken: data.hasToken, error: data.error });
+        setHealth({ ok: r.ok && !!data.ok, hasToken: data.hasToken, error: data.error });
       } catch (e: any) {
         if (!mounted) return;
         setHealth({ ok: false, error: e?.message || 'Error de conexión' });
@@ -34,12 +34,17 @@ export default function BlobDiagnostics() {
     setCreating(true);
     setPostUrl(null);
     try {
-      const r = await fetch('/api/blob/upload-url', { method: 'POST' });
-      const data = await r.json();
-      if (!r.ok || !data?.url) {
-        throw new Error(data?.error || 'No se pudo crear URL');
-      }
-      setPostUrl(String(data.url));
+      // We no longer create a URL directly; instead, we check we can
+      // get a token by attempting a dry-run upload path generation.
+      const dummy = new Blob(["ok"], { type: 'text/plain' });
+      const now = new Date();
+      const year = String(now.getFullYear());
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const pathname = `uploads/${year}/${month}/diagnostics.txt`;
+      const resp = await fetch('/api/blob/handle-upload', { method: 'GET' });
+      const info = await resp.json();
+      if (!resp.ok || !info?.ok) throw new Error('Health GET failed');
+      setPostUrl('OK: token presente=' + String(!!info?.hasToken) + '; ruta ejemplo=' + pathname);
     } catch (e) {
       setPostUrl('ERROR: ' + ((e as any)?.message || 'desconocido'));
     } finally {
@@ -90,4 +95,3 @@ export default function BlobDiagnostics() {
     </div>
   );
 }
-

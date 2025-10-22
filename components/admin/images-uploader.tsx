@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState, useRef } from 'react';
+import { upload } from '@vercel/blob/client';
 
 export default function ImagesUploader({ targetName = 'images[]', max }: { targetName?: string, max?: number }) {
   const [urls, setUrls] = useState<string[]>([]);
@@ -16,22 +17,20 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
     try {
       for (const file of Array.from(files)) {
         if (max && (urls.length + next.length) >= max) break;
-        const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });
-        const { url } = await urlRes.json();
-        if (!urlRes.ok || !url) {
-          throw new Error('No se pudo crear URL de carga');
-        }
-        const put = await fetch(url, {
-          method: 'PUT',
-          headers: { 'content-type': file.type || 'application/octet-stream' },
-          body: file,
+        const now = new Date();
+        const year = String(now.getFullYear());
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const nameGuess = (file as any).name ? String((file as any).name).toLowerCase() : '';
+        let ext = nameGuess.match(/\.([a-z0-9]+)$/)?.[1] || '';
+        if (!ext) ext = (file.type && file.type.includes('/')) ? file.type.split('/')[1] : 'bin';
+        const base = (nameGuess || 'image').replace(/[^a-z0-9._-]+/g, '-');
+        const pathname = `uploads/${year}/${month}/${base}.${ext}`;
+
+        const res = await upload(pathname, file, {
+          handleUploadUrl: '/api/blob/handle-upload',
+          access: 'public',
         });
-        const uploaded = await put.json().catch(() => ({} as any));
-        if (!put.ok) {
-          throw new Error((uploaded as any)?.error || 'Error al subir');
-        }
-        const finalUrl = (uploaded as any)?.url || url.split('?')[0];
-        next.push(finalUrl);
+        next.push(res.url);
       }
       setUrls((prev) => [...prev, ...next]);
     } catch (e: any) {

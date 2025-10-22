@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { upload } from '@vercel/blob/client';
 
 export default function HeroMediaUploader({ targetInputName, defaultUrl }: { targetInputName: string; defaultUrl?: string }) {
   const [preview, setPreview] = useState<string | undefined>(defaultUrl);
@@ -31,28 +32,20 @@ export default function HeroMediaUploader({ targetInputName, defaultUrl }: { tar
     setError(undefined);
     setOk(false);
     try {
-      // 1) Pedir URL de subida directa (Vercel Blob)
-      const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });
-      const { url } = await urlRes.json();
-      if (!urlRes.ok || !url) {
-        setError('No se pudo crear URL de carga');
-        return;
-      }
-      // 2) Subir directo a Blob
-      const put = await fetch(url, {
-        method: 'PUT',
-        headers: { 'content-type': file.type || 'application/octet-stream' },
-        body: file,
+      const now = new Date();
+      const year = String(now.getFullYear());
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const baseName = ((file as any).name ? String((file as any).name).toLowerCase() : 'media').replace(/[^a-z0-9._-]+/g, '-');
+      const ext = (baseName.match(/\.([a-z0-9]+)$/)?.[1]) || (file.type && file.type.includes('/') ? file.type.split('/')[1] : 'bin');
+      const pathname = `uploads/${year}/${month}/${baseName}.${ext}`;
+
+      const res = await upload(pathname, file, {
+        handleUploadUrl: '/api/blob/handle-upload',
+        access: 'public',
       });
-      const uploaded = await put.json().catch(() => ({} as any));
-      if (!put.ok) {
-        setError((uploaded as any)?.error || 'Upload failed');
-        return;
-      }
-      const finalUrl = (uploaded as any)?.url || url.split('?')[0];
-      setPreview(finalUrl);
+      setPreview(res.url);
       const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
-      if (input) input.value = finalUrl;
+      if (input) input.value = res.url;
       setOk(true);
     } finally {
       setLoading(false);

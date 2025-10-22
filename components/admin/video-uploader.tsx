@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { upload } from '@vercel/blob/client';
 
 export default function VideoUploader({ targetInputName, defaultUrl }: { targetInputName: string; defaultUrl?: string }) {
   const [preview, setPreview] = useState<string | undefined>(defaultUrl);
@@ -31,26 +32,22 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
     setError(undefined);
     setOk(false);
     try {
-      const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });
-      const { url } = await urlRes.json();
-      if (!urlRes.ok || !url) {
-        setError('No se pudo crear URL de carga');
-        return;
-      }
-      const put = await fetch(url, {
-        method: 'PUT',
-        headers: { 'content-type': file.type || 'application/octet-stream' },
-        body: file,
+      const now = new Date();
+      const year = String(now.getFullYear());
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const nameGuess = (file as any).name ? String((file as any).name).toLowerCase() : '';
+      let ext = nameGuess.match(/\.([a-z0-9]+)$/)?.[1] || '';
+      if (!ext) ext = (file.type && file.type.includes('/')) ? file.type.split('/')[1] : 'bin';
+      const base = (nameGuess || 'video').replace(/[^a-z0-9._-]+/g, '-');
+      const pathname = `uploads/${year}/${month}/${base}.${ext}`;
+
+      const res = await upload(pathname, file, {
+        handleUploadUrl: '/api/blob/handle-upload',
+        access: 'public',
       });
-      const uploaded = await put.json().catch(() => ({} as any));
-      if (!put.ok) {
-        setError((uploaded as any)?.error || 'Error al subir archivo');
-        return;
-      }
-      const finalUrl = (uploaded as any)?.url || url.split('?')[0];
-      setPreview(finalUrl);
+      setPreview(res.url);
       const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
-      if (input) input.value = finalUrl;
+      if (input) input.value = res.url;
       setOk(true);
     } finally {
       setLoading(false);
@@ -81,4 +78,3 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
     </div>
   );
 }
-

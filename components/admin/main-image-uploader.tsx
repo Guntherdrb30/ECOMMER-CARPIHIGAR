@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState, useRef } from 'react';
+import { upload } from '@vercel/blob/client';
 
 export default function MainImageUploader({ targetName = 'mainImage' }: { targetName?: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -11,18 +12,19 @@ export default function MainImageUploader({ targetName = 'mainImage' }: { target
     if (!file) return;
     setBusy(true);
     try {
-      const urlRes = await fetch('/api/blob/upload-url', { method: 'POST' });
-      const { url } = await urlRes.json();
-      if (!urlRes.ok || !url) return;
-      const put = await fetch(url, {
-        method: 'PUT',
-        headers: { 'content-type': file.type || 'application/octet-stream' },
-        body: file,
+      const now = new Date();
+      const year = String(now.getFullYear());
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const nameGuess = (file as any).name ? String((file as any).name).toLowerCase() : '';
+      let ext = nameGuess.match(/\.([a-z0-9]+)$/)?.[1] || '';
+      if (!ext) ext = (file.type && file.type.includes('/')) ? file.type.split('/')[1] : 'bin';
+      const pathname = `uploads/${year}/${month}/main.${ext}`;
+
+      const res = await upload(pathname, file, {
+        handleUploadUrl: '/api/blob/handle-upload',
+        access: 'public',
       });
-      const uploaded = await put.json().catch(() => ({} as any));
-      if (!put.ok) return;
-      const finalUrl = (uploaded as any)?.url || url.split('?')[0];
-      setUrl(finalUrl);
+      setUrl(res.url);
     } catch (e: any) {
       console.error('[MainImageUploader] upload error', e);
       // stays silent in UI; can be enhanced to show error near the button
