@@ -1,6 +1,7 @@
 ﻿import { getSettings, updateSettings, getAuditLogs } from "@/server/actions/settings";
 import LogoUploader from "@/components/admin/logo-uploader";
 import HeroMediaUploader from "@/components/admin/hero-media-uploader";
+import HeroCarouselEditor from "@/components/admin/hero-carousel-editor";
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
@@ -133,26 +134,9 @@ export default async function AdminSettingsPage() {
             </div>
           </div>
           <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-2">Home (Pagina principal)</h3>
-            <p className="text-sm text-gray-600 mb-3">Sube hasta 3 archivos (imagen o video) para el carrusel del hero.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 3 }).map((_, i) => {
-                const index = i + 1;
-                const fieldName = `homeHeroUrl${index}`;
-                const defaultUrl = ((settings as any).homeHeroUrls?.[i]) || '';
-
-                return (
-                  <div key={fieldName} className="border p-3 rounded-lg">
-                    <label className="block text-gray-700 font-medium">Medio del Carrusel #{index}</label>
-                    <p className="text-xs text-gray-500 mb-2">Esta sera la posicion #{index} del hero.</p>
-                    <div className="mt-2">
-                      <HeroMediaUploader targetInputName={fieldName} defaultUrl={defaultUrl} />
-                    </div>
-                    <input type="hidden" name={fieldName} defaultValue={defaultUrl} />
-                  </div>
-                );
-              })}
-            </div>
+            <h3 className="text-lg font-semibold mb-2">Home (Página principal)</h3>
+            <p className="text-sm text-gray-600 mb-3">Sube y ordena hasta 3 archivos (imagen o video) para el carrusel del hero.</p>
+            <HeroCarouselEditor defaultUrls={((settings as any).homeHeroUrls || []) as string[]} />
           </div>
           <div className="mb-4">
             <label className="block text-gray-700">Umbral de stock bajo</label>
