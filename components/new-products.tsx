@@ -8,13 +8,13 @@ export default async function NewProducts() {
     getSettings(),
   ]);
 
-  // We need to serialize the products and settings
+  // Ensure products are serializable, handling both Decimal and number cases
   const serializableProducts = newProducts.map((p: any) => ({
     ...p,
-    priceUSD: p.priceUSD.toNumber(),
-    priceAllyUSD: p.priceAllyUSD?.toNumber() || null,
-    avgCost: p.avgCost?.toNumber() || null,
-    lastCost: p.lastCost?.toNumber() || null,
+    priceUSD: typeof p.priceUSD === 'number' ? p.priceUSD : p.priceUSD?.toNumber?.() ?? Number(p.priceUSD),
+    priceAllyUSD: typeof p.priceAllyUSD === 'number' ? p.priceAllyUSD : p.priceAllyUSD?.toNumber?.() ?? (p.priceAllyUSD ? Number(p.priceAllyUSD) : null),
+    avgCost: typeof p.avgCost === 'number' ? p.avgCost : p.avgCost?.toNumber?.() ?? (p.avgCost ? Number(p.avgCost) : null),
+    lastCost: typeof p.lastCost === 'number' ? p.lastCost : p.lastCost?.toNumber?.() ?? (p.lastCost ? Number(p.lastCost) : null),
   }));
 
   const serializableSettings = {
