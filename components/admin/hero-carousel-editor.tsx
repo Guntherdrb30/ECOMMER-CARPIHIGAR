@@ -54,6 +54,16 @@ export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: strin
     });
   }
 
+  function clearSlot(i: number) {
+    setItems((prev) => {
+      const next = prev.slice();
+      next[i] = '';
+      return next;
+    });
+    const ref = fileRefs[i].current;
+    if (ref) ref.value = '';
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {items.map((url, i) => (
@@ -81,6 +91,7 @@ export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: strin
             <button type="button" onClick={() => onUpload(i)} className="px-3 py-1 rounded bg-gray-800 text-white flex-none" disabled={busyIndex === i}>
               {busyIndex === i ? 'Subiendo...' : (url ? 'Reemplazar' : 'Subir')}
             </button>
+            <button type="button" onClick={() => clearSlot(i)} className="px-3 py-1 rounded border flex-none">Limpiar</button>
           </div>
           <input type="hidden" name={`homeHeroUrl${i + 1}`} value={url} />
         </div>
@@ -89,4 +100,3 @@ export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: strin
     </div>
   );
 }
-

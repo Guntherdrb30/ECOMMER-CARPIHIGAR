@@ -108,7 +108,7 @@ export default function HeroCarousel({ images }: Props) {
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${slide.image})` }}>
+                  <div className="relative h-full w-full bg-cover bg-center" style={{ backgroundImage: `url('${slide.image}')` }}>
                     <div className="absolute inset-0 bg-black/40 flex items-center">
                       <div className="container mx-auto px-4">
                         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold drop-shadow-md max-w-3xl">
