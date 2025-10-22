@@ -40,9 +40,6 @@ export default async function AdminSettingsPage() {
                 secondaryColor: (formData.get('secondaryColor') as string) || undefined,
                 logoUrl: (formData.get('logoUrl') as string) || undefined,
                 lowStockThreshold: parseInt(String(formData.get('lowStockThreshold') ?? '5'), 10),
-                homeHeroUrl1: (formData.get('homeHeroUrl1') as string) || undefined,
-                homeHeroUrl2: (formData.get('homeHeroUrl2') as string) || undefined,
-                homeHeroUrl3: (formData.get('homeHeroUrl3') as string) || undefined,
                 homeHeroUrls: Array.from({ length: 3 }).map((_, i) => formData.get(`homeHeroUrl${i + 1}`) as string).filter(Boolean),
                 sellerCommissionPercent: parseFloat(String(formData.get('sellerCommissionPercent') || '5')),
             };
