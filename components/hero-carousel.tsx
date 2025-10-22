@@ -35,19 +35,19 @@ function buildSlides(images?: string[]): HeroSlide[] {
   }
   return [
     {
-      image: '/uploads/carpinteria y hogar.png',
+      image: encodeURI('/uploads/carpinteria y hogar.png'),
       title: 'Diseño y Calidad para tus Espacios',
       subtitle: 'Encuentra los mejores acabados y herrajes para tus proyectos de carpintería.',
       href: '/productos?categoria=carpinteria',
     },
     {
-      image: '/uploads/cocina moderna.png',
+      image: encodeURI('/uploads/cocina moderna.png'),
       title: 'Renueva tu Hogar con Estilo',
       subtitle: 'Descubre nuestra selección de productos para darle un nuevo aire a tu hogar.',
       href: '/productos?categoria=hogar',
     },
     {
-      image: '/uploads/1.png',
+      image: encodeURI('/uploads/1.png'),
       title: 'Herramientas para Profesionales',
       subtitle: 'Todo lo que necesitas para llevar tus proyectos al siguiente nivel.',
       href: '/productos?q=herramientas',
@@ -60,16 +60,21 @@ export default function HeroCarousel({ images }: Props) {
   const [mods, setMods] = useState<any[]>([]);
   useEffect(() => {
     let mounted = true;
-    import('swiper/modules').then(({ Navigation, Pagination, Autoplay, EffectFade }) => {
-      if (mounted) setMods([Navigation, Pagination, Autoplay, EffectFade]);
-    });
+    import('swiper/modules')
+      .then(({ Navigation, Pagination, Autoplay, EffectFade }) => {
+        if (mounted) setMods([Navigation, Pagination, Autoplay, EffectFade]);
+      })
+      .catch((e) => {
+        console.error('[HeroCarousel] Failed to load Swiper modules', e);
+      });
     return () => {
       mounted = false;
     };
   }, []);
+  const hasMods = mods.length > 0;
   return (
     <section className="relative h-[45vh] sm:h-[55vh] md:h-[70vh] lg:h-[80vh] min-h-[320px] w-full text-white">
-      {mods.length > 0 && (
+      {hasMods ? (
         <Swiper
           modules={mods as any}
           effect="fade"
@@ -124,8 +129,36 @@ export default function HeroCarousel({ images }: Props) {
             </SwiperSlide>
           ))}
         </Swiper>
+      ) : (
+        (() => {
+          const slide = slides[0];
+          const src = (slide?.image || '').toLowerCase();
+          const video = src.endsWith('.mp4') || src.endsWith('.webm') || src.endsWith('.ogg');
+          return (
+            <div className="relative h-full w-full">
+              {video ? (
+                <video src={slide.image} className="h-full w-full object-cover" autoPlay muted loop playsInline />
+              ) : (
+                <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url('${slide.image}')` }} />
+              )}
+              <div className="absolute inset-0 bg-black/40 flex items-center">
+                <div className="container mx-auto px-4">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold drop-shadow-md max-w-3xl">
+                    {slide.title}
+                  </h1>
+                  <p className="text-base sm:text-lg md:text-xl mt-3 max-w-2xl">{slide.subtitle}</p>
+                  <Link
+                    href={slide.href}
+                    className="mt-6 sm:mt-8 inline-block bg-brand hover:opacity-90 font-semibold text-base sm:text-lg py-2.5 sm:py-3 px-6 sm:px-8 rounded-full transition-all duration-300"
+                  >
+                    Ver más
+                  </Link>
+                </div>
+              </div>
+            </div>
+          );
+        })()
       )}
     </section>
   );
 }
-
