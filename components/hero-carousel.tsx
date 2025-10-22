@@ -61,6 +61,14 @@ export default function HeroCarousel({ images, autoplayMs }: Props) {
   const slideCount = slides.length;
   const [mods, setMods] = useState<any[]>([]);
   useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        // Debug: contar slides recibidos en runtime
+        console.log('[HeroCarousel] slides', slideCount, slides);
+      }
+    } catch {}
+  }, [slideCount]);
+  useEffect(() => {
     let mounted = true;
     import('swiper/modules')
       .then(({ Navigation, Pagination, Autoplay, EffectFade }) => {
