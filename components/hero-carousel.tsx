@@ -19,9 +19,7 @@ export interface HeroSlide {
   href: string;
 }
 
-type Props = {
-  images?: string[];
-};
+type Props = {\n  images?: string[];\n  autoplayMs?: number;\n};
 
 function buildSlides(images?: string[]): HeroSlide[] {
   const normalized = (images || []).filter(Boolean);
@@ -55,7 +53,7 @@ function buildSlides(images?: string[]): HeroSlide[] {
   ];
 }
 
-export default function HeroCarousel({ images }: Props) {
+export default function HeroCarousel({ images, autoplayMs }: Props) {
   const slides = buildSlides(images);
   const slideCount = slides.length;
   const [mods, setMods] = useState<any[]>([]);
@@ -169,3 +167,4 @@ export default function HeroCarousel({ images }: Props) {
     </section>
   );
 }
+

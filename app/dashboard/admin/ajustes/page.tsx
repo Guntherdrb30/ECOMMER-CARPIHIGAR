@@ -42,6 +42,7 @@ export default async function AdminSettingsPage() {
                 logoUrl: (formData.get('logoUrl') as string) || undefined,
                 lowStockThreshold: parseInt(String(formData.get('lowStockThreshold') ?? '5'), 10),
                 homeHeroUrls: Array.from({ length: 3 }).map((_, i) => formData.get(`homeHeroUrl${i + 1}`) as string).filter(Boolean),
+                heroAutoplayMs: parseInt(String(formData.get('heroAutoplayMs') || '5000'), 10),
                 sellerCommissionPercent: parseFloat(String(formData.get('sellerCommissionPercent') || '5')),
             };
             await updateSettings(data);
@@ -136,6 +137,11 @@ export default async function AdminSettingsPage() {
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-2">Home (Página principal)</h3>
             <p className="text-sm text-gray-600 mb-3">Sube y ordena hasta 3 archivos (imagen o video) para el carrusel del hero.</p>
+            <div className="mb-3">
+              <label className="block text-gray-700">Autoplay del carrusel (ms)</label>
+              <input type="number" name="heroAutoplayMs" min={1000} step={500} defaultValue={Number((settings as any).heroAutoplayMs || 5000)} className="w-full px-3 py-2 border rounded-lg" />
+              <p className="text-xs text-gray-500">Recomendado: 5000 (5s). Con 1 sola imagen, no aplica.</p>
+            </div>
             <HeroCarouselEditor defaultUrls={((settings as any).homeHeroUrls || []) as string[]} />
           </div>
           <div className="mb-4">

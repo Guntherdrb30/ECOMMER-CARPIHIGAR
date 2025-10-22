@@ -49,6 +49,8 @@ model User {
   passwordResetTokenExpiresAt DateTime?
 }
 
+
+
 model SiteSettings {
   id                      Int     @id @default(1)
   brandName               String  @default("Carpihogar.ai")
@@ -61,6 +63,7 @@ model SiteSettings {
   secondaryColor          String?
   logoUrl                 String?
   homeHeroUrls            String[]
+  heroAutoplayMs          Int?
   lowStockThreshold       Int     @default(5)
   sellerCommissionPercent Decimal @default(5) @db.Decimal(5, 2)
   deleteSecret            String?
@@ -548,3 +551,4 @@ model Message {
 
   @@index([conversationId, createdAt])
 }
+

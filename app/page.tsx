@@ -10,7 +10,7 @@ export default async function Home() {
     : undefined;
   return (
     <div>
-      <HeroCarousel images={images} />
+      <HeroCarousel images={images} autoplayMs={Number((settings as any).heroAutoplayMs || 5000)} />
       <FeaturedCategories />
       <NewProducts />
     </div>

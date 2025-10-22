@@ -11,7 +11,8 @@ async function ensureSiteSettingsColumns() {
       'ADD COLUMN IF NOT EXISTS "deleteSecret" TEXT, ' +
       'ADD COLUMN IF NOT EXISTS "defaultMarginClientPct" DECIMAL(5,2), ' +
       'ADD COLUMN IF NOT EXISTS "defaultMarginAllyPct" DECIMAL(5,2), ' +
-      'ADD COLUMN IF NOT EXISTS "defaultMarginWholesalePct" DECIMAL(5,2);'
+      'ADD COLUMN IF NOT EXISTS "defaultMarginWholesalePct" DECIMAL(5,2), ' +
+      'ADD COLUMN IF NOT EXISTS "heroAutoplayMs" INTEGER'
     );
   } catch {}
 }
@@ -39,6 +40,7 @@ export async function getSettings() {
           secondaryColor: '#111827',
           logoUrl: '/logo-default.svg',
           homeHeroUrls: [],
+          heroAutoplayMs: 5000 as any,
           lowStockThreshold: 5,
           sellerCommissionPercent: 5,
         } as any,
@@ -53,6 +55,7 @@ export async function getSettings() {
       defaultMarginClientPct: (settings as any).defaultMarginClientPct?.toNumber?.() ?? 40,
       defaultMarginAllyPct: (settings as any).defaultMarginAllyPct?.toNumber?.() ?? 30,
       defaultMarginWholesalePct: (settings as any).defaultMarginWholesalePct?.toNumber?.() ?? 20,
+      heroAutoplayMs: Number((settings as any).heroAutoplayMs ?? 5000) || 5000,
     } as any;
   } catch (err) {
     console.warn('[getSettings] DB not reachable, using defaults.', err);
@@ -68,6 +71,7 @@ export async function getSettings() {
       secondaryColor: '#111827',
       logoUrl: '/logo-default.svg',
       homeHeroUrls: [],
+      heroAutoplayMs: 5000,
       lowStockThreshold: 5,
       sellerCommissionPercent: 5,
       defaultMarginClientPct: 40,
@@ -84,9 +88,30 @@ export async function updateSettings(data: any) {
     throw new Error('Not authorized');
   }
 
+  // Normalize hero autoplay and enforce first slide as image if available
+  const urlsIn = Array.isArray(data?.homeHeroUrls) ? (data.homeHeroUrls as string[]).filter(Boolean) : [];
+  const isVideo = (u: string) => {
+    const s = String(u || '').toLowerCase();
+    return s.endsWith('.mp4') || s.endsWith('.webm') || s.endsWith('.ogg');
+  };
+  if (urlsIn.length > 1 && isVideo(urlsIn[0])) {
+    const idx = urlsIn.findIndex((u) => !isVideo(u));
+    if (idx > 0) {
+      const t = urlsIn[0]; urlsIn[0] = urlsIn[idx]; urlsIn[idx] = t;
+    }
+  }
+  const msRaw = Number(data?.heroAutoplayMs ?? 5000);
+  const heroAutoplayMs = (!isNaN(msRaw) && msRaw > 0) ? Math.min(Math.max(msRaw, 1000), 120000) : 5000;
+
+  const prepared = {
+    ...data,
+    homeHeroUrls: urlsIn,
+    heroAutoplayMs,
+  } as any;
+
   const settings = await prisma.siteSettings.update({
     where: { id: 1 },
-    data,
+    data: prepared,
   });
 
   revalidatePath('/dashboard/admin/ajustes');
