@@ -57,6 +57,7 @@ function buildSlides(images?: string[]): HeroSlide[] {
 
 export default function HeroCarousel({ images }: Props) {
   const slides = buildSlides(images);
+  const slideCount = slides.length;
   const [mods, setMods] = useState<any[]>([]);
   useEffect(() => {
     let mounted = true;
@@ -72,16 +73,19 @@ export default function HeroCarousel({ images }: Props) {
     };
   }, []);
   const hasMods = mods.length > 0;
+  const loopEnabled = slideCount > 1;
   return (
-    <section className="relative h-[45vh] sm:h-[55vh] md:h-[70vh] lg:h-[80vh] min-h-[320px] w-full text-white">
+    <section className="relative h-[45vh] sm:h-[55vh] md:h-[70vh] lg:h-[80vh] min-h-[320px] w-full text-white bg-black">
       {hasMods ? (
         <Swiper
           modules={mods as any}
           effect="fade"
-          loop
+          loop={loopEnabled}
           autoplay={{ delay: 5000, disableOnInteraction: false }}
-          navigation
-          pagination={{ clickable: true }}
+          navigation={loopEnabled}
+          pagination={loopEnabled ? { clickable: true } : false as any}
+          allowTouchMove={loopEnabled}
+          watchOverflow
           className="h-full w-full"
         >
           {slides.map((slide, index) => (
