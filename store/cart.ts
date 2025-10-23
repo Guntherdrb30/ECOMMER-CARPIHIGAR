@@ -6,6 +6,8 @@ export type CartItem = {
   name: string;
   priceUSD: number;
   quantity: number;
+  // Snapshot del stock disponible al momento de agregar
+  stock?: number;
 };
 
 export type CartState = {
@@ -24,17 +26,20 @@ export const useCartStore = create<CartState>()(
       items: [],
       addItem: (product, quantity = 1) => {
         const existingItem = get().items.find((item) => item.id === product.id);
+        const maxStock = typeof product.stock === 'number' ? product.stock : existingItem?.stock ?? Infinity;
         if (existingItem) {
+          const nextQty = Math.min(existingItem.quantity + quantity, maxStock);
           set((state) => ({
             items: state.items.map((item) =>
               item.id === product.id
-                ? { ...item, quantity: item.quantity + quantity }
+                ? { ...item, quantity: nextQty, stock: maxStock }
                 : item
             ),
           }));
         } else {
+          const qty = Math.min(quantity, maxStock);
           set((state) => ({
-            items: [...state.items, { ...product, quantity }],
+            items: [...state.items, { ...product, quantity: qty, stock: maxStock }],
           }));
         }
       },
@@ -44,7 +49,9 @@ export const useCartStore = create<CartState>()(
         } else {
           set((state) => ({
             items: state.items.map((item) =>
-              item.id === itemId ? { ...item, quantity } : item
+              item.id === itemId
+                ? { ...item, quantity: Math.max(1, Math.min(quantity, item.stock ?? quantity)) }
+                : item
             ),
           }));
         }

@@ -59,14 +59,18 @@ export default function Cart({ tasa }: { tasa: number }) {
                   <Price priceUSD={item.priceUSD} tasa={tasa} moneda={moneda} />
                 </td>
                 <td className="p-4">
-                  <input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => updateQty(item.id, parseInt(e.target.value, 10))}
-                    className="w-20 border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand"
-                  />
-                   <button onClick={() => removeItem(item.id)} className="ml-4 text-red-500 hover:text-red-700">X</button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={Math.max(1, item.stock ?? 1)}
+                      value={item.quantity}
+                      onChange={(e) => updateQty(item.id, parseInt(e.target.value, 10))}
+                      className="w-20 border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand"
+                    />
+                    <button onClick={() => removeItem(item.id)} className="ml-2 text-red-500 hover:text-red-700">X</button>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">{(item.stock ?? Infinity) === Infinity ? '' : `Stock: ${item.stock}`}</div>
                 </td>
                 <td className="p-4 text-right">
                   <Price priceUSD={item.priceUSD * item.quantity} tasa={tasa} moneda={moneda} className="font-bold" />

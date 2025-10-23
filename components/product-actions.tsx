@@ -20,15 +20,25 @@ export function ProductActions({ product }: { product: Omit<Product, 'priceUSD'>
   const addItem = useCartStore((state) => state.addItem);
 
   const handleAddToCart = () => {
+    if (product.stock <= 0) {
+      toast.error('Producto agotado');
+      return;
+    }
+    const safeQty = Math.max(1, Math.min(quantity, product.stock));
     addItem(
       {
         id: product.id,
         name: product.name,
         priceUSD: product.priceUSD,
+        stock: product.stock,
       },
-      quantity
+      safeQty
     );
-    toast.success('Producto agregado');
+    if (safeQty < quantity) {
+      toast.info(`Se agregó el máximo disponible (${safeQty})`);
+    } else {
+      toast.success('Producto agregado');
+    }
   };
 
   const shareUrl = `${process.env.NEXTAUTH_URL}/productos/${product.slug}`;
@@ -37,19 +47,21 @@ export function ProductActions({ product }: { product: Omit<Product, 'priceUSD'>
     <>
       <div className="flex items-center gap-4 mb-8">
         <label htmlFor="quantity" className="font-bold">Cantidad:</label>
-        <select
+        <input
           id="quantity"
+          type="number"
+          min={1}
+          max={Math.max(1, product.stock)}
           value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          className="border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand"
+          onChange={(e) => setQuantity(() => {
+            const n = Number(e.target.value);
+            if (!Number.isFinite(n)) return 1;
+            return Math.max(1, Math.min(n, product.stock));
+          })}
+          className="w-24 border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand"
           disabled={product.stock === 0}
-        >
-          {Array.from({ length: Math.min(10, product.stock) }, (_, i) => (
-            <option key={i + 1} value={i + 1}>
-              {i + 1}
-            </option>
-          ))}
-        </select>
+        />
+        <span className="text-sm text-gray-500">{product.stock > 0 ? `Disponibles: ${product.stock}` : 'Agotado'}</span>
       </div>
       <button
         onClick={handleAddToCart}
