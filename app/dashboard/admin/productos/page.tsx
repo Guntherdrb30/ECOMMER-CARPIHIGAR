@@ -94,6 +94,8 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             categoryId: String(formData.get('categoryId') || '' ) || null,
             supplierId: String(formData.get('supplierId') || '' ) || null,
             isNew: Boolean(formData.get('isNew')),
+            videoUrl: String((formData.get('videoUrl') as string) || '').trim() || null,
+            showSocialButtons: Boolean(formData.get('showSocialButtons')),
             relatedIds,
           });
           redirect('/dashboard/admin/productos?message=Producto%20creado');
@@ -124,6 +126,15 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           </select>
           <div className="md:col-span-3">
             <RelatedProductsPicker products={products as any} name="relatedIds[]" watchCategoryName="categoryId" />
+          </div>
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-700">URL de video (mp4/webm/ogg) opcional</label>
+              <input name="videoUrl" placeholder="https://.../video.mp4" className="form-input" />
+            </div>
+            <div className="flex items-end">
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" name="showSocialButtons" /> Mostrar botones Instagram/TikTok en el producto</label>
+            </div>
           </div>
           <input name="image" placeholder="URL de imagen principal" className="form-input" />
           <div>

@@ -67,6 +67,9 @@ model SiteSettings {
   lowStockThreshold       Int     @default(5)
   sellerCommissionPercent Decimal @default(5) @db.Decimal(5, 2)
   deleteSecret            String?
+  // Social handles for product buttons
+  instagramHandle         String?
+  tiktokHandle            String?
   // Root recovery and security settings (root-only)
   rootPhone               String?
   rootRecoveryHash        String?
@@ -96,6 +99,10 @@ model Product {
   brand        String
   description  String?
   images       String[]
+  // Optional product video (rendered last in gallery)
+  videoUrl     String?
+  // Show Instagram/TikTok buttons in PDP
+  showSocialButtons Boolean @default(false)
   sku          String?         @unique
   // Código interno opcional (puede venir de proveedor)
   code         String?         @unique

@@ -12,7 +12,9 @@ async function ensureSiteSettingsColumns() {
       'ADD COLUMN IF NOT EXISTS "defaultMarginClientPct" DECIMAL(5,2), ' +
       'ADD COLUMN IF NOT EXISTS "defaultMarginAllyPct" DECIMAL(5,2), ' +
       'ADD COLUMN IF NOT EXISTS "defaultMarginWholesalePct" DECIMAL(5,2), ' +
-      'ADD COLUMN IF NOT EXISTS "heroAutoplayMs" INTEGER'
+      'ADD COLUMN IF NOT EXISTS "heroAutoplayMs" INTEGER, ' +
+      'ADD COLUMN IF NOT EXISTS "instagramHandle" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "tiktokHandle" TEXT'
     );
   } catch {}
 }

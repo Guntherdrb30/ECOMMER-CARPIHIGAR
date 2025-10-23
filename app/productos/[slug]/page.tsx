@@ -8,6 +8,7 @@ import { ProductActions } from '@/components/product-actions';
 import type { Product } from '@prisma/client';
 import { getProductPageData } from '@/server/actions/products';
 import { useState, useEffect, use, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import RelatedProductsCarousel from '@/components/related-products-carousel';
 import Head from 'next/head';
 import Breadcrumb from '@/components/breadcrumb'; // Importar Breadcrumb
@@ -38,6 +39,23 @@ function ProductJsonLd({ product, baseUrl }: { product: Product; baseUrl: string
 
   return (
     <Head>
+      <link rel="canonical" href={productUrl} />
+      <meta property="og:type" content="product" />
+      <meta property="og:site_name" content="Carpihogar.ai" />
+      <meta property="og:url" content={productUrl} />
+      <meta property="og:title" content={product.name} />
+      {product.description && <meta property="og:description" content={product.description} />}
+      <meta property="og:image" content={product.images[0] || `${baseUrl}/logo-default.svg`} />
+      {/* Open Graph price metadata for product */}
+      <meta property="product:price:amount" content={product.priceUSD.toString()} />
+      <meta property="product:price:currency" content="USD" />
+      {/* Some crawlers also look for og:price:* */}
+      <meta property="og:price:amount" content={product.priceUSD.toString()} />
+      <meta property="og:price:currency" content="USD" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={product.name} />
+      {product.description && <meta name="twitter:description" content={product.description} />}
+      <meta name="twitter:image" content={product.images[0] || `${baseUrl}/logo-default.svg`} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -47,27 +65,45 @@ function ProductJsonLd({ product, baseUrl }: { product: Product; baseUrl: string
 }
 
 
-function ProductImageGallery({ images }: { images: string[] }) {
-  const [selectedImage, setSelectedImage] = useState(images[0] || 'https://via.placeholder.com/400');
+function ProductImageGallery({ images, videoUrl }: { images: string[]; videoUrl?: string | null }) {
+  const isVideo = (u?: string | null) => !!u && /\.(mp4|webm|ogg)(\?.*)?$/i.test(u);
+  const media = [...(images || [])];
+  if (videoUrl && !isVideo(images?.[images.length - 1])) {
+    media.push(videoUrl);
+  }
+  const [selectedIdx, setSelectedIdx] = useState(0);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const selectedUrl = media[selectedIdx] || 'https://via.placeholder.com/400';
+  const selectedIsVideo = isVideo(selectedUrl) || (!!videoUrl && selectedIdx === media.length - 1 && selectedUrl === videoUrl);
 
   return (
     <div>
-      <div className="overflow-hidden rounded-lg shadow-md mb-4 cursor-pointer" onClick={() => setLightboxImage(selectedImage)}>
-        <div
-          style={{ backgroundImage: `url(${selectedImage})` }}
-          className="bg-gray-200 h-96 w-full bg-cover bg-center transform transition-transform duration-300 hover:scale-110"
-        ></div>
+      <div className="overflow-hidden rounded-lg shadow-md mb-4 cursor-pointer" onClick={() => !selectedIsVideo && setLightboxImage(selectedUrl)}>
+        {selectedIsVideo ? (
+          <video controls className="w-full h-96 bg-black" src={selectedUrl} />
+        ) : (
+          <div
+            style={{ backgroundImage: `url(${selectedUrl})` }}
+            className="bg-gray-200 h-96 w-full bg-cover bg-center transform transition-transform duration-300 hover:scale-110"
+          ></div>
+        )}
       </div>
       <div className="grid grid-cols-4 gap-4">
-        {images.map((image, index) => (
-          <div key={index} className="overflow-hidden rounded-md cursor-pointer" onClick={() => setSelectedImage(image)}>
-            <div
-              style={{ backgroundImage: `url(${image})` }}
-              className={`bg-gray-200 h-20 w-full bg-cover bg-center transform transition-transform duration-300 hover:scale-110 ${selectedImage === image ? 'border-2 border-brand' : ''}`}
-            ></div>
-          </div>
-        ))}
+        {media.map((url, index) => {
+          const isV = isVideo(url) || (!!videoUrl && index === media.length - 1 && url === videoUrl);
+          return (
+            <div key={index} className="overflow-hidden rounded-md cursor-pointer" onClick={() => setSelectedIdx(index)}>
+              <div
+                style={!isV ? { backgroundImage: `url(${url})` } : undefined}
+                className={`bg-gray-200 h-20 w-full bg-cover bg-center transform transition-transform duration-300 hover:scale-110 ${selectedIdx === index ? 'border-2 border-brand' : ''} relative`}
+              >
+                {isV && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 text-white font-semibold">Video</div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {lightboxImage && (
@@ -120,22 +156,28 @@ const AnimatedTitle = ({ children }: { children: React.ReactNode }) => {
 
 export default function ProductoDetallePage({ params }: { params: { slug: string } }) {
   const resolvedParams = use(params);
+  const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [settings, setSettings] = useState<any>(null);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchData() {
-      const { product, settings, relatedProducts } = await getProductPageData(resolvedParams.slug);
-      if (!product) {
+      const { product: p, settings, relatedProducts } = await getProductPageData(resolvedParams.slug);
+      if (!p) {
         notFound();
       }
-      setProduct(product);
+      // Redirect to canonical slug if different (e.g., entered without suffix)
+      if (p && resolvedParams.slug !== p.slug) {
+        router.replace(`/productos/${p.slug}`);
+        return; // avoid setting stale state
+      }
+      setProduct(p);
       setSettings(settings);
       setRelatedProducts(relatedProducts);
     }
     fetchData();
-  }, [resolvedParams.slug]);
+  }, [resolvedParams.slug, router]);
 
   if (!product || !settings) {
     return <div>Cargando...</div>;
@@ -159,7 +201,7 @@ export default function ProductoDetallePage({ params }: { params: { slug: string
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {/* Image Gallery */}
-          <ProductImageGallery images={product.images} />
+          <ProductImageGallery images={product.images} videoUrl={(product as any).videoUrl} />
 
           {/* Product Info */}
           <div>
@@ -179,6 +221,32 @@ export default function ProductoDetallePage({ params }: { params: { slug: string
               avgCost: product.avgCost || null,
               lastCost: product.lastCost || null,
             }} />
+
+            {/* Social buttons: show only if enabled at product and handles configured */}
+            {Boolean((product as any).showSocialButtons) && (Boolean((settings as any).instagramHandle) || Boolean((settings as any).tiktokHandle)) && (
+              <div className="mt-6 flex gap-3">
+                {Boolean((settings as any).instagramHandle) && (
+                  <a
+                    className="px-4 py-2 rounded bg-pink-600 text-white hover:bg-pink-700"
+                    href={`https://www.instagram.com/${String((settings as any).instagramHandle || '').replace(/^@+/, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Ver en Instagram
+                  </a>
+                )}
+                {Boolean((settings as any).tiktokHandle) && (
+                  <a
+                    className="px-4 py-2 rounded bg-black text-white hover:bg-gray-800"
+                    href={`https://www.tiktok.com/@${String((settings as any).tiktokHandle || '').replace(/^@+/, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Ver en TikTok
+                  </a>
+                )}
+              </div>
+            )}
 
           </div>
         </div>

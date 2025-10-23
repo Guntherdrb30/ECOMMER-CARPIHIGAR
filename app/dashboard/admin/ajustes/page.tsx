@@ -44,6 +44,8 @@ export default async function AdminSettingsPage() {
                 homeHeroUrls: Array.from({ length: 3 }).map((_, i) => formData.get(`homeHeroUrl${i + 1}`) as string).filter(Boolean),
                 heroAutoplayMs: parseInt(String(formData.get('heroAutoplayMs') || '5000'), 10),
                 sellerCommissionPercent: parseFloat(String(formData.get('sellerCommissionPercent') || '5')),
+                instagramHandle: String((formData.get('instagramHandle') as string) || '').replace(/^@+/, '').trim() || undefined,
+                tiktokHandle: String((formData.get('tiktokHandle') as string) || '').replace(/^@+/, '').trim() || undefined,
             };
             await updateSettings(data);
             const { redirect } = await import('next/navigation');
@@ -143,6 +145,28 @@ export default async function AdminSettingsPage() {
               <p className="text-xs text-gray-500">Recomendado: 5000 (5s). Con 1 sola imagen, no aplica.</p>
             </div>
             <HeroCarouselEditor defaultUrls={((settings as any).homeHeroUrls || []) as string[]} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-gray-700">Instagram (usuario)</label>
+              <input
+                type="text"
+                name="instagramHandle"
+                placeholder="@carpihogar.ai"
+                defaultValue={(settings as any).instagramHandle || ''}
+                className="w-full px-3 py-2 border rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700">TikTok (usuario)</label>
+              <input
+                type="text"
+                name="tiktokHandle"
+                placeholder="@carpihogar.ai"
+                defaultValue={(settings as any).tiktokHandle || ''}
+                className="w-full px-3 py-2 border rounded-lg"
+              />
+            </div>
           </div>
           <div className="mb-4">
             <label className="block text-gray-700">Umbral de stock bajo</label>

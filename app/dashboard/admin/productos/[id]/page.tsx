@@ -62,6 +62,18 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           <RelatedProductsPicker products={allProducts as any} name="relatedIds[]" defaultValue={relatedIds as any} watchCategoryName="categoryId" />
         </div>
 
+        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-gray-700">URL de video (mp4/webm/ogg) opcional</label>
+            <input name="videoUrl" defaultValue={(product as any).videoUrl || ''} placeholder="https://.../video.mp4" className="border rounded px-2 py-1 w-full" />
+          </div>
+          <div className="flex items-end">
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" name="showSocialButtons" defaultChecked={Boolean((product as any).showSocialButtons)} /> Mostrar botones Instagram/TikTok en el producto
+            </label>
+          </div>
+        </div>
+
         <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <h3 className="font-semibold mb-1">Imágenes actuales</h3>

@@ -9,6 +9,17 @@ import { generateEan13, normalizeBarcode } from '@/lib/barcode';
 import { getSettings } from '@/server/actions/settings';
 import { unstable_cache as unstableCache } from 'next/cache';
 
+// Ensure optional columns exist for new features (best-effort, tolerant if missing perms)
+async function ensureProductColumns() {
+  try {
+    await prisma.$executeRawUnsafe(
+      'ALTER TABLE "public"."Product" ' +
+      'ADD COLUMN IF NOT EXISTS "videoUrl" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "showSocialButtons" BOOLEAN NOT NULL DEFAULT false'
+    );
+  } catch {}
+}
+
 function parseCsvSimple(text: string, delimiter?: string): Array<Record<string,string>> {
     const dl = delimiter && delimiter.length ? delimiter : (text.indexOf(';') > -1 ? ';' : ',');
     const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim().length > 0);
@@ -193,6 +204,7 @@ export async function getProducts(filters?: { isNew?: boolean; categorySlug?: st
 }
 
 export async function createProduct(data: any) {
+    await ensureProductColumns();
     const session = await getServerSession(authOptions);
     if ((session?.user as any)?.role !== 'ADMIN') {
         throw new Error('Not authorized');
@@ -258,6 +270,7 @@ export async function createProduct(data: any) {
 }
 
 export async function updateProduct(id: string, data: any) {
+    await ensureProductColumns();
     const product = await prisma.product.update({
         where: { id },
         data,
@@ -408,6 +421,7 @@ export const getFeaturedCategoryBanners = unstableCache(async () => {
 }, ['featured-category-banners-v1'], { revalidate: 6 * 60 * 60 });
 
 export async function updateProductFull(formData: FormData) {
+    await ensureProductColumns();
     const session = await getServerSession(authOptions);
     if ((session?.user as any)?.role !== 'ADMIN') {
         throw new Error('Not authorized');
@@ -424,6 +438,8 @@ export async function updateProductFull(formData: FormData) {
     const categoryId = String(formData.get('categoryId') || '' ) || null;
     const supplierId = String(formData.get('supplierId') || '' ) || null;
     const isNew = String(formData.get('isNew') || '') === 'on' || String(formData.get('isNew') || '') === 'true';
+    const videoUrl = String(formData.get('videoUrl') || '').trim() || null;
+    const showSocialButtons = String(formData.get('showSocialButtons') || '') === 'on' || String(formData.get('showSocialButtons') || '') === 'true';
 
     // Images handling
     const replaceAll = String(formData.get('replaceAllImages') || '') === 'on' || String(formData.get('replaceAllImages') || '') === 'true';
@@ -442,7 +458,7 @@ export async function updateProductFull(formData: FormData) {
 
     const product = await prisma.product.update({
         where: { id },
-        data: { name, slug, description, sku, brand, priceUSD, priceAllyUSD, stock, categoryId, supplierId, isNew, images },
+        data: { name, slug, description, sku, brand, priceUSD, priceAllyUSD, stock, categoryId, supplierId, isNew, images, videoUrl, showSocialButtons },
     });
 
     // Update related products if provided (tolerant if join table doesn't exist yet)
@@ -501,10 +517,22 @@ export async function updateProductBarcodeByForm(formData: FormData) {
 }
 
 export async function getProductPageData(slug: string) {
-  const [product, settings] = await Promise.all([
-    prisma.product.findUnique({ where: { slug } }),
-    prisma.siteSettings.findUnique({ where: { id: 1 } }),
-  ]);
+  await ensureProductColumns();
+  // Try exact slug; if not found, try begins-with fallback (e.g. "peinadora" -> "peinadora-abc12")
+  let product = await prisma.product.findUnique({ where: { slug } });
+  if (!product) {
+    try {
+      product = await prisma.product.findFirst({
+        where: {
+          OR: [
+            { slug: { startsWith: slug + '-' } as any },
+            { slug: { equals: slug, mode: 'insensitive' } as any },
+          ],
+        },
+      }) as any;
+    } catch {}
+  }
+  const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
 
   if (!product || !settings) {
     return { product: null, settings: null, relatedProducts: [] };
