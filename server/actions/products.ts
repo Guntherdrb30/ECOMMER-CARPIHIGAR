@@ -167,9 +167,8 @@ export async function getProducts(filters?: { isNew?: boolean; categorySlug?: st
     }
 
     if (filters?.categorySlug) {
-        where.category = {
-            slug: filters.categorySlug,
-        };
+        // Correct relational filter for optional 1:1 relation
+        where.category = { is: { slug: filters.categorySlug } } as any;
     }
 
     if (filters?.q) {
