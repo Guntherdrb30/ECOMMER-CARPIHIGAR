@@ -18,6 +18,7 @@ export type CartState = {
   clearCart: () => void;
   getTotalItems: () => number;
   getTotalUSD: () => number;
+  refreshStocks: () => Promise<{ removed: string[]; adjusted: Array<{ id: string; from: number; to: number }> }>;
 };
 
 export const useCartStore = create<CartState>()(
@@ -67,6 +68,34 @@ export const useCartStore = create<CartState>()(
       },
       getTotalUSD: () => {
         return get().items.reduce((total, item) => total + item.priceUSD * item.quantity, 0);
+      },
+      refreshStocks: async () => {
+        const items = get().items;
+        const removed: string[] = [];
+        const adjusted: Array<{ id: string; from: number; to: number }> = [];
+        if (!items.length) return { removed, adjusted };
+        try {
+          const ids = Array.from(new Set(items.map(i => i.id)));
+          const res = await fetch(`/api/stock?ids=${encodeURIComponent(ids.join(','))}`, { cache: 'no-store' });
+          if (!res.ok) return { removed, adjusted };
+          const data = await res.json();
+          const stocks = (data?.stocks || {}) as Record<string, number>;
+          set((state) => {
+            const next: CartItem[] = [];
+            for (const it of state.items) {
+              const newStock = typeof stocks[it.id] === 'number' ? stocks[it.id] : (it.stock ?? Infinity);
+              if (Number(newStock) <= 0) {
+                removed.push(it.id);
+                continue;
+              }
+              const newQty = Math.max(1, Math.min(it.quantity, Number(newStock)));
+              if (newQty !== it.quantity) adjusted.push({ id: it.id, from: it.quantity, to: newQty });
+              next.push({ ...it, quantity: newQty, stock: Number(newStock) });
+            }
+            return { items: next } as any;
+          });
+        } catch {}
+        return { removed, adjusted };
       },
     }),
     {

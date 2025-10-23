@@ -1,14 +1,26 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useCartStore } from '@/store/cart';
 import Price from '@/components/price';
 import Link from 'next/link';
 
 export default function Cart({ tasa }: { tasa: number }) {
-  const { items, updateQty, removeItem, getTotalUSD } = useCartStore();
+  const { items, updateQty, removeItem, getTotalUSD, refreshStocks } = useCartStore();
   const [moneda, setMoneda] = useState<'USD' | 'VES'>('USD');
+  const [syncInfo, setSyncInfo] = useState<{ removed: string[]; adjusted: Array<{ id: string; from: number; to: number }> } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const doSync = async () => {
+      const res = await refreshStocks();
+      if (!cancelled) setSyncInfo(res);
+    };
+    doSync();
+    const t = setInterval(doSync, 15000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [refreshStocks]);
 
   const total = getTotalUSD();
 
@@ -27,6 +39,12 @@ export default function Cart({ tasa }: { tasa: number }) {
   return (
     <div className="container mx-auto px-4 py-12">
       <h1 className="text-4xl font-bold mb-8">Tu Carrito</h1>
+      {syncInfo && (syncInfo.removed.length > 0 || syncInfo.adjusted.length > 0) && (
+        <div className="mb-4 border border-yellow-300 bg-yellow-50 text-yellow-800 px-3 py-2 rounded text-sm">
+          {syncInfo.removed.length > 0 && (<div>Se removieron productos agotados del carrito.</div>)}
+          {syncInfo.adjusted.length > 0 && (<div>Algunas cantidades se ajustaron al stock disponible.</div>)}
+        </div>
+      )}
 
       {/* Currency Switcher */}
       <div className="flex justify-end mb-4">
