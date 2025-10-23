@@ -5,8 +5,7 @@ import { getCategoriesFlattened } from "@/server/actions/categories";
 import { getSuppliers } from "@/server/actions/procurement";
 import { getSettings } from "@/server/actions/settings";
 import StockHistory from "@/components/admin/stock-history";
-import ImagesUploader from "@/components/admin/images-uploader";
-import MainImageUploader from "@/components/admin/main-image-uploader";
+import ProductMediaManager from "@/components/admin/product-media-manager";
 import { redirect } from "next/navigation";
 import ProductQuickSearch from "@/components/admin/product-quick-search";
 import { PendingButton } from '@/components/pending-button';
@@ -129,23 +128,11 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           </div>
           <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-700">URL de video (mp4/webm/ogg) opcional</label>
-              <input name="videoUrl" placeholder="https://.../video.mp4" className="form-input" />
-            </div>
-            <div className="flex items-end">
               <label className="inline-flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" name="showSocialButtons" /> Mostrar botones Instagram/TikTok en el producto</label>
             </div>
           </div>
-          <input name="image" placeholder="URL de imagen principal" className="form-input" />
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">O subir imagen principal</label>
-            <MainImageUploader targetName="mainImage" />
-          </div>
+          <ProductMediaManager />
           <label className="inline-flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" name="isNew" /> Nuevo</label>
-          <div className="md:col-span-3">
-            <label className="block text-sm text-gray-700 mb-1">Imagenes adicionales (hasta 3)</label>
-            <ImagesUploader targetName="images[]" max={3} />
-          </div>
           <div className="md:col-span-3">
             <div className="form-actions">
               <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creando...">Crear</PendingButton>
