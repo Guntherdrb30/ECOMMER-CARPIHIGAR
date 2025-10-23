@@ -178,6 +178,16 @@ export async function getProducts(filters?: { isNew?: boolean; categorySlug?: st
         where.supplierId = filters.supplierId;
     }
 
+    const dec = (x: any, fb: number | null = null) => {
+        try {
+            if (x == null) return fb;
+            if (typeof x === 'number') return x;
+            if (typeof x?.toNumber === 'function') return x.toNumber();
+            const n = Number(x);
+            return isNaN(n) ? fb : n;
+        } catch { return fb; }
+    };
+
     try {
         const products = await prisma.product.findMany({
             where,
@@ -191,10 +201,11 @@ export async function getProducts(filters?: { isNew?: boolean; categorySlug?: st
         });
         return products.map(p => ({
             ...p,
-            priceUSD: p.priceUSD.toNumber(),
-            priceAllyUSD: p.priceAllyUSD?.toNumber() || null,
-            avgCost: p.avgCost?.toNumber() || null,
-            lastCost: p.lastCost?.toNumber() || null,
+            images: Array.isArray((p as any).images) ? (p as any).images : [],
+            priceUSD: dec((p as any).priceUSD, 0)!,
+            priceAllyUSD: dec((p as any).priceAllyUSD, null),
+            avgCost: dec((p as any).avgCost, null),
+            lastCost: dec((p as any).lastCost, null),
         }));
     } catch (err) {
         console.warn('[getProducts] DB not reachable or query failed. Returning empty list.', err);
@@ -558,27 +569,39 @@ export async function getProductPageData(slug: string) {
     });
   }
 
+  const dec = (x: any, fb: number | null = null) => {
+    try {
+      if (x == null) return fb;
+      if (typeof x === 'number') return x;
+      if (typeof x?.toNumber === 'function') return x.toNumber();
+      const n = Number(x);
+      return isNaN(n) ? fb : n;
+    } catch { return fb; }
+  };
+
   const serializableProduct = {
     ...product,
-    priceUSD: product.priceUSD.toNumber(),
-    priceAllyUSD: product.priceAllyUSD?.toNumber() || null,
-    avgCost: product.avgCost?.toNumber() || null,
-    lastCost: product.lastCost?.toNumber() || null,
-  };
+    images: Array.isArray((product as any).images) ? (product as any).images : [],
+    priceUSD: dec((product as any).priceUSD, 0)!,
+    priceAllyUSD: dec((product as any).priceAllyUSD, null),
+    avgCost: dec((product as any).avgCost, null),
+    lastCost: dec((product as any).lastCost, null),
+  } as any;
 
   const serializableSettings = {
     ...settings,
-    ivaPercent: settings.ivaPercent.toNumber(),
-    tasaVES: settings.tasaVES.toNumber(),
-    sellerCommissionPercent: settings.sellerCommissionPercent.toNumber(),
-  };
+    ivaPercent: dec((settings as any).ivaPercent, 16)!,
+    tasaVES: dec((settings as any).tasaVES, 40)!,
+    sellerCommissionPercent: dec((settings as any).sellerCommissionPercent, 5)!,
+  } as any;
 
   const serializableRelatedProducts = relatedProducts.map((p) => ({
     ...p,
-    priceUSD: p.priceUSD.toNumber(),
-    priceAllyUSD: p.priceAllyUSD?.toNumber() || null,
-    avgCost: p.avgCost?.toNumber() || null,
-    lastCost: p.lastCost?.toNumber() || null,
+    images: Array.isArray((p as any).images) ? (p as any).images : [],
+    priceUSD: dec((p as any).priceUSD, 0)!,
+    priceAllyUSD: dec((p as any).priceAllyUSD, null),
+    avgCost: dec((p as any).avgCost, null),
+    lastCost: dec((p as any).lastCost, null),
   }));
 
   return {
