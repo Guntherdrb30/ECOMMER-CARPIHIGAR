@@ -26,7 +26,7 @@ function ProductJsonLd({ product, baseUrl }: { product: Product; baseUrl: string
     sku: product.sku,
     brand: {
       '@type': 'Brand',
-      name: product.brand?.name || 'Carpihogar',
+      name: (product as any).brand || 'Carpihogar',
     },
     offers: {
       '@type': 'Offer',
@@ -46,6 +46,10 @@ function ProductJsonLd({ product, baseUrl }: { product: Product; baseUrl: string
       <meta property="og:title" content={product.name} />
       {product.description && <meta property="og:description" content={product.description} />}
       <meta property="og:image" content={product.images[0] || `${baseUrl}/logo-default.svg`} />
+      {/* Open Graph product extension */}
+      <meta property="product:brand" content={(product as any).brand || 'Carpihogar'} />
+      <meta property="product:availability" content={product.stock > 0 ? 'in stock' : 'out of stock'} />
+      <meta property="product:retailer_item_id" content={product.sku || product.id} />
       {/* Open Graph price metadata for product */}
       <meta property="product:price:amount" content={product.priceUSD.toString()} />
       <meta property="product:price:currency" content="USD" />
