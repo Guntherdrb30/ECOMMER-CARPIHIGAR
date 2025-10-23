@@ -1,8 +1,7 @@
 import { getCategoriesFlattened } from "@/server/actions/categories";
 import { getSuppliers } from "@/server/actions/procurement";
 import { getProductById, updateProductFull, getRelatedIds, getProducts } from "@/server/actions/products";
-import MainImageUploader from "@/components/admin/main-image-uploader";
-import ImagesUploader from "@/components/admin/images-uploader";
+import ProductMediaManager from "@/components/admin/product-media-manager";
 import RelatedProductsPicker from "@/components/admin/related-products-picker";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -61,8 +60,11 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         <div className="md:col-span-3">
           <RelatedProductsPicker products={allProducts as any} name="relatedIds[]" defaultValue={relatedIds as any} watchCategoryName="categoryId" />
         </div>
+        {/* Media Manager (images + video) */}
+        <ProductMediaManager defaultImages={(product.images as any as string[])} defaultVideoUrl={(product as any).videoUrl || ''} />
 
-        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Legacy media inputs hidden (preserved for reference) */}
+        <div className="hidden md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm text-gray-700">URL de video (mp4/webm/ogg) opcional</label>
             <input name="videoUrl" defaultValue={(product as any).videoUrl || ''} placeholder="https://.../video.mp4" className="border rounded px-2 py-1 w-full" />
@@ -97,6 +99,12 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         <div className="md:col-span-3">
           <label className="inline-flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" name="replaceAllImages" /> Reemplazar todas las imágenes (si marcas, solo se guardarán la nueva principal + nuevas adicionales)
+          </label>
+        </div>
+
+        <div className="md:col-span-3">
+          <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" name="showSocialButtons" defaultChecked={Boolean((product as any).showSocialButtons)} /> Mostrar botones Instagram/TikTok en el producto
           </label>
         </div>
 
