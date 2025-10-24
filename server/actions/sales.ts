@@ -83,6 +83,10 @@ export async function createOfflineSale(formData: FormData) {
   const docTypeRaw = String(formData.get('docType') || 'recibo').toLowerCase();
   const allowedDocs = ['recibo','nota','factura'];
   const docType = (allowedDocs.includes(docTypeRaw) ? docTypeRaw : 'recibo') as 'recibo'|'nota'|'factura';
+  // If aliado, force sellerId to be current user
+  if ((session?.user as any)?.role === 'ALIADO') {
+    sellerId = String((session?.user as any)?.id || '');
+  }
 
   if (!items.length) {
     try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_VALIDATION_FAILED', details: 'No hay items' } }); } catch {}
@@ -200,8 +204,3 @@ export async function createOfflineSale(formData: FormData) {
   redirect(`/dashboard/admin/ventas?message=${encodeURIComponent(successMessage)}`);
 }
 
-
-  // If aliado, force sellerId to be current user
-  if ((session?.user as any)?.role === 'ALIADO') {
-    sellerId = String((session?.user as any)?.id || '');
-  }
