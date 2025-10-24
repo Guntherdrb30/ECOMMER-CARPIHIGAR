@@ -49,6 +49,7 @@ export function ProductActions({ product }: { product: Omit<Product, 'priceUSD'>
         name: product.name,
         priceUSD: product.priceUSD,
         stock: stock,
+        image: (product as any).images?.[0],
       },
       safeQty
     );
@@ -110,3 +111,4 @@ export function ProductActions({ product }: { product: Omit<Product, 'priceUSD'>
     </>
   );
 }
+

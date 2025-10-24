@@ -6,6 +6,8 @@ import type { Product } from '@prisma/client';
 import WishlistButton from './wishlist-button';
 import { useEffect, useMemo, useState } from 'react';
 import { STOCK_POLL_MS } from '@/lib/constants';
+import { useCartStore } from '@/store/cart';
+import { toast } from 'sonner';
 
 type ProductWithCategory = Product & {
     category: {
@@ -33,6 +35,16 @@ const ProductCard = ({ product, tasa, isWishlisted }: { product: ProductWithCate
     return () => { cancelled = true; clearInterval(t); };
   }, [product.id]);
 
+  const addItem = useCartStore((s) => s.addItem);
+
+  const onAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (stock <= 0) { toast.error('Producto agotado'); return; }
+    addItem({ id: product.id, name: product.name, priceUSD: product.priceUSD, stock, image: (product as any).images?.[0] }, 1);
+    toast.success('Producto agregado al carrito');
+  };
+
   return (
     <div className="relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow group">
       <WishlistButton productId={product.id} isInitiallyWishlisted={isWishlisted} />
@@ -48,14 +60,23 @@ const ProductCard = ({ product, tasa, isWishlisted }: { product: ProductWithCate
             </div>
           )}
         </div>
-        <div className="p-4">
-          <h3 className="text-lg font-bold text-gray-800 truncate">{product.name}</h3>
-          <div className="mt-2">
-            <Price priceUSD={product.priceUSD} tasa={tasa} moneda="USD" className="text-xl font-bold text-gray-900" />
-            <Price priceUSD={product.priceUSD} tasa={tasa} moneda="VES" className="text-sm text-gray-600 block" />
-          </div>
-        </div>
       </Link>
+      <div className="p-4">
+        <Link href={`/productos/${product.slug}`} className="block">
+          <h3 className="text-lg font-bold text-gray-800 truncate">{product.name}</h3>
+        </Link>
+        <div className="mt-2">
+          <Price priceUSD={product.priceUSD} tasa={tasa} moneda="USD" className="text-xl font-bold text-gray-900" />
+          <Price priceUSD={product.priceUSD} tasa={tasa} moneda="VES" className="text-sm text-gray-600 block" />
+        </div>
+        <button
+          onClick={onAddToCart}
+          disabled={stock <= 0}
+          className={`mt-3 w-full rounded-md py-2 text-sm font-semibold ${stock > 0 ? 'bg-brand text-white hover:bg-opacity-90' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
+        >
+          {stock > 0 ? 'Agregar al Carrito' : 'Agotado'}
+        </button>
+      </div>
     </div>
   );
 };
