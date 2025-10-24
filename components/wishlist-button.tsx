@@ -48,7 +48,7 @@ export default function WishlistButton({ productId, isInitiallyWishlisted }: Wis
     <button
       onClick={handleClick}
       disabled={isPending}
-      className={`absolute top-2 right-2 p-1.5 rounded-full transition-colors duration-200 
+      className={`absolute top-2 right-2 z-10 p-1.5 rounded-full transition-colors duration-200 
         ${isWishlisted ? 'text-red-500 bg-red-100' : 'text-gray-500 bg-white/60 hover:bg-gray-100'}
         ${isPending ? 'cursor-not-allowed' : ''}`}
       aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
