@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { STOCK_POLL_MS } from '@/lib/constants';
 import { useCartStore } from '@/store/cart';
 import type { Product } from '@prisma/client';
 import { toast } from 'sonner';
@@ -31,7 +32,7 @@ export function ProductActions({ product }: { product: Omit<Product, 'priceUSD'>
       } catch {}
     };
     poll();
-    const t = setInterval(poll, 15000);
+    const t = setInterval(poll, STOCK_POLL_MS);
     return () => { cancelled = true; clearInterval(t); };
   }, [product.id]);
   const addItem = useCartStore((state) => state.addItem);

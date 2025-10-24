@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { STOCK_POLL_MS } from '@/lib/constants';
 import { useCartStore } from '@/store/cart';
 import Price from '@/components/price';
 import Link from 'next/link';
@@ -18,7 +19,7 @@ export default function Cart({ tasa }: { tasa: number }) {
       if (!cancelled) setSyncInfo(res);
     };
     doSync();
-    const t = setInterval(doSync, 15000);
+    const t = setInterval(doSync, STOCK_POLL_MS);
     return () => { cancelled = true; clearInterval(t); };
   }, [refreshStocks]);
 

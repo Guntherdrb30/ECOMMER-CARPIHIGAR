@@ -5,6 +5,7 @@ import Price from '@/components/price';
 import type { Product } from '@prisma/client';
 import WishlistButton from './wishlist-button';
 import { useEffect, useMemo, useState } from 'react';
+import { STOCK_POLL_MS } from '@/lib/constants';
 
 type ProductWithCategory = Product & {
     category: {
@@ -28,7 +29,7 @@ const ProductCard = ({ product, tasa, isWishlisted }: { product: ProductWithCate
       } catch {}
     };
     poll();
-    const t = setInterval(poll, 15000);
+    const t = setInterval(poll, STOCK_POLL_MS);
     return () => { cancelled = true; clearInterval(t); };
   }, [product.id]);
 

@@ -89,11 +89,11 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           </div>
           <div>
             <h3 className="font-semibold mb-1">Nueva imagen principal (opcional)</h3>
-            <MainImageUploader targetName="mainImage" />
+            {/* main image uploader removido en favor de ProductMediaManager */}
           </div>
           <div>
             <h3 className="font-semibold mb-1">Nuevas imágenes adicionales (opcional)</h3>
-            <ImagesUploader targetName="images[]" max={3} />
+            {/* images uploader removido en favor de ProductMediaManager */}
           </div>
         </div>
         <div className="md:col-span-3">

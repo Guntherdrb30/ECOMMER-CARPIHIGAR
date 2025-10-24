@@ -77,9 +77,9 @@ export default function ProductMediaManager({
       <div className="border rounded p-3 bg-white">
         <h3 className="font-semibold mb-1">Video del producto (opcional)</h3>
         <HeroMediaUploader targetInputName={videoName} defaultUrl={defaultVideoUrl || undefined} />
+        <input type="hidden" name={videoName} defaultValue={defaultVideoUrl || ''} />
         <p className="text-xs text-gray-500 mt-2">Formatos: MP4, WEBM, OGG. El video se muestra al final de la galería.</p>
       </div>
     </div>
   );
 }
-
