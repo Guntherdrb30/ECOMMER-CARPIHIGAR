@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import CategorySelect from '@/components/category-select';
 import CategoryCombobox from '@/components/category-combobox';
+import ProductLiveSearch from '@/components/product-live-search';
 
 export default async function ProductosPage({
   searchParams,
@@ -17,12 +18,13 @@ export default async function ProductosPage({
 }) {
   const sp = (await searchParams) || {};
   const categorySlug = typeof sp.categoria === 'string' ? sp.categoria : undefined;
+  const q = typeof sp.q === 'string' ? sp.q : '';
   
   const session = await getServerSession(authOptions);
   const userId = (session?.user as any)?.id;
 
   const [products, settings, categories, wishlistItems] = await Promise.all([
-    getProducts({ categorySlug }),
+    getProducts({ categorySlug, q: q || undefined }),
     getSettings(),
     getCategoriesFlattened(),
     userId ? prisma.wishlistItem.findMany({ where: { userId } }) : Promise.resolve([]),
@@ -101,3 +103,4 @@ export default async function ProductosPage({
     </div>
   );
 }
+

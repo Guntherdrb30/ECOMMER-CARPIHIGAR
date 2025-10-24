@@ -172,7 +172,16 @@ export async function getProducts(filters?: { isNew?: boolean; categorySlug?: st
     }
 
     if (filters?.q) {
-        where.name = { contains: filters.q, mode: 'insensitive' };
+        const tokens = String(filters.q).split(/\s+/).filter(Boolean);
+        if (tokens.length) {
+            where.AND = tokens.map((t) => ({
+                OR: [
+                    { name: { contains: t, mode: 'insensitive' } },
+                    { sku: { contains: t, mode: 'insensitive' } },
+                    { code: { contains: t, mode: 'insensitive' } },
+                ],
+            }));
+        }
     }
     if (filters?.supplierId) {
         where.supplierId = filters.supplierId;
