@@ -10,6 +10,13 @@ export default withAuth(
     ) {
       return NextResponse.rewrite(new URL("/auth/login?message=You Are Not Authorized!", req.url));
     }
+    // Protect aliado dashboard for ALIADO role
+    if (
+      req.nextUrl.pathname.startsWith("/dashboard/aliado") &&
+      req.nextauth.token?.role !== "ALIADO"
+    ) {
+      return NextResponse.rewrite(new URL("/auth/login?message=You Are Not Authorized!", req.url));
+    }
   },
   {
     callbacks: {
@@ -18,4 +25,4 @@ export default withAuth(
   }
 );
 
-export const config = { matcher: ["/dashboard/admin/:path*", "/checkout/:path*", "/dashboard/cliente/:path*"] };
+export const config = { matcher: ["/dashboard/admin/:path*", "/checkout/:path*", "/dashboard/cliente/:path*", "/dashboard/aliado/:path*"] };

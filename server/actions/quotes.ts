@@ -55,12 +55,12 @@ export async function getQuoteById(id: string) {
 
 export async function createQuote(formData: FormData) {
   const session = await getServerSession(authOptions);
-  if ((session?.user as any)?.role !== 'ADMIN' && (session?.user as any)?.role !== 'VENDEDOR') {
+  if ((session?.user as any)?.role !== 'ADMIN' && (session?.user as any)?.role !== 'VENDEDOR' && (session?.user as any)?.role !== 'ALIADO') {
     throw new Error('Not authorized');
   }
   const userEmail = String(formData.get('customerEmail') || '');
   const userName = String(formData.get('customerName') || '');
-  const sellerId = String(formData.get('sellerId') || '');
+  let sellerId = String(formData.get('sellerId') || '');
   const itemsJson = String(formData.get('items') || '[]');
   const items: Array<{ productId: string; name: string; priceUSD: number; quantity: number } > = JSON.parse(itemsJson || '[]');
   const ivaPercentForm = formData.get('ivaPercent');
@@ -85,6 +85,11 @@ export async function createQuote(formData: FormData) {
   const totalUSD = subtotalUSD * (1 + ivaPercent/100);
   const totalVES = totalUSD * tasaVES;
 
+  // For ALIADO role, force sellerId to be the current user
+  if ((session?.user as any)?.role === 'ALIADO') {
+    sellerId = String((session?.user as any)?.id || '') || null as any;
+  }
+
   const quote = await prisma.quote.create({
     data: {
       userId: user.id,
@@ -107,20 +112,65 @@ export async function createQuote(formData: FormData) {
   redirect(`/dashboard/admin/presupuestos/${quote.id}?message=${encodeURIComponent('Presupuesto creado')}`);
 }
 
+// Ally-only: list own quotes
+export async function getMyAllyQuotes(filters?: { q?: string; status?: 'BORRADOR'|'ENVIADO'|'APROBADO'|'RECHAZADO'|'VENCIDO'|string; from?: string; to?: string }) {
+  const session = await getServerSession(authOptions);
+  const myId = String((session?.user as any)?.id || '');
+  if (!myId || (session?.user as any)?.role !== 'ALIADO') throw new Error('Not authorized');
+  await autoExpireQuotes();
+  const where: any = { sellerId: myId };
+  if (filters?.status) {
+    const st = String(filters.status).toUpperCase();
+    if (['BORRADOR','ENVIADO','APROBADO','RECHAZADO','VENCIDO'].includes(st)) where.status = st as any;
+  }
+  if (filters?.from || filters?.to) {
+    const createdAt: any = {};
+    if (filters.from) { const d = new Date(String(filters.from)); if (!isNaN(d.getTime())) createdAt.gte = d as any; }
+    if (filters.to) { const d = new Date(String(filters.to)); if (!isNaN(d.getTime())) { const next = new Date(d); next.setDate(next.getDate()+1); createdAt.lt = next as any; } }
+    if (Object.keys(createdAt).length) where.createdAt = createdAt;
+  }
+  if (filters?.q) {
+    const q = String(filters.q);
+    where.OR = [
+      { id: { contains: q } },
+      { user: { name: { contains: q, mode: 'insensitive' } } },
+      { user: { email: { contains: q, mode: 'insensitive' } } },
+    ];
+  }
+  return prisma.quote.findMany({ where, include: { user: true, seller: true, items: true }, orderBy: { createdAt: 'desc' } });
+}
+
+// Ally-only: get quote by id (must belong to ally as seller)
+export async function getAllyQuoteById(id: string) {
+  const session = await getServerSession(authOptions);
+  const myId = String((session?.user as any)?.id || '');
+  if (!myId || (session?.user as any)?.role !== 'ALIADO') throw new Error('Not authorized');
+  await autoExpireQuotes();
+  const quote = await prisma.quote.findUnique({ where: { id }, include: { user: true, seller: true, items: { include: { product: true } } } });
+  if (!quote || String(quote.sellerId || '') !== myId) throw new Error('Not authorized');
+  return quote;
+}
+
 export async function updateQuoteStatusByForm(formData: FormData) {
   const session = await getServerSession(authOptions);
-  if ((session?.user as any)?.role !== 'ADMIN' && (session?.user as any)?.role !== 'VENDEDOR') {
+  if ((session?.user as any)?.role !== 'ADMIN' && (session?.user as any)?.role !== 'VENDEDOR' && (session?.user as any)?.role !== 'ALIADO') {
     throw new Error('Not authorized');
   }
   const id = String(formData.get('quoteId') || '');
   const statusRaw = String(formData.get('status') || '').toUpperCase();
   const allowed = ['BORRADOR','ENVIADO','APROBADO','RECHAZADO','VENCIDO'];
   const status = allowed.includes(statusRaw) ? statusRaw : 'BORRADOR';
+  // If aliado, ensure ownership
+  if ((session?.user as any)?.role === 'ALIADO') {
+    const q = await prisma.quote.findUnique({ where: { id }, select: { sellerId: true } });
+    if (!q || String(q.sellerId || '') !== String((session?.user as any)?.id || '')) throw new Error('Not authorized');
+  }
   await prisma.quote.update({ where: { id }, data: { status: status as any } });
   try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'QUOTE_STATUS', details: `${id}:${status}` } }); } catch {}
-  revalidatePath('/dashboard/admin/presupuestos');
-  revalidatePath(`/dashboard/admin/presupuestos/${id}`);
-  redirect(`/dashboard/admin/presupuestos/${id}?message=${encodeURIComponent('Estado actualizado a ' + status)}`);
+  try { revalidatePath('/dashboard/admin/presupuestos'); } catch {}
+  try { revalidatePath(`/dashboard/admin/presupuestos/${id}`); } catch {}
+  const backTo = String(formData.get('backTo') || '') || `/dashboard/admin/presupuestos/${id}`;
+  redirect(`${backTo}?message=${encodeURIComponent('Estado actualizado a ' + status)}`);
 }
 
 export async function convertQuoteToOrder(formData: FormData) {
@@ -184,7 +234,65 @@ export async function updateQuoteExpiryByForm(formData: FormData) {
   const expiresAt = expiresStr ? new Date(expiresStr) : null;
   await prisma.quote.update({ where: { id }, data: { expiresAt: expiresAt as any } });
   try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'QUOTE_SET_EXPIRES', details: `${id}:${expiresStr}` } }); } catch {}
-  revalidatePath('/dashboard/admin/presupuestos');
-  revalidatePath(`/dashboard/admin/presupuestos/${id}`);
-  redirect(`/dashboard/admin/presupuestos/${id}?message=${encodeURIComponent('Vencimiento actualizado')}`);
+  try { revalidatePath('/dashboard/admin/presupuestos'); } catch {}
+  try { revalidatePath(`/dashboard/admin/presupuestos/${id}`); } catch {}
+  const backTo = String(formData.get('backTo') || '') || `/dashboard/admin/presupuestos/${id}`;
+  redirect(`${backTo}?message=${encodeURIComponent('Vencimiento actualizado')}`);
+}
+
+export async function updateQuoteByForm(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  const role = String((session?.user as any)?.role || '');
+  if (!['ADMIN','VENDEDOR','ALIADO'].includes(role)) throw new Error('Not authorized');
+
+  const id = String(formData.get('quoteId') || '');
+  const itemsJson = String(formData.get('items') || '[]');
+  const items: Array<{ productId: string; name: string; priceUSD: number; quantity: number } > = JSON.parse(itemsJson || '[]');
+  const ivaPercentForm = formData.get('ivaPercent');
+  const tasaVESForm = formData.get('tasaVES');
+  const customerTaxId = (String(formData.get('customerTaxId') || '').trim() || null);
+  const customerFiscalAddress = (String(formData.get('customerFiscalAddress') || '').trim() || null);
+  const notes = String(formData.get('notes') || '');
+  const backTo = String(formData.get('backTo') || '') || `/dashboard/admin/presupuestos/${id}`;
+
+  const q = await prisma.quote.findUnique({ where: { id }, select: { sellerId: true } });
+  if (!q) throw new Error('Quote not found');
+  if (role === 'ALIADO') {
+    const myId = String((session?.user as any)?.id || '');
+    if (String(q.sellerId || '') !== myId) throw new Error('Not authorized');
+  }
+
+  if (!Array.isArray(items) || !items.length) {
+    redirect(`${backTo}?error=${encodeURIComponent('Debes agregar al menos un producto')}`);
+  }
+
+  const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
+  const ivaPercent = ivaPercentForm !== null ? Number(ivaPercentForm) : Number(settings?.ivaPercent || 16);
+  const tasaVES = tasaVESForm !== null ? Number(tasaVESForm) : Number(settings?.tasaVES || 40);
+
+  const subtotalUSD = items.reduce((acc, it) => acc + (Number(it.priceUSD) * Number(it.quantity)), 0);
+  const totalUSD = subtotalUSD * (1 + ivaPercent/100);
+  const totalVES = totalUSD * tasaVES;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.quote.update({ where: { id }, data: {
+      subtotalUSD: subtotalUSD as any,
+      ivaPercent: ivaPercent as any,
+      tasaVES: tasaVES as any,
+      totalUSD: totalUSD as any,
+      totalVES: totalVES as any,
+      notes: notes || null,
+      customerTaxId: customerTaxId as any,
+      customerFiscalAddress: customerFiscalAddress as any,
+    } });
+    await tx.quoteItem.deleteMany({ where: { quoteId: id } });
+    await tx.quoteItem.createMany({ data: items.map((it) => ({ quoteId: id, productId: it.productId, name: it.name, priceUSD: it.priceUSD as any, quantity: Number(it.quantity) })) });
+  });
+
+  try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'QUOTE_UPDATE_ITEMS', details: id } }); } catch {}
+  try { revalidatePath('/dashboard/aliado/presupuestos'); } catch {}
+  try { revalidatePath(`/dashboard/aliado/presupuestos/${id}`); } catch {}
+  try { revalidatePath('/dashboard/admin/presupuestos'); } catch {}
+  try { revalidatePath(`/dashboard/admin/presupuestos/${id}`); } catch {}
+  redirect(`${backTo}?message=${encodeURIComponent('Presupuesto actualizado')}`);
 }

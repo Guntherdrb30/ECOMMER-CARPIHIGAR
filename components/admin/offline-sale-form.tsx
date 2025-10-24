@@ -5,11 +5,11 @@ import { useEffect, useMemo, useState } from "react";
 type Prod = { id: string; name: string; sku: string | null; priceUSD: number; priceAllyUSD?: number | null };
 type Line = { productId: string; name: string; p1: number; p2?: number | null; priceUSD: number; quantity: number };
 
-export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent, tasaVES, action }: { sellers: Array<{ id: string; name?: string; email: string }>, commissionPercent: number, ivaPercent: number, tasaVES: number, action: (formData: FormData) => void }) {
+export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent, tasaVES, action, initialItems, fixedSellerId }: { sellers: Array<{ id: string; name?: string; email: string }>, commissionPercent: number, ivaPercent: number, tasaVES: number, action: (formData: FormData) => void, initialItems?: Line[], fixedSellerId?: string }) {
   const [q, setQ] = useState("");
   const [found, setFound] = useState<Prod[]>([]);
-  const [items, setItems] = useState<Line[]>([]);
-  const [sellerId, setSellerId] = useState<string>("");
+  const [items, setItems] = useState<Line[]>(() => initialItems || []);
+  const [sellerId, setSellerId] = useState<string>(fixedSellerId || "");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerTaxId, setCustomerTaxId] = useState("");
@@ -110,7 +110,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <label className="block text-sm text-gray-700">Vendedor</label>
-          <select name="sellerId" value={sellerId} onChange={(e) => setSellerId(e.target.value)} className="border rounded px-2 py-1 w-full" required>
+          <select name="sellerId" value={sellerId} onChange={(e) => setSellerId(e.target.value)} className="border rounded px-2 py-1 w-full" required disabled={!!fixedSellerId}>
             <option value="">Seleccione vendedor</option>
             {sellers.map((s) => (
               <option key={s.id} value={s.id}>
@@ -118,6 +118,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
               </option>
             ))}
           </select>
+          {fixedSellerId && <input type="hidden" name="sellerId" value={sellerId} />}
         </div>
         <div>
           <label className="block text-sm text-gray-700">Cliente (Nombre)</label>

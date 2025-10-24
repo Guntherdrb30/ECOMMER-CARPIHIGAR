@@ -55,13 +55,13 @@ export async function markCommissionPaid(formData: FormData) {
 
 export async function createOfflineSale(formData: FormData) {
   const session = await getServerSession(authOptions);
-  if ((session?.user as any)?.role !== 'ADMIN' && (session?.user as any)?.role !== 'VENDEDOR') {
+  if ((session?.user as any)?.role !== 'ADMIN' && (session?.user as any)?.role !== 'VENDEDOR' && (session?.user as any)?.role !== 'ALIADO') {
     try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_NOT_AUTHORIZED', details: '' } }); } catch {}
     throw new Error('Not authorized');
   }
   const userEmail = String(formData.get('customerEmail') || '');
   const userName = String(formData.get('customerName') || '');
-  const sellerId = String(formData.get('sellerId') || '');
+  let sellerId = String(formData.get('sellerId') || '');
   const itemsJson = String(formData.get('items') || '[]');
   const items: Array<{ productId: string; name?: string; priceUSD: number; quantity: number } > = JSON.parse(itemsJson || '[]');
   const paymentMethod = String(formData.get('paymentMethod') || 'ZELLE').toUpperCase();
@@ -115,8 +115,10 @@ export async function createOfflineSale(formData: FormData) {
   const ivaPercent = ivaPercentForm !== null ? Number(ivaPercentForm) : Number(settings?.ivaPercent || 16);
   const tasaVES = tasaVESForm !== null ? Number(tasaVESForm) : Number(settings?.tasaVES || 40);
   let commissionPercent = Number((settings as any)?.sellerCommissionPercent || 5);
+  let sellerRole: string | null = null;
   if (sellerId) {
-    const seller = await prisma.user.findUnique({ where: { id: sellerId }, select: { commissionPercent: true } });
+    const seller = await prisma.user.findUnique({ where: { id: sellerId }, select: { commissionPercent: true, role: true } });
+    sellerRole = (seller as any)?.role || null;
     if (seller?.commissionPercent !== null && seller?.commissionPercent !== undefined) {
       commissionPercent = Number(seller.commissionPercent as any);
     }
@@ -189,7 +191,7 @@ export async function createOfflineSale(formData: FormData) {
     }
   }
 
-  if (sellerId) {
+  if (sellerId && sellerRole === 'VENDEDOR') {
     const amountUSD = Number((totalUSD * commissionPercent) / 100);
     await prisma.commission.create({ data: { orderId: order.id, sellerId, percent: commissionPercent as any, amountUSD: amountUSD as any } });
   }
@@ -199,3 +201,7 @@ export async function createOfflineSale(formData: FormData) {
 }
 
 
+  // If aliado, force sellerId to be current user
+  if ((session?.user as any)?.role === 'ALIADO') {
+    sellerId = String((session?.user as any)?.id || '');
+  }

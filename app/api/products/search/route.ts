@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   // Require admin or vendedor to use this endpoint in admin context
   const session = (await getServerSession(authOptions as any)) as any;
   const role = session?.user?.role as string | undefined;
-  if (!session || (role !== 'ADMIN' && role !== 'VENDEDOR')) {
+  if (!session || (role !== 'ADMIN' && role !== 'VENDEDOR' && role !== 'ALIADO')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
