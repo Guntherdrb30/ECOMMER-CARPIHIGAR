@@ -5,10 +5,11 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 
 const navItems = [
-  { name: 'Resumen', href: '/dashboard/aliado', icon: 'Home' },
+  // Aliado core
   { name: 'Presupuestos', href: '/dashboard/aliado/presupuestos', icon: 'Clipboard' },
   { name: 'Ventas', href: '/dashboard/aliado/ventas', icon: 'Cash' },
   { name: 'Reportes', href: '/dashboard/aliado/reportes', icon: 'Chart' },
+  { name: 'Resumen', href: '/dashboard/aliado', icon: 'Home' },
   // Cliente shortcuts
   { name: 'Mis Pedidos (Cliente)', href: '/dashboard/cliente/pedidos', icon: 'Package' },
   { name: 'Mis Favoritos (Cliente)', href: '/dashboard/cliente/favoritos', icon: 'Heart' },
@@ -53,4 +54,3 @@ export function AllyDashboardSidebar() {
     </aside>
   );
 }
-
