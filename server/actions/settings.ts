@@ -150,6 +150,9 @@ export async function setDeleteSecret(formData: FormData) {
   if ((session?.user as any)?.role !== 'ADMIN') {
     throw new Error('Not authorized');
   }
+  if (String(email || '').toLowerCase() !== rootEmail) {
+    throw new Error('Solo el usuario root puede cambiar esta clave');
+  }
   const newSecret = String(formData.get('newSecret') || '').trim();
   const confirm = String(formData.get('confirm') || '').trim();
   if (!newSecret || newSecret.length < 6) {
