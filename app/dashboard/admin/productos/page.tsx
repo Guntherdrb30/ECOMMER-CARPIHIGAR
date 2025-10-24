@@ -8,6 +8,7 @@ import StockHistory from "@/components/admin/stock-history";
 import ProductMediaManager from "@/components/admin/product-media-manager";
 import { redirect } from "next/navigation";
 import ProductQuickSearch from "@/components/admin/product-quick-search";
+import ProductActionsMenu from "@/components/admin/product-actions-menu";
 import { PendingButton } from '@/components/pending-button';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import RelatedProductsPicker from "@/components/admin/related-products-picker";
@@ -30,15 +31,24 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
     <div className="container mx-auto p-4">
       <ShowToastFromSearch successParam="message" errorParam="error" />
       <h1 className="text-2xl font-bold mb-4">Gestionar Productos</h1>
+      {/* Buscador superior */}
+      <form className="mb-3 flex gap-2" method="get">
+        <input name="q" placeholder="Buscar por nombre, SKU o código" defaultValue={q} className="flex-1 border rounded px-2 py-1" />
+        <button className="px-3 py-1 rounded bg-blue-600 text-white">Buscar</button>
+        {q && (<a href="/dashboard/admin/productos" className="px-3 py-1 rounded border">Limpiar</a>)}
+      </form>
+
       <div className="mb-2 flex items-center gap-3 text-sm">
         <a href="/samples/products_template.csv" className="text-blue-600 underline" download>Descargar plantilla CSV de productos</a>
         <a href="/api/reports/products-csv" className="text-blue-600 underline" target="_blank">Exportar productos (CSV)</a>
       </div>
-      <div className="mb-4 p-4 bg-white rounded shadow">
-        <h2 className="text-lg font-semibold mb-2">Carga masiva (CSV) con previsualizacion</h2>
-        <p className="text-sm text-gray-600 mb-2">Columnas alineadas con el formulario: <code>name</code>, <code>slug</code>, <code>sku</code>, <code>barcode</code>, <code>brand</code>, <code>priceUSD</code>, <code>priceAllyUSD</code>, <code>stock</code>, <code>categoryId</code>, <code>supplierId</code>, <code>image</code>, <code>images</code>. Puedes omitir precios y solo indicar costo; si no indicas precios, se calculan con los margenes por defecto del sistema.</p>
-        <ProductCsvUploader />
-      </div>
+      <details className="mb-4 p-4 bg-white rounded shadow">
+        <summary className="text-lg font-semibold cursor-pointer">Carga masiva (CSV) con previsualización</summary>
+        <div className="mt-2">
+          <p className="text-sm text-gray-600 mb-2">Columnas: <code>name</code>, <code>slug</code>, <code>sku</code>, <code>barcode</code>, <code>brand</code>, <code>priceUSD</code>, <code>priceAllyUSD</code>, <code>stock</code>, <code>categoryId</code>, <code>supplierId</code>, <code>image</code>, <code>images</code>. Puedes omitir precios y solo indicar costo; si no indicas precios, se calculan con los márgenes por defecto.</p>
+          <ProductCsvUploader />
+        </div>
+      </details>
       <div className="mb-4">
         <label className="block text-sm text-gray-700 mb-1">Busqueda rapida</label>
         <ProductQuickSearch />
@@ -69,9 +79,9 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
       </form>
 
       {/* Crear producto */}
-      <div className="form-card">
-        <h2 className="text-lg font-bold">Crear Producto</h2>
-        <form action={async (formData) => {
+      <details className="form-card">
+        <summary className="text-lg font-bold cursor-pointer">Crear Producto</summary>
+        <form className="mt-3" action={async (formData) => {
           'use server';
           const images = (formData.getAll('images[]') as string[]).filter(Boolean);
           const mainImageUpload = String(formData.get('mainImage') || '').trim();
@@ -139,7 +149,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             </div>
           </div>
         </form>
-      </div>
+      </details>
 
       {/* Lista */}
       <div className="bg-white p-4 rounded-lg shadow mt-4">
@@ -171,43 +181,8 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                   <td className="border px-4 py-2">{product.supplier?.name || '-'}</td>
                   <td className="border px-4 py-2">{product.isNew ? 'Si' : 'No'}</td>
                   <td className="border px-4 py-2 space-y-2">
-                    <form action={updateProductInline} className="flex flex-wrap gap-2 items-center text-sm">
-                      <input type="hidden" name="id" value={product.id} />
-                      <input name="priceUSD" type="number" step="0.01" defaultValue={Number(product.priceUSD)} className="w-24 border rounded px-1 py-0.5" />
-                      <input name="priceAllyUSD" type="number" step="0.01" defaultValue={product.priceAllyUSD != null ? Number(product.priceAllyUSD) : undefined} className="w-24 border rounded px-1 py-0.5" />
-                      <input name="stock" type="number" defaultValue={product.stock} className="w-20 border rounded px-1 py-0.5" />
-                      <label className="inline-flex items-center gap-1"><input type="checkbox" name="isNew" defaultChecked={product.isNew} /> Nuevo</label>
-                      <input name="image" placeholder="URL img" className="w-40 border rounded px-1 py-0.5" />
-                      <PendingButton className="px-2 py-1 bg-gray-800 text-white rounded" pendingText="Guardando...">Guardar</PendingButton>
-                    </form>
-                    <form action={createStockMovement} className="flex flex-wrap gap-2 items-center text-sm">
-                      <input type="hidden" name="productId" value={product.id} />
-                      <select name="type" className="border rounded px-1 py-0.5">
-                        <option value="ENTRADA">Entrada</option>
-                        <option value="SALIDA">Salida</option>
-                        <option value="AJUSTE">Ajuste</option>
-                      </select>
-                      <input name="quantity" type="number" min="1" placeholder="Qty" className="w-20 border rounded px-1 py-0.5" />
-                      <input name="reason" placeholder="Motivo" className="w-40 border rounded px-1 py-0.5" />
-                      <PendingButton className="px-2 py-1 border rounded" pendingText="Moviendo...">Mover</PendingButton>
-                    </form>
-                    <form action={updateProductBarcodeByForm} className="flex flex-wrap gap-2 items-center text-sm">
-                      <input type="hidden" name="id" value={product.id} />
-                      <input name="barcode" defaultValue={(product as any).barcode || ''} placeholder="EAN-13" className="w-40 border rounded px-1 py-0.5" />
-                      <PendingButton className="px-2 py-1 bg-gray-800 text-white rounded" pendingText="Guardando...">Guardar codigo</PendingButton>
-                      {!(product as any).barcode && (
-                        <button name="generate" value="1" className="px-2 py-1 border rounded" title="Generar EAN-13">Generar</button>
-                      )}
-                    </form>
+                    <ProductActionsMenu product={product} lowStock={lowStock} />
                     <StockHistory productId={product.id} />
-                    <a className="text-blue-600 hover:underline" href={`/dashboard/admin/productos/${product.id}`}>Editar</a>
-                    <SecretDeleteButton
-                      action={deleteProductByForm as any}
-                      hidden={{ id: product.id }}
-                      label="Eliminar"
-                      title="Eliminar producto"
-                      description="Esta accion eliminara el producto y no se puede deshacer."
-                    />
                   </td>
                 </tr>
               ))}
