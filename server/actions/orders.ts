@@ -12,7 +12,8 @@ export async function getMyOrders(params?: { take?: number }) {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id;
     if (!userId) {
-        throw new Error('Not authenticated');
+        // Gracefully handle when session is not yet established on first render
+        return [] as any[];
     }
 
     const orders = await prisma.order.findMany({

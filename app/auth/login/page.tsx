@@ -28,6 +28,8 @@ export default function LoginPage() {
       const role = (session?.user as any)?.role as string | undefined;
       if (role === 'ADMIN') {
         router.replace('/dashboard/admin');
+      } else if (role === 'ALIADO') {
+        router.replace('/dashboard/aliado');
       } else {
         router.replace('/dashboard/cliente');
       }
