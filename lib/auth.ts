@@ -43,11 +43,24 @@ export const authOptions: AuthOptions = {
           where: { email: credentials.email },
         });
 
-        if (!user || !user.password) {
+        if (!user) {
           return null;
         }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
+        // Allow one-time bootstrap of password for privileged roles if empty/legacy
+        // This helps when admins promote a user (e.g., to ALIADO) that was created without a password.
+        if ((!user.password || !user.password.trim()) && user.role !== 'CLIENTE') {
+          const newPwd = String(credentials.password || '').trim();
+          if (newPwd.length >= 6) {
+            const hashed = await bcrypt.hash(newPwd, 10);
+            await prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
+            user.password = hashed;
+          } else {
+            return null;
+          }
+        }
+
+        const isValid = user.password ? await bcrypt.compare(credentials.password, user.password) : false;
 
         if (isValid) {
           return {
