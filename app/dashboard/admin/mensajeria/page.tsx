@@ -78,7 +78,7 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
         <h2 className="font-semibold mb-2">Buscar cliente y escribirle</h2>
         <form method="get" className="flex items-center gap-2 mb-2">
           <input name="uq" defaultValue={uq} placeholder="Buscar por nombre, email o teléfono" className="border rounded px-3 py-2 flex-1" />
-          <button className="px-3 py-2 bg-gray-800 text-white rounded">Buscar</button>
+          <button className="px-3 py-2 bg-brand hover:bg-opacity-90 text-white rounded">Buscar</button>
           {uq && <a href="/dashboard/admin/mensajeria" className="px-3 py-2 border rounded">Limpiar</a>}
         </form>
         {!!uq && (
@@ -130,7 +130,7 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
         {status && <input type="hidden" name="status" value={status} />}
         {mine && <input type="hidden" name="mine" value="1" />}
         {unassigned && <input type="hidden" name="unassigned" value="1" />}
-        <button className="px-3 py-2 bg-gray-800 text-white rounded">Buscar</button>
+        <button className="px-3 py-2 bg-brand hover:bg-opacity-90 text-white rounded">Buscar</button>
         <a href="/dashboard/admin/mensajeria" className="px-3 py-2 border rounded">Limpiar</a>
       </form>
 

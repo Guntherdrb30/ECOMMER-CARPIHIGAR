@@ -172,7 +172,7 @@ export default function ProductLiveSearch({
           placeholder={placeholder}
           className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand"
         />
-        <button className="px-3 py-1 rounded bg-blue-600 text-white" type="submit">
+        <button className="px-3 py-1 rounded bg-brand hover:bg-opacity-90 text-white" type="submit">
           Buscar
         </button>
       </form>
@@ -220,4 +220,3 @@ export default function ProductLiveSearch({
     </div>
   );
 }
-

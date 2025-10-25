@@ -34,7 +34,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
       {/* Buscador superior */}
       <form className="mb-3 flex gap-2" method="get">
         <input name="q" placeholder="Buscar por nombre, SKU o código" defaultValue={q} className="flex-1 border rounded px-2 py-1" />
-        <button className="px-3 py-1 rounded bg-blue-600 text-white">Buscar</button>
+        <button className="px-3 py-1 rounded bg-brand hover:bg-opacity-90 text-white">Buscar</button>
         {q && (<a href="/dashboard/admin/productos" className="px-3 py-1 rounded border">Limpiar</a>)}
       </form>
 
