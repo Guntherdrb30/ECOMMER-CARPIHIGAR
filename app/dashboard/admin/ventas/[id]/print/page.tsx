@@ -52,7 +52,7 @@ export default async function PrintSalePage({
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="text-xl font-bold">{(settings as any).brandName || 'Carpihogar.ai'}</div>
-            <div className="text-gray-600">{(settings as any).contactEmail} · {String((settings as any).contactPhone)}</div>
+            <div className="text-gray-600">{(settings as any).contactEmail} - {String((settings as any).contactPhone)}</div>
           </div>
           {(settings as any).logoUrl && (
             <img src={(settings as any).logoUrl} alt="logo" className="h-10" />
@@ -62,7 +62,7 @@ export default async function PrintSalePage({
         <div className="flex justify-between mb-4">
           <div>
             <div className="font-semibold">{title}</div>
-            <div className="text-gray-600">N°: {order.id}</div>
+            <div className="text-gray-600">No.: {order.id}</div>
             <div className="text-gray-600">Fecha: {new Date(order.createdAt as any).toLocaleString()}</div>
             <div className="text-gray-600">Moneda: {moneda}</div>
             <div className="text-gray-600">IVA: {ivaPercent}%</div>
@@ -74,20 +74,20 @@ export default async function PrintSalePage({
             {tipo === 'factura' && (
               <div className="text-gray-600 mt-1">
                 {order.customerTaxId && (<div>Cédula/RIF: {order.customerTaxId}</div>)}
-                {order.customerFiscalAddress && (<div>Dirección fiscal: {order.customerFiscalAddress}</div>)}
+                {order.customerFiscalAddress && (<div>Direccion fiscal: {order.customerFiscalAddress}</div>)}
               </div>
             )}
             {tipo !== 'factura' && order.payment && (
               <div className="text-gray-600 mt-1">
-                Pago: {order.payment.method} · {order.payment.currency}
-                {order.payment.reference ? ` · Ref: ${order.payment.reference}` : ''}
+                Pago: {order.payment.method} �- {order.payment.currency}
+                {order.payment.reference ? ` �- Ref: ${order.payment.reference}` : ''}
               </div>
             )}
             {tipo !== 'factura' && order.payment?.method === 'PAGO_MOVIL' && (
               <div className="text-gray-600 mt-1">
                 {order.payment.payerName && (<div>Titular: {order.payment.payerName}</div>)}
                 {order.payment.payerPhone && (<div>Teléfono: {order.payment.payerPhone}</div>)}
-                {order.payment.payerBank && (<div>Banco: {order.payment.payerBank}</div>)}
+                {order.payment.payerBank && (<div>BaNo.: {order.payment.payerBank}</div>)}
               </div>
             )}
           </div>
@@ -95,7 +95,7 @@ export default async function PrintSalePage({
 
         {order.shippingAddress && (
           <div className="mb-4 text-sm text-gray-700">
-            <div className="font-semibold">Dirección de envío</div>
+            <div className="font-semibold">Direccion de envío</div>
             <div>{order.shippingAddress.fullname}</div>
             <div>{order.shippingAddress.address1}{order.shippingAddress.address2 ? `, ${order.shippingAddress.address2}` : ''}</div>
             <div>{order.shippingAddress.city}, {order.shippingAddress.state}</div>
@@ -142,3 +142,5 @@ export default async function PrintSalePage({
   );
 }
 \n
+
+
