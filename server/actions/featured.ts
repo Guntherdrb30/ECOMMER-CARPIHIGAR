@@ -1,36 +1,59 @@
-'use server';
+"use server";
 
-import prisma from '@/lib/prisma';
-import { unstable_cache as unstableCache } from 'next/cache';
+import prisma from "@/lib/prisma";
+import { unstable_cache as unstableCache } from "next/cache";
 
 type Banner = { name: string; slug: string; href: string; image: string };
 
 async function computeBanners(): Promise<Banner[]> {
-  const slugs = ['carpinteria', 'hogar'];
+  const slugs = ["carpinteria", "hogar"] as const;
   const out: Banner[] = [];
   const windowKey = Math.floor(Date.now() / (2 * 60 * 60 * 1000)); // 2h window
+
+  // Read configured category banner URLs from settings, if any
+  let conf: { carp?: string; hogar?: string } = {};
+  try {
+    const settings = await prisma.siteSettings.findUnique({
+      where: { id: 1 },
+      select: { categoryBannerCarpinteriaUrl: true, categoryBannerHogarUrl: true },
+    });
+    conf.carp = (settings as any)?.categoryBannerCarpinteriaUrl || "";
+    conf.hogar = (settings as any)?.categoryBannerHogarUrl || "";
+  } catch {}
+
   for (const slug of slugs) {
     try {
-      const cat = await prisma.category.findUnique({ where: { slug }, select: { id: true, name: true, slug: true } });
+      const cat = await prisma.category.findUnique({
+        where: { slug },
+        select: { id: true, name: true, slug: true },
+      });
+      const href = `/productos?categoria=${slug}`;
+      const fallbackName = slug === "hogar" ? "Hogar" : "Carpintería";
       if (!cat) {
-        out.push({ name: slug === 'hogar' ? 'Hogar' : 'Carpintería', slug, href: `/productos?categoria=${slug}`, image: '' });
+        const configured = slug === "hogar" ? conf.hogar || "" : conf.carp || "";
+        out.push({ name: fallbackName, slug, href, image: configured });
         continue;
       }
-      const prods = await prisma.product.findMany({
-        where: { categoryId: cat.id, NOT: { images: { isEmpty: true } } } as any,
-        select: { images: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-      });
-      let image = '';
-      if (prods.length) {
-        const salt = Array.from(slug).reduce((s, ch) => s + ch.charCodeAt(0), 0);
-        const idx = (windowKey + salt) % prods.length;
-        image = prods[idx].images[0] || '';
+
+      // Prefer configured image; fallback to sampled product image from that category
+      let image = slug === "hogar" ? conf.hogar || "" : conf.carp || "";
+      if (!image) {
+        const prods = await prisma.product.findMany({
+          where: { categoryId: cat.id, NOT: { images: { isEmpty: true } } } as any,
+          select: { images: true, createdAt: true },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        });
+        if (prods.length) {
+          const salt = Array.from(slug).reduce((s, ch) => s + ch.charCodeAt(0), 0);
+          const idx = (windowKey + salt) % prods.length;
+          image = prods[idx].images[0] || "";
+        }
       }
-      out.push({ name: cat.name || (slug === 'hogar' ? 'Hogar' : 'Carpintería'), slug, href: `/productos?categoria=${slug}`, image });
+      out.push({ name: cat.name || fallbackName, slug, href, image });
     } catch {
-      out.push({ name: slug === 'hogar' ? 'Hogar' : 'Carpintería', slug, href: `/productos?categoria=${slug}`, image: '' });
+      const configured = slug === "hogar" ? conf.hogar || "" : conf.carp || "";
+      out.push({ name: slug === "hogar" ? "Hogar" : "Carpintería", slug, href: `/productos?categoria=${slug}`, image: configured });
     }
   }
   return out;
@@ -40,4 +63,9 @@ export async function getFeaturedCategoryBannersNoCache(): Promise<Banner[]> {
   return computeBanners();
 }
 
-export const getFeaturedCategoryBanners = unstableCache(computeBanners, ['featured-category-banners-v3'], { revalidate: 2 * 60 * 60, tags: ['featured-category-banners'] });
+export const getFeaturedCategoryBanners = unstableCache(
+  computeBanners,
+  ["featured-category-banners-v4"],
+  { revalidate: 2 * 60 * 60, tags: ["featured-category-banners"] }
+);
+

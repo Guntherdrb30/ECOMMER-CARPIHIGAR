@@ -46,6 +46,8 @@ export default async function AdminSettingsPage() {
                 sellerCommissionPercent: parseFloat(String(formData.get('sellerCommissionPercent') || '5')),
                 instagramHandle: String((formData.get('instagramHandle') as string) || '').replace(/^@+/, '').trim() || undefined,
                 tiktokHandle: String((formData.get('tiktokHandle') as string) || '').replace(/^@+/, '').trim() || undefined,
+                categoryBannerCarpinteriaUrl: (formData.get('categoryBannerCarpinteriaUrl') as string) || undefined,
+                categoryBannerHogarUrl: (formData.get('categoryBannerHogarUrl') as string) || undefined,
             };
             await updateSettings(data);
             const { redirect } = await import('next/navigation');
@@ -145,6 +147,22 @@ export default async function AdminSettingsPage() {
               <p className="text-xs text-gray-500">Recomendado: 5000 (5s). Con 1 sola imagen, no aplica.</p>
             </div>
             <HeroCarouselEditor defaultUrls={((settings as any).homeHeroUrls || []) as string[]} />
+          </div>
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-2">Categorías del Home</h3>
+            <p className="text-sm text-gray-600 mb-3">Carga imágenes de fondo para las tarjetas de "Carpintería" y "Hogar".</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700">Imagen para Carpintería</label>
+                <HeroMediaUploader targetInputName="categoryBannerCarpinteriaUrl" defaultUrl={(settings as any).categoryBannerCarpinteriaUrl || ''} />
+                <input type="hidden" name="categoryBannerCarpinteriaUrl" defaultValue={(settings as any).categoryBannerCarpinteriaUrl || ''} />
+              </div>
+              <div>
+                <label className="block text-gray-700">Imagen para Hogar</label>
+                <HeroMediaUploader targetInputName="categoryBannerHogarUrl" defaultUrl={(settings as any).categoryBannerHogarUrl || ''} />
+                <input type="hidden" name="categoryBannerHogarUrl" defaultValue={(settings as any).categoryBannerHogarUrl || ''} />
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>

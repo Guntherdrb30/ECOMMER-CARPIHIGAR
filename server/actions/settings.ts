@@ -14,7 +14,9 @@ async function ensureSiteSettingsColumns() {
       'ADD COLUMN IF NOT EXISTS "defaultMarginWholesalePct" DECIMAL(5,2), ' +
       'ADD COLUMN IF NOT EXISTS "heroAutoplayMs" INTEGER, ' +
       'ADD COLUMN IF NOT EXISTS "instagramHandle" TEXT, ' +
-      'ADD COLUMN IF NOT EXISTS "tiktokHandle" TEXT'
+      'ADD COLUMN IF NOT EXISTS "tiktokHandle" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "categoryBannerCarpinteriaUrl" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "categoryBannerHogarUrl" TEXT'
     );
   } catch {}
 }
@@ -58,6 +60,8 @@ export async function getSettings() {
       defaultMarginAllyPct: (settings as any).defaultMarginAllyPct?.toNumber?.() ?? 30,
       defaultMarginWholesalePct: (settings as any).defaultMarginWholesalePct?.toNumber?.() ?? 20,
       heroAutoplayMs: Number((settings as any).heroAutoplayMs ?? 5000) || 5000,
+      categoryBannerCarpinteriaUrl: (settings as any).categoryBannerCarpinteriaUrl || '',
+      categoryBannerHogarUrl: (settings as any).categoryBannerHogarUrl || '',
     } as any;
   } catch (err) {
     console.warn('[getSettings] DB not reachable, using defaults.', err);
@@ -79,6 +83,8 @@ export async function getSettings() {
       defaultMarginClientPct: 40,
       defaultMarginAllyPct: 30,
       defaultMarginWholesalePct: 20,
+      categoryBannerCarpinteriaUrl: '',
+      categoryBannerHogarUrl: '',
     } as any;
   }
 }
@@ -109,6 +115,8 @@ export async function updateSettings(data: any) {
     ...data,
     homeHeroUrls: urlsIn,
     heroAutoplayMs,
+    categoryBannerCarpinteriaUrl: (data as any).categoryBannerCarpinteriaUrl || null,
+    categoryBannerHogarUrl: (data as any).categoryBannerHogarUrl || null,
   } as any;
 
   const settings = await prisma.siteSettings.update({
