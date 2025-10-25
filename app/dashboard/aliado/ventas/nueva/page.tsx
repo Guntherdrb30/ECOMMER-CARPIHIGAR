@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { createOfflineSale } from "@/server/actions/sales";
 import { getAllyQuoteById } from "@/server/actions/quotes";
 
-export default async function NuevaVentaAliadoPage({ searchParams }: { searchParams?: Promise<{ fromQuote?: string }> }) {
+export default async function NuevaVentaAliadoPage({ searchParams }: { searchParams?: Promise<{ fromQuote?: string; shipping?: string }> }) {
   const sp = (await searchParams) || ({} as any);
   const [settings, session] = await Promise.all([
     getSettings(),
@@ -28,14 +28,17 @@ export default async function NuevaVentaAliadoPage({ searchParams }: { searchPar
       });
     } catch {}
   }
+  const initialShipping = (() => {
+    const s = String((sp as any).shipping || '').toUpperCase();
+    return (s === 'RETIRO_TIENDA' || s === 'DELIVERY') ? (s as any) : '';
+  })();
 
   return (
     <div className="container mx-auto p-4 space-y-4">
       <h1 className="text-2xl font-bold">Nueva Venta (Aliado)</h1>
       <div className="bg-white p-4 rounded-lg shadow">
-        <OfflineSaleForm sellers={[me]} commissionPercent={commission} ivaPercent={iva} tasaVES={tasa} action={createOfflineSale} initialItems={initialItems} fixedSellerId={me.id} />
+        <OfflineSaleForm sellers={[me]} commissionPercent={commission} ivaPercent={iva} tasaVES={tasa} action={createOfflineSale} initialItems={initialItems} fixedSellerId={me.id} initialShippingLocalOption={initialShipping} />
       </div>
     </div>
   );
 }
-

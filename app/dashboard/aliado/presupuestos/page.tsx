@@ -1,6 +1,6 @@
 import { getMyAllyQuotes } from "@/server/actions/quotes";
 
-export default async function AliadoPresupuestosPage({ searchParams }: { searchParams?: Promise<{ q?: string; estado?: string; desde?: string; hasta?: string }> }) {
+export default async function AliadoPresupuestosPage({ searchParams }: { searchParams?: Promise<{ message?: string; q?: string; estado?: string; desde?: string; hasta?: string }> }) {
   const sp = (await searchParams) || ({} as any);
   const q = String((sp as any).q || '');
   const estado = String((sp as any).estado || '');
@@ -13,6 +13,9 @@ export default async function AliadoPresupuestosPage({ searchParams }: { searchP
         <h1 className="text-2xl font-bold">Mis Presupuestos</h1>
         <a href="/dashboard/aliado/presupuestos/nuevo" className="bg-blue-600 text-white px-3 py-1 rounded">Nuevo Presupuesto</a>
       </div>
+      {(sp as any).message && (
+        <div className="border border-green-200 bg-green-50 text-green-800 px-3 py-2 rounded">{(sp as any).message}</div>
+      )}
 
       <form method="get" className="bg-white p-4 rounded-lg shadow grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
         <div>
@@ -80,4 +83,3 @@ export default async function AliadoPresupuestosPage({ searchParams }: { searchP
     </div>
   );
 }
-

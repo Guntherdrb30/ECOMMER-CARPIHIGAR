@@ -1,9 +1,11 @@
 import { getAllyQuoteById, updateQuoteStatusByForm } from "@/server/actions/quotes";
+import { getLatestAddressByUserId } from "@/server/actions/addresses";
 import Link from "next/link";
 
 export default async function VerPresupuestoAliadoPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams?: Promise<{ message?: string }> }) {
   const { id } = await params;
   const [quote, sp] = await Promise.all([ getAllyQuoteById(id), (async () => (await searchParams) || {})() ]);
+  const latestAddr = await getLatestAddressByUserId(quote.userId);
   const message = (sp as any).message;
   const allySubtotal = quote.items.reduce((a: number, it: any) => a + Number((it.product?.priceAllyUSD ?? it.priceUSD)) * Number(it.quantity), 0);
   const allyIva = allySubtotal * (Number(quote.ivaPercent) / 100);
@@ -36,7 +38,7 @@ export default async function VerPresupuestoAliadoPage({ params, searchParams }:
 
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-bold mb-2">Acciones</h2>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-end">
           <form action={updateQuoteStatusByForm}>
             <input type="hidden" name="quoteId" value={quote.id} />
             <input type="hidden" name="status" value="ENVIADO" />
@@ -55,7 +57,33 @@ export default async function VerPresupuestoAliadoPage({ params, searchParams }:
             <input type="hidden" name="backTo" value={`/dashboard/aliado/presupuestos/${quote.id}`} />
             <button className="px-3 py-1 rounded border">Rechazar</button>
           </form>
+          <form method="get" action="/dashboard/aliado/ventas/nueva" className="flex items-center gap-2">
+            <input type="hidden" name="fromQuote" value={quote.id} />
+            <label className="text-sm text-gray-700">Envío</label>
+            <select name="shipping" className="border rounded px-2 py-1 text-sm">
+              <option value="">Automático</option>
+              <option value="RETIRO_TIENDA">Retiro en tienda</option>
+              <option value="DELIVERY">Delivery</option>
+            </select>
+            <button className="px-3 py-1 rounded border bg-green-600 text-white" type="submit">Hacer venta</button>
+          </form>
         </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-lg shadow">
+        <h2 className="text-lg font-bold mb-2">Datos de envío</h2>
+        {latestAddr ? (
+          <div className="text-sm text-gray-800">
+            <div className="font-semibold">{latestAddr.fullname}</div>
+            <div>{latestAddr.address1}{latestAddr.address2 ? `, ${latestAddr.address2}` : ''}</div>
+            <div>{latestAddr.city}, {latestAddr.state}</div>
+            {latestAddr.phone && <div>Teléfono: {latestAddr.phone}</div>}
+            {latestAddr.zone && <div>Zona: {latestAddr.zone}</div>}
+            {latestAddr.notes && <div className="text-gray-600">Notas: {latestAddr.notes}</div>}
+          </div>
+        ) : (
+          <div className="text-sm text-gray-600">Sin dirección guardada aún. Puedes indicarla al crear la venta o al crear el presupuesto.</div>
+        )}
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow">

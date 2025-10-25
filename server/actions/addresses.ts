@@ -125,3 +125,17 @@ export async function saveAddressSA(_prevState: any, formData: FormData) {
   return saveAddress(formData);
 }
 
+// Admin/Vendedor/Aliado: listar direcciones por userId (para presupuestos/ventas offline)
+export async function getAddressesByUserId(userId: string) {
+  const session = await getServerSession(authOptions);
+  const role = String((session?.user as any)?.role || '');
+  if (!['ADMIN','VENDEDOR','ALIADO'].includes(role)) throw new Error('Not authorized');
+  if (!userId) return [];
+  return prisma.address.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+}
+
+export async function getLatestAddressByUserId(userId: string) {
+  const addrs = await getAddressesByUserId(userId);
+  return addrs[0] || null;
+}
+

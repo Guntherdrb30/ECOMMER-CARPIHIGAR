@@ -58,8 +58,10 @@ export async function createQuote(formData: FormData) {
   if ((session?.user as any)?.role !== 'ADMIN' && (session?.user as any)?.role !== 'VENDEDOR' && (session?.user as any)?.role !== 'ALIADO') {
     throw new Error('Not authorized');
   }
+  const role = String((session?.user as any)?.role || '');
   const userEmail = String(formData.get('customerEmail') || '');
   const userName = String(formData.get('customerName') || '');
+  const userPhone = String(formData.get('customerPhone') || '');
   let sellerId = String(formData.get('sellerId') || '');
   const itemsJson = String(formData.get('items') || '[]');
   const items: Array<{ productId: string; name: string; priceUSD: number; quantity: number } > = JSON.parse(itemsJson || '[]');
@@ -69,13 +71,49 @@ export async function createQuote(formData: FormData) {
   const customerFiscalAddress = (String(formData.get('customerFiscalAddress') || '').trim() || null);
   const notes = String(formData.get('notes') || '');
 
-  if (!items.length) redirect('/dashboard/admin/presupuestos/nuevo?error=Debes%20agregar%20al%20menos%20un%20producto');
+  if (!items.length) {
+    if (role === 'ALIADO') {
+      redirect('/dashboard/aliado/presupuestos/nuevo?error=' + encodeURIComponent('Debes agregar al menos un producto'));
+    }
+    redirect('/dashboard/admin/presupuestos/nuevo?error=' + encodeURIComponent('Debes agregar al menos un producto'));
+  }
+  if (!userPhone.trim()) {
+    if (role === 'ALIADO') {
+      redirect('/dashboard/aliado/presupuestos/nuevo?error=' + encodeURIComponent('El teléfono del cliente es obligatorio'));
+    }
+    redirect('/dashboard/admin/presupuestos/nuevo?error=' + encodeURIComponent('El teléfono del cliente es obligatorio'));
+  }
 
   // Ensure customer exists or create a placeholder
   let user = await prisma.user.findUnique({ where: { email: userEmail } });
   if (!user) {
     user = await prisma.user.create({ data: { email: userEmail || `walkin_${Date.now()}@local`, password: '', name: userName || 'Cliente Presupuesto', role: 'CLIENTE', alliedStatus: 'NONE' } });
   }
+  // Update phone if provided
+  try {
+    if (userPhone && user.phone !== userPhone) {
+      await prisma.user.update({ where: { id: user.id }, data: { phone: userPhone } });
+    }
+  } catch {}
+
+  // Optionally save shipping address to user's address book
+  try {
+    const shippingAddressId = String(formData.get('shippingAddressId') || '');
+    if (shippingAddressId) {
+      const addr = await prisma.address.findFirst({ where: { id: shippingAddressId, userId: user.id } });
+      // If found, nothing else to do
+    } else {
+      const addrState = String(formData.get('addr_state') || '').trim();
+      const addrCity = String(formData.get('addr_city') || '').trim();
+      const addr1 = String(formData.get('addr_address1') || '').trim();
+      if (addrState && addrCity && addr1) {
+        const addrZone = String(formData.get('addr_zone') || '').trim() || null;
+        const addr2 = String(formData.get('addr_address2') || '').trim() || null;
+        const addrNotes = String(formData.get('addr_notes') || '').trim() || null;
+        await prisma.address.create({ data: { userId: user.id, fullname: user.name || userEmail || 'Cliente', phone: userPhone || (user.phone || ''), state: addrState, city: addrCity, zone: addrZone as any, address1: addr1, address2: addr2 as any, notes: addrNotes as any } });
+      }
+    }
+  } catch {}
 
   const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
   const ivaPercent = ivaPercentForm !== null ? Number(ivaPercentForm) : Number(settings?.ivaPercent || 16);
@@ -86,7 +124,7 @@ export async function createQuote(formData: FormData) {
   const totalVES = totalUSD * tasaVES;
 
   // For ALIADO role, force sellerId to be the current user
-  if ((session?.user as any)?.role === 'ALIADO') {
+  if (role === 'ALIADO') {
     sellerId = String((session?.user as any)?.id || '') || null as any;
   }
 
@@ -108,7 +146,12 @@ export async function createQuote(formData: FormData) {
   });
 
   try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'QUOTE_CREATE', details: quote.id } }); } catch {}
-  revalidatePath('/dashboard/admin/presupuestos');
+  // Ensure both dashboards reflect the new quote
+  try { revalidatePath('/dashboard/admin/presupuestos'); } catch {}
+  try { revalidatePath('/dashboard/aliado/presupuestos'); } catch {}
+  if (role === 'ALIADO') {
+    redirect(`/dashboard/aliado/presupuestos?message=${encodeURIComponent('Presupuesto creado')}`);
+  }
   redirect(`/dashboard/admin/presupuestos/${quote.id}?message=${encodeURIComponent('Presupuesto creado')}`);
 }
 

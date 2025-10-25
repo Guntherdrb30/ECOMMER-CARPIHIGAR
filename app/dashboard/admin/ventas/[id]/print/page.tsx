@@ -93,6 +93,16 @@ export default async function PrintSalePage({
           </div>
         </div>
 
+        {order.shippingAddress && (
+          <div className="mb-4 text-sm text-gray-700">
+            <div className="font-semibold">Dirección de envío</div>
+            <div>{order.shippingAddress.fullname}</div>
+            <div>{order.shippingAddress.address1}{order.shippingAddress.address2 ? `, ${order.shippingAddress.address2}` : ''}</div>
+            <div>{order.shippingAddress.city}, {order.shippingAddress.state}</div>
+            {order.shippingAddress.phone && <div>Tel: {order.shippingAddress.phone}</div>}
+          </div>
+        )}
+
         <table className="w-full table-auto text-sm mb-4">
           <thead>
             <tr className="bg-gray-100">
@@ -131,3 +141,4 @@ export default async function PrintSalePage({
     </div>
   );
 }
+\n
