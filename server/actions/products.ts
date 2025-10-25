@@ -621,7 +621,7 @@ export async function getProductPageData(slug: string) {
 }
 
 // Top-selling products for home trends section
-export async function getTrendingProducts(limit = 9, daysBack = 120) {
+export async function getTrendingProducts(limit = 9, daysBack = 60) {
   try {
     const to = new Date();
     const from = new Date(to.getTime() - daysBack * 24 * 60 * 60 * 1000);
@@ -639,7 +639,10 @@ export async function getTrendingProducts(limit = 9, daysBack = 120) {
       curr.revenueUSD += rev;
       agg.set(key, curr);
     }
-    const sorted = Array.from(agg.entries()).sort((a, b) => b[1].revenueUSD - a[1].revenueUSD).slice(0, limit);
+    // Sort by quantity sold primarily ("más se venden"), fallback by revenue
+    const sorted = Array.from(agg.entries())
+      .sort((a, b) => (b[1].qty - a[1].qty) || (b[1].revenueUSD - a[1].revenueUSD))
+      .slice(0, limit);
     const ids = sorted.map(([id]) => id);
     if (!ids.length) return [] as any[];
     const products = await prisma.product.findMany({ where: { id: { in: ids } }, include: { category: true } });

@@ -4,7 +4,7 @@ import ProductCard from '@/components/product-card';
 
 export default async function TrendingProducts() {
   const [products, settings] = await Promise.all([
-    getTrendingProducts(9, 120),
+    getTrendingProducts(9, 60),
     getSettings(),
   ]);
 
@@ -23,4 +23,3 @@ export default async function TrendingProducts() {
     </section>
   );
 }
-
