@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 
 // Best-effort: ensure SiteSettings has new columns in DBs that missed migrations
@@ -127,6 +127,7 @@ export async function updateSettings(data: any) {
   revalidatePath('/dashboard/admin/ajustes');
   try { revalidatePath('/', 'layout' as any); } catch {}
   try { revalidatePath('/'); } catch {}
+  try { revalidateTag('featured-category-banners'); } catch {}
   return settings;
 }
 
