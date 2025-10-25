@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { useSession, signOut } from 'next-auth/react';
 import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X } from 'lucide-react';
+import ProductLiveSearch from '@/components/product-live-search';
 
 type HeaderProps = {
   logoUrl?: string;
@@ -77,6 +78,10 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
             <span className="text-2xl md:text-3xl font-bold text-brand">{brandName || 'Carpihogar.ai'}</span>
           )}
         </Link>
+        {/* Search bar visible on md+ */}
+        <div className="hidden md:block flex-1 max-w-xl mx-2">
+          <ProductLiveSearch placeholder="Buscar productos..." />
+        </div>
         <nav className="hidden lg:flex items-center space-x-4 xl:space-x-6 ml-auto">
           {allLinks.filter(l => l.href !== '/carrito').map((link) => (
             <Link key={link.href} href={link.href} className="relative text-gray-600 hover:text-brand transition-colors px-2 py-1 whitespace-nowrap text-sm xl:text-base">
@@ -127,7 +132,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
             </button>
           )}
         </nav>
-        <div className="lg:hidden ml-auto">
+        <div className="md:hidden ml-auto">
           <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600 hover:text-brand focus:outline-none">
             {isOpen ? <X /> : <Menu />}
           </button>
@@ -135,6 +140,9 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
       </div>
       {isOpen && (
         <div className="md:hidden bg-white px-4 pb-4">
+          <div className="py-3">
+            <ProductLiveSearch placeholder="Buscar productos..." />
+          </div>
           <nav className="flex flex-col space-y-4">
             {allLinks.filter(l => l.href !== '/carrito').map((link) => (
               <Link key={link.href} href={link.href} className="relative text-gray-600 hover:text-brand transition-colors py-2" onClick={() => setIsOpen(false)}>

@@ -43,11 +43,11 @@ export default async function ProductosPage({
 
       {/* Filtros */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-8 flex flex-wrap items-center gap-4">
-        <div className="flex-grow">
-          <label htmlFor="search" className="sr-only">Búsqueda</label>
-          <input type="text" id="search" placeholder="Buscar productos..." className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand" />
+        <div className="flex-grow min-w-[280px]">
+          {/* Buscador en vivo con sugerencias */}
+          <ProductLiveSearch placeholder="Buscar productos..." defaultQuery={q} />
         </div>
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 min-w-[240px]">
           <label htmlFor="category" className="sr-only">Categoría</label>
           <CategoryCombobox categories={categories as any} value={categorySlug || ''} />
         </div>
@@ -66,7 +66,7 @@ export default async function ProductosPage({
           ) : (
             <div className="flex flex-wrap gap-2">
               {topLevel.map((c: any) => (
-                <Link key={c.id} href={`/productos?categoria=${c.slug}`} className={`inline-flex items-center px-3 py-1.5 rounded-full border text-sm transition-colors ${c.slug===selectedCategory.slug ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border-gray-200'}`}>{c.name}</Link>
+                <Link key={c.id} href={`/productos?categoria=${c.slug}`} className={`inline-flex items-center px-3 py-1.5 rounded-full border text-sm transition-colors ${c.slug===selectedCategory?.slug ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border-gray-200'}`}>{c.name}</Link>
               ))}
             </div>
           )
