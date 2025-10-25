@@ -135,3 +135,26 @@ export async function deleteCategoryByForm(formData: FormData) {
         redirect('/dashboard/admin/categorias?error=No%20se%20pudo%20eliminar%20la%20categor%C3%ADa');
     }
 }
+
+// Root categories with a representative image and quick children for the grid UI
+export async function getCategoryGridData() {
+    // Fetch all root categories
+    const roots = await prisma.category.findMany({ where: { parentId: null }, orderBy: { name: 'asc' }, include: { children: { orderBy: { name: 'asc' } } } });
+    // For each root, try to find a representative image from its latest products
+    const out: Array<{ id: string; name: string; slug: string; image: string; productCount: number; children: Array<{ id: string; name: string; slug: string }> }> = [];
+    for (const r of roots) {
+        let image = '';
+        try {
+            const prods = await prisma.product.findMany({ where: { categoryId: r.id, NOT: { images: { isEmpty: true } } } as any, select: { images: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 30 });
+            if (prods.length) {
+                image = prods[0].images?.[0] || '';
+            }
+        } catch {}
+        let productCount = 0;
+        try {
+            productCount = await prisma.product.count({ where: { categoryId: r.id } });
+        } catch {}
+        out.push({ id: r.id, name: r.name, slug: r.slug, image, productCount, children: (r.children || []).slice(0, 6).map((c) => ({ id: c.id, name: c.name, slug: c.slug })) });
+    }
+    return out;
+}
