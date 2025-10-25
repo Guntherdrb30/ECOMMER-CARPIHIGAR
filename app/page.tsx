@@ -1,6 +1,7 @@
 import HeroCarousel from '@/components/hero-carousel-simple';
 import FeaturedCategories from '@/components/featured-categories';
 import NewProducts from '@/components/new-products';
+import TrendingProducts from '@/components/trending-products';
 import { getSettings } from '@/server/actions/settings';
 
 export default async function Home() {
@@ -13,6 +14,7 @@ export default async function Home() {
       <HeroCarousel images={images} autoplayMs={Number((settings as any).heroAutoplayMs || 5000)} />
       <FeaturedCategories />
       <NewProducts />
+      <TrendingProducts />
     </div>
   );
 }

@@ -619,3 +619,53 @@ export async function getProductPageData(slug: string) {
     relatedProducts: serializableRelatedProducts,
   };
 }
+
+// Top-selling products for home trends section
+export async function getTrendingProducts(limit = 9, daysBack = 120) {
+  try {
+    const to = new Date();
+    const from = new Date(to.getTime() - daysBack * 24 * 60 * 60 * 1000);
+    const items = await prisma.orderItem.findMany({
+      where: { order: { createdAt: { gte: from, lte: to } } },
+      select: { productId: true, priceUSD: true, quantity: true },
+    });
+    const agg = new Map<string, { qty: number; revenueUSD: number }>();
+    for (const it of items) {
+      const key = it.productId;
+      const unit = Number(it.priceUSD || 0);
+      const rev = unit * Number(it.quantity || 0);
+      const curr = agg.get(key) || { qty: 0, revenueUSD: 0 };
+      curr.qty += Number(it.quantity || 0);
+      curr.revenueUSD += rev;
+      agg.set(key, curr);
+    }
+    const sorted = Array.from(agg.entries()).sort((a, b) => b[1].revenueUSD - a[1].revenueUSD).slice(0, limit);
+    const ids = sorted.map(([id]) => id);
+    if (!ids.length) return [] as any[];
+    const products = await prisma.product.findMany({ where: { id: { in: ids } }, include: { category: true } });
+    // Preserve order by revenue
+    const order = new Map(ids.map((id, idx) => [id, idx]));
+    const dec = (x: any, fb: number | null = null) => {
+      try {
+        if (x == null) return fb;
+        if (typeof x === 'number') return x;
+        if (typeof x?.toNumber === 'function') return x.toNumber();
+        const n = Number(x);
+        return isNaN(n) ? fb : n;
+      } catch { return fb; }
+    };
+    return products
+      .map((p: any) => ({
+        ...p,
+        images: Array.isArray(p.images) ? p.images : [],
+        priceUSD: dec(p.priceUSD, 0)!,
+        priceAllyUSD: dec(p.priceAllyUSD, null),
+        avgCost: dec(p.avgCost, null),
+        lastCost: dec(p.lastCost, null),
+      }))
+      .sort((a: any, b: any) => (order.get(a.id)! - order.get(b.id)!));
+  } catch (e) {
+    console.warn('[getTrendingProducts] failed', e);
+    return [] as any[];
+  }
+}
