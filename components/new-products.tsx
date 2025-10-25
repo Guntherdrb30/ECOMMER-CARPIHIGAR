@@ -1,6 +1,6 @@
 import { getProducts } from '@/server/actions/products';
 import { getSettings } from '@/server/actions/settings';
-import RelatedProductsCarousel from './related-products-carousel';
+import ProductCard from '@/components/product-card';
 
 export default async function NewProducts() {
   const [newProducts, settings] = await Promise.all([
@@ -38,7 +38,11 @@ export default async function NewProducts() {
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <h2 className="text-3xl font-bold text-center mb-8">Nuevos Productos</h2>
-        <RelatedProductsCarousel products={serializableProducts} settings={serializableSettings} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
+          {serializableProducts.slice(0, 20).map((product: any) => (
+            <ProductCard key={product.id} product={product} tasa={(serializableSettings as any).tasaVES} compact isWishlisted={false} />
+          ))}
+        </div>
       </div>
     </section>
   );

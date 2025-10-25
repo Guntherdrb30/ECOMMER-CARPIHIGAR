@@ -15,7 +15,7 @@ type ProductWithCategory = Product & {
     } | null;
 };
 
-const ProductCard = ({ product, tasa, isWishlisted }: { product: ProductWithCategory, tasa: number, isWishlisted: boolean }) => {
+const ProductCard = ({ product, tasa, isWishlisted = false, compact = false }: { product: ProductWithCategory, tasa: number, isWishlisted?: boolean, compact?: boolean }) => {
   const [liveStock, setLiveStock] = useState<number | null>(null);
   const stock = useMemo(() => (liveStock ?? product.stock), [liveStock, product.stock]);
 
@@ -46,10 +46,10 @@ const ProductCard = ({ product, tasa, isWishlisted }: { product: ProductWithCate
   };
 
   return (
-    <div className="relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow group">
+    <div className={`relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow group ${compact ? 'text-sm' : ''}`}>
       <WishlistButton productId={product.id} isInitiallyWishlisted={isWishlisted} />
       <Link href={`/productos/${product.slug}`}>
-        <div className="relative h-72 w-full overflow-hidden">
+        <div className={`relative w-full overflow-hidden ${compact ? 'h-44' : 'h-72'}`}>
           <div
             style={{ backgroundImage: `url(${product.images[0] || 'https://via.placeholder.com/400'})` }}
             className={`bg-gray-200 h-full w-full bg-cover bg-center transition-transform duration-300 group-hover:scale-105 ${stock <= 0 ? 'opacity-60' : ''}`}
@@ -61,18 +61,18 @@ const ProductCard = ({ product, tasa, isWishlisted }: { product: ProductWithCate
           )}
         </div>
       </Link>
-      <div className="p-4">
+      <div className={`${compact ? 'p-3' : 'p-4'}`}>
         <Link href={`/productos/${product.slug}`} className="block">
-          <h3 className="text-lg font-bold text-gray-800 truncate">{product.name}</h3>
+          <h3 className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-gray-800 truncate`}>{product.name}</h3>
         </Link>
         <div className="mt-2">
-          <Price priceUSD={product.priceUSD} tasa={tasa} moneda="USD" className="text-xl font-bold text-gray-900" />
-          <Price priceUSD={product.priceUSD} tasa={tasa} moneda="VES" className="text-sm text-gray-600 block" />
+          <Price priceUSD={product.priceUSD} tasa={tasa} moneda="USD" className={`${compact ? 'text-base' : 'text-xl'} font-bold text-gray-900`} />
+          <Price priceUSD={product.priceUSD} tasa={tasa} moneda="VES" className={`${compact ? 'text-xs' : 'text-sm'} text-gray-600 block`} />
         </div>
         <button
           onClick={onAddToCart}
           disabled={stock <= 0}
-          className={`mt-3 w-full rounded-md py-2 text-sm font-semibold ${stock > 0 ? 'bg-brand text-white hover:bg-opacity-90' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
+          className={`mt-3 w-full rounded-md ${compact ? 'py-1 text-xs' : 'py-2 text-sm'} font-semibold ${stock > 0 ? 'bg-brand text-white hover:bg-opacity-90' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
         >
           {stock > 0 ? 'Agregar al Carrito' : 'Agotado'}
         </button>
