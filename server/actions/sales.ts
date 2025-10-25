@@ -251,6 +251,37 @@ export async function createOfflineSale(formData: FormData) {
   try { revalidatePath('/dashboard/admin/ventas'); } catch {}
   try { revalidatePath('/dashboard/aliado/ventas'); } catch {}
   const backTo = role === 'ALIADO' ? '/dashboard/aliado/ventas' : '/dashboard/admin/ventas';
-  redirect(`${backTo}?message=${encodeURIComponent(successMessage)}`);
+  redirect(`${backTo}?message=${encodeURIComponent(successMessage)}&orderId=${encodeURIComponent(order.id)}`);
+}
+
+export async function sendOrderWhatsAppByForm(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  const role = String((session?.user as any)?.role || '');
+  if (!['ADMIN','VENDEDOR','ALIADO'].includes(role)) throw new Error('Not authorized');
+  const orderId = String(formData.get('orderId') || '');
+  const backToDefault = role === 'ALIADO' ? '/dashboard/aliado/ventas' : '/dashboard/admin/ventas';
+  const backTo = String(formData.get('backTo') || '') || backToDefault;
+  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { user: true } });
+  if (!order) redirect(`${backTo}?message=${encodeURIComponent('Orden no encontrada')}`);
+  if (role === 'ALIADO') {
+    const myId = String((session?.user as any)?.id || '');
+    if (String(order.sellerId || '') !== myId) throw new Error('Not authorized');
+  }
+  const phone = String((order.user as any)?.phone || '') || '';
+  if (!phone) redirect(`${backTo}?message=${encodeURIComponent('El cliente no tiene teléfono registrado')}`);
+  let msg = 'WhatsApp enviado';
+  try {
+    const { sendWhatsAppText } = await import('@/lib/whatsapp');
+    const brand = (await prisma.siteSettings.findUnique({ where: { id: 1 } }))?.brandName || 'Carpihogar';
+    const totalTxt = `$${Number(order.totalUSD).toFixed(2)}`;
+    const code = order.id.slice(-6);
+    const body = `Hola ${order.user?.name || 'cliente'}!\nTu recibo ${code} ha sido generado.\nTotal: ${totalTxt}.\nGracias por tu compra en ${brand}!`;
+    const res = await sendWhatsAppText(phone, body);
+    if (!res.ok) msg = 'No se pudo enviar por WhatsApp';
+    try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'WHATSAPP_RECEIPT_SENT_MANUAL', details: `${order.id}:${phone}:${res.ok ? 'OK' : ('ERR ' + (res.error || ''))}` } }); } catch {}
+  } catch {
+    msg = 'No se pudo enviar por WhatsApp';
+  }
+  redirect(`${backTo}?message=${encodeURIComponent(msg)}&orderId=${encodeURIComponent(orderId)}`);
 }
 
