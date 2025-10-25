@@ -42,7 +42,17 @@ export default async function VentasAliadoPage({ searchParams }: { searchParams?
                 <tr key={o.id}>
                   <td className="border px-3 py-2">{o.id.slice(-6)}</td>
                   <td className="border px-3 py-2">{o.user?.name || o.user?.email}</td>
-                  <td className="border px-3 py-2 text-center">{o.status}</td>
+                  <td className="border px-3 py-2 text-center">
+                    {o.payment?.status === 'RECHAZADO' ? (
+                      <span className="text-red-700 font-semibold">Pago rechazado</span>
+                    ) : (
+                      o.status === 'CONFIRMACION' || o.payment?.status === 'EN_REVISION' ? (
+                        <span className="text-red-700 font-semibold">Venta por verificar</span>
+                      ) : (
+                        <span className="text-green-700 font-semibold">Venta verificada</span>
+                      )
+                    )}
+                  </td>
                   <td className="border px-3 py-2 text-right">{Number(o.totalUSD).toFixed(2)}</td>
                   <td className="border px-3 py-2">{new Date(o.createdAt).toLocaleString()}</td>
                   <td className="border px-3 py-2 text-right">

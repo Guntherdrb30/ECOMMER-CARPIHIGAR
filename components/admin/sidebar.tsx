@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -12,12 +13,27 @@ export default function AdminSidebar() {
   const role = String((session?.user as any)?.role || '');
   const rootEmail = String(process.env.NEXT_PUBLIC_ROOT_EMAIL || process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
   const isRoot = role === 'ADMIN' && email === rootEmail;
+  const [allyPending, setAllyPending] = React.useState(0);
+
+  React.useEffect(() => {
+    let active = true;
+    fetch('/api/admin/ally-pending-count')
+      .then((r) => (r.ok ? r.json() : { count: 0 }))
+      .then((d) => {
+        if (active && typeof d?.count === 'number') setAllyPending(d.count);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const links = [
     { href: '/dashboard/admin', label: 'Resumen' },
     { href: '/dashboard/admin/productos', label: 'Productos' },
     { href: '/dashboard/admin/categorias', label: 'Categorías' },
     { href: '/dashboard/admin/ventas', label: 'Ventas' },
+    { href: '/dashboard/admin/ventas/aliados', label: 'Ventas Aliados (verificar)' },
     { href: '/dashboard/admin/cuentas-por-cobrar', label: 'Cuentas por Cobrar' },
     { href: '/dashboard/admin/inventario', label: 'Inventario' },
     { href: '/dashboard/admin/inventario/valuacion', label: 'Valuación' },
@@ -50,7 +66,14 @@ export default function AdminSidebar() {
                 active ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              {l.label}
+              <span className="inline-flex items-center gap-2">
+                <span>{l.label}</span>
+                {l.href === '/dashboard/admin/ventas/aliados' && allyPending > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[11px] px-1.5 min-w-[1.25rem]">
+                    {allyPending}
+                  </span>
+                )}
+              </span>
             </Link>
           );
         })}

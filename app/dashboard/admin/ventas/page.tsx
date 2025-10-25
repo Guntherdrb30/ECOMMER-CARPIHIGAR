@@ -1,4 +1,5 @@
 import { getSales, getCommissions, getSellers, markCommissionPaid } from "@/server/actions/sales";
+import { getAllyPendingSalesCount } from "@/server/actions/ally-admin";
 
 export default async function AdminSalesPage({ searchParams }: { searchParams?: Promise<{ sellerId?: string; message?: string; invoice?: string; cliente?: string; rif?: string }> }) {
   const sp = (await searchParams) || {} as any;
@@ -12,12 +13,20 @@ export default async function AdminSalesPage({ searchParams }: { searchParams?: 
     getCommissions({ sellerId: sellerId || undefined }),
     getSellers(),
   ]);
+  let allyPendingCount = 0;
+  try { allyPendingCount = await getAllyPendingSalesCount(); } catch {}
 
   return (
     <div className="container mx-auto p-4 space-y-4">
       <h1 className="text-2xl font-bold">Ventas</h1>
       {message && (
         <div className="border border-green-200 bg-green-50 text-green-800 px-3 py-2 rounded">{message}</div>
+      )}
+      {allyPendingCount > 0 && (
+        <div className="border border-amber-200 bg-amber-50 text-amber-800 px-3 py-2 rounded">
+          Hay {allyPendingCount} venta{allyPendingCount === 1 ? '' : 's'} de aliados por verificar.{' '}
+          <a href="/dashboard/admin/ventas/aliados" className="underline">Revisar ahora</a>
+        </div>
       )}
       <form method="get" className="bg-white p-4 rounded-lg shadow grid grid-cols-1 md:grid-cols-5 gap-3">
         <div className="md:col-span-1">

@@ -175,7 +175,7 @@ export async function createOfflineSale(formData: FormData) {
       tasaVES,
       totalUSD,
       totalVES,
-      status: (saleType === 'CONTADO' ? 'PAGADO' : 'PENDIENTE') as any,
+      status: ((role === 'ALIADO') ? ('CONFIRMACION' as any) : (saleType === 'CONTADO' ? ('PAGADO' as any) : ('PENDIENTE' as any))) as any,
       saleType: saleType as any,
       creditDueDate: creditDueDate as any,
       customerTaxId: customerTaxId as any,
@@ -193,7 +193,7 @@ export async function createOfflineSale(formData: FormData) {
   const method = validMethods.includes(paymentMethod) ? (paymentMethod as any) : ('ZELLE' as any);
   const currency = paymentCurrency === 'VES' ? ('VES' as any) : ('USD' as any);
   if (saleType === 'CONTADO') {
-    await prisma.payment.create({ data: { orderId: order.id, method, reference: paymentReference || null, status: 'APROBADO' as any, currency, payerName, payerPhone, payerBank } });
+    { const payStatus: any = (role === 'ALIADO') ? ('EN_REVISION' as any) : ('APROBADO' as any); await prisma.payment.create({ data: { orderId: order.id, method, reference: paymentReference || null, status: payStatus, currency, payerName, payerPhone, payerBank } }); }
   }
   if (saleType === 'CREDITO') {
     try {
@@ -284,4 +284,41 @@ export async function sendOrderWhatsAppByForm(formData: FormData) {
   }
   redirect(`${backTo}?message=${encodeURIComponent(msg)}&orderId=${encodeURIComponent(orderId)}`);
 }
+
+export async function approveAllySaleByForm(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const orderId = String(formData.get('orderId') || '');
+  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { payment: true } });
+  if (!order) throw new Error('Order not found');
+  if (order.payment) {
+    await prisma.payment.update({ where: { orderId: order.id }, data: { status: 'APROBADO' as any } });
+  }
+  const nextStatus: any = (order.saleType as any) === 'CREDITO' ? ('PENDIENTE' as any) : ('PAGADO' as any);
+  await prisma.order.update({ where: { id: order.id }, data: { status: nextStatus } });
+  try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'ALLY_SALE_APPROVED', details: order.id } }); } catch {}
+  try { revalidatePath('/dashboard/admin/ventas/aliados'); } catch {}
+  try { revalidatePath('/dashboard/admin/ventas'); } catch {}
+  try { revalidatePath('/dashboard/aliado/ventas'); } catch {}
+  redirect('/dashboard/admin/ventas/aliados?message=' + encodeURIComponent('Venta aprobada'));
+}
+
+export async function rejectAllySaleByForm(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const orderId = String(formData.get('orderId') || '');
+  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { payment: true } });
+  if (!order) throw new Error('Order not found');
+  if (order.payment) {
+    await prisma.payment.update({ where: { orderId: order.id }, data: { status: 'RECHAZADO' as any } });
+  }
+  await prisma.order.update({ where: { id: order.id }, data: { status: 'PENDIENTE' as any } });
+  try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'ALLY_SALE_REJECTED', details: order.id } }); } catch {}
+  try { revalidatePath('/dashboard/admin/ventas/aliados'); } catch {}
+  try { revalidatePath('/dashboard/admin/ventas'); } catch {}
+  try { revalidatePath('/dashboard/aliado/ventas'); } catch {}
+  redirect('/dashboard/admin/ventas/aliados?message=' + encodeURIComponent('Venta rechazada'));
+}
+
+
 
