@@ -1,15 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 type Item = { id: string; name: string; slug: string; image?: string; stock: number; priceUSD: number; sku?: string; code?: string };
 
 export default function ProductLiveSearch({ placeholder = 'Buscar productos...', defaultQuery = '' }: { placeholder?: string; defaultQuery?: string }) {
   const router = useRouter();
-  const sp = useSearchParams();
-  const initial = defaultQuery || sp.get('q') || '';
-  const [q, setQ] = useState(initial);
+  const [q, setQ] = useState(defaultQuery || '');
   const [items, setItems] = useState<Item[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<number>(-1);
