@@ -11,7 +11,7 @@ export default async function PrintSalePage({
 }) {
   const { id } = await params;
   const sp = (await searchParams) || {};
-  const tipo = (sp.tipo || 'recibo').toLowerCase(); // recibo | nota | factura
+  const tipo = (sp.tipo || 'recibo').toLowerCase();
 
   const [order, settings] = await Promise.all([
     getOrderById(id),
@@ -21,10 +21,8 @@ export default async function PrintSalePage({
   if (!order) return <div className="p-4">Venta no encontrada</div>;
 
   const moneda = ((sp.moneda as any) || (order as any)?.payment?.currency || 'USD').toUpperCase();
-
   const ivaPercent = Number(order.ivaPercent || (settings as any).ivaPercent || 16);
   const tasaVES = Number(order.tasaVES || (settings as any).tasaVES || 40);
-
   const subtotalUSD = Number(order.subtotalUSD);
   const ivaUSD = Number((subtotalUSD * ivaPercent) / 100);
   const totalUSD = Number(subtotalUSD + ivaUSD);
@@ -73,21 +71,21 @@ export default async function PrintSalePage({
             <div>{order.user?.name || order.user?.email}</div>
             {tipo === 'factura' && (
               <div className="text-gray-600 mt-1">
-                {order.customerTaxId && (<div>CÃ©dula/RIF: {order.customerTaxId}</div>)}
+                {order.customerTaxId && (<div>Cedula/RIF: {order.customerTaxId}</div>)}
                 {order.customerFiscalAddress && (<div>Direccion fiscal: {order.customerFiscalAddress}</div>)}
               </div>
             )}
             {tipo !== 'factura' && order.payment && (
               <div className="text-gray-600 mt-1">
-                Pago: {order.payment.method} Â- {order.payment.currency}
-                {order.payment.reference ? ` Â- Ref: ${order.payment.reference}` : ''}
+                Pago: {order.payment.method} - {order.payment.currency}
+                {order.payment.reference ? ` - Ref: ${order.payment.reference}` : ''}
               </div>
             )}
             {tipo !== 'factura' && order.payment?.method === 'PAGO_MOVIL' && (
               <div className="text-gray-600 mt-1">
                 {order.payment.payerName && (<div>Titular: {order.payment.payerName}</div>)}
-                {order.payment.payerPhone && (<div>TelÃ©fono: {order.payment.payerPhone}</div>)}
-                {order.payment.payerBank && (<div>BaNo.: {order.payment.payerBank}</div>)}
+                {order.payment.payerPhone && (<div>Telefono: {order.payment.payerPhone}</div>)}
+                {order.payment.payerBank && (<div>Banco: {order.payment.payerBank}</div>)}
               </div>
             )}
           </div>
@@ -95,7 +93,7 @@ export default async function PrintSalePage({
 
         {order.shippingAddress && (
           <div className="mb-4 text-sm text-gray-700">
-            <div className="font-semibold">Direccion de envÃ­o</div>
+            <div className="font-semibold">Direccion de envio</div>
             <div>{order.shippingAddress.fullname}</div>
             <div>{order.shippingAddress.address1}{order.shippingAddress.address2 ? `, ${order.shippingAddress.address2}` : ''}</div>
             <div>{order.shippingAddress.city}, {order.shippingAddress.state}</div>
@@ -141,6 +139,3 @@ export default async function PrintSalePage({
     </div>
   );
 }
-\n
-
-
