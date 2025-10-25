@@ -148,6 +148,15 @@ export async function getCategoryGridData() {
     type ChildOut = { id: string; name: string; slug: string; image: string; productCount: number };
     const out: Array<{ id: string; name: string; slug: string; image: string; productCount: number; children: ChildOut[] }> = [];
 
+    const windowMs = 6 * 60 * 60 * 1000; // 6 hours rotation window
+    const win = Math.floor(Date.now() / windowMs);
+
+    const pickIndex = (len: number, salt: string) => {
+        if (len <= 0) return 0;
+        const s = Array.from(salt).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+        return (win + s) % len;
+    };
+
     for (const r of roots) {
         // Root representative image from recent products
         let image = '';
@@ -158,7 +167,10 @@ export async function getCategoryGridData() {
                 orderBy: { createdAt: 'desc' },
                 take: 30,
             });
-            if (prods.length) image = prods[0].images?.[0] || '';
+            if (prods.length) {
+                const idx = pickIndex(prods.length, r.slug);
+                image = prods[idx].images?.[0] || '';
+            }
         } catch {}
         let productCount = 0;
         try { productCount = await prisma.product.count({ where: { categoryId: r.id } }); } catch {}
@@ -168,12 +180,16 @@ export async function getCategoryGridData() {
         for (const c of (r.children || [])) {
             let cimg = '';
             try {
-                const cp = await prisma.product.findFirst({
+                const cps = await prisma.product.findMany({
                     where: { categoryId: c.id, NOT: { images: { isEmpty: true } } } as any,
                     select: { images: true, createdAt: true },
                     orderBy: { createdAt: 'desc' },
+                    take: 20,
                 });
-                if (cp) cimg = (cp.images as any)?.[0] || '';
+                if (cps && cps.length) {
+                    const idx = pickIndex(cps.length, c.slug);
+                    cimg = (cps[idx].images as any)?.[0] || '';
+                }
             } catch {}
             let ccount = 0;
             try { ccount = await prisma.product.count({ where: { categoryId: c.id } }); } catch {}

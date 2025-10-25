@@ -8,7 +8,7 @@ type Banner = { name: string; slug: string; href: string; image: string };
 async function computeBanners(): Promise<Banner[]> {
   const slugs = ["carpinteria", "hogar"] as const;
   const out: Banner[] = [];
-  const windowKey = Math.floor(Date.now() / (2 * 60 * 60 * 1000)); // 2h window
+  const windowKey = Math.floor(Date.now() / (6 * 60 * 60 * 1000)); // 6h window
 
   // Read configured category banner URLs from settings, if any
   let conf: { carp?: string; hogar?: string } = {};
@@ -68,4 +68,3 @@ export const getFeaturedCategoryBanners = unstableCache(
   ["featured-category-banners-v4"],
   { revalidate: 2 * 60 * 60, tags: ["featured-category-banners"] }
 );
-
