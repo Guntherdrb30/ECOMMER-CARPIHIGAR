@@ -1,83 +1,54 @@
-'use client';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { updateUserProfile, changePassword } from "@/server/actions/user";
 
-import { useState } from 'react';
-import { updateUserProfile, changePassword } from '@/server/actions/user';
-import { useSession } from 'next-auth/react';
-import { Toaster, toast } from 'sonner';
-
-export default function PerfilPage() {
-  const { data: session, update } = useSession();
-  const [name, setName] = useState(session?.user?.name || '');
-  const [phone, setPhone] = useState((session?.user as any)?.phone || '');
-
-  const handleProfileUpdate = async (formData: FormData) => {
-    const result = await updateUserProfile(formData);
-    if (result.success) {
-      toast.success(result.message);
-      // Update the session to reflect the new name
-      await update({ name: formData.get('name') });
-    } else {
-      toast.error(result.message);
-    }
-  };
-
-  const handlePasswordChange = async (formData: FormData) => {
-    const result = await changePassword(formData);
-    if (result.success) {
-      toast.success(result.message);
-    } else {
-      toast.error(result.message);
-    }
-    // It's good practice to clear password fields after submission
-    const form = document.getElementById('passwordForm') as HTMLFormElement;
-    form.reset();
-  };
-
-  if (!session) {
-    return <div>Cargando...</div>; // Or a spinner component
+export default async function PerfilPage() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return <div className="p-4">Debes iniciar sesion para ver tu perfil.</div>;
   }
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  const name = session.user.name || "";
+  const phone = (user?.phone as any) || "";
 
   return (
-    <div>
-      <Toaster richColors />
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Mi Perfil</h1>
-      
-      {/* Profile Information Form */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-        <h2 className="text-xl font-bold text-gray-700 mb-4">Información Personal</h2>
-        <form action={handleProfileUpdate}>
+    <div className="p-4 space-y-8">
+      <h1 className="text-3xl font-bold text-gray-800">Mi Perfil</h1>
+
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <h2 className="text-xl font-bold text-gray-700 mb-4">Informacion Personal</h2>
+        <form action={updateUserProfile}>
           <div className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre Completo</label>
-              <input 
-                type="text" 
-                name="name" 
-                id="name" 
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+              <input
+                type="text"
+                name="name"
+                id="name"
+                defaultValue={name}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono</label>
-              <input 
-                type="tel" 
-                name="phone" 
-                id="phone" 
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Telefono</label>
+              <input
+                type="tel"
+                name="phone"
+                id="phone"
+                defaultValue={phone}
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
-              <input 
-                type="email" 
-                name="email" 
-                id="email" 
-                defaultValue={session.user.email || ''} 
-                readOnly 
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Correo Electronico</label>
+              <input
+                type="email"
+                name="email"
+                id="email"
+                defaultValue={session.user.email || ""}
+                readOnly
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
               />
             </div>
@@ -88,26 +59,25 @@ export default function PerfilPage() {
         </form>
       </div>
 
-      {/* Change Password Form */}
       <div className="bg-white p-6 rounded-lg shadow-sm">
-        <h2 className="text-xl font-bold text-gray-700 mb-4">Cambiar Contraseña</h2>
-        <form id="passwordForm" action={handlePasswordChange}>
+        <h2 className="text-xl font-bold text-gray-700 mb-4">Cambiar Contrasena</h2>
+        <form action={changePassword}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">Contraseña Actual</label>
+              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">Contrasena Actual</label>
               <input type="password" name="currentPassword" id="currentPassword" required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
             </div>
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">Contraseña Nueva</label>
+              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">Contrasena Nueva</label>
               <input type="password" name="newPassword" id="newPassword" required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
             </div>
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Confirmar Contraseña Nueva</label>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Confirmar Contrasena Nueva</label>
               <input type="password" name="confirmPassword" id="confirmPassword" required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
             </div>
           </div>
           <div className="mt-6 text-right">
-            <button type="submit" className="bg-gray-700 text-white font-semibold px-5 py-2 rounded-lg hover:bg-gray-800 transition-colors">Cambiar Contraseña</button>
+            <button type="submit" className="bg-gray-700 text-white font-semibold px-5 py-2 rounded-lg hover:bg-gray-800 transition-colors">Cambiar Contrasena</button>
           </div>
         </form>
       </div>
