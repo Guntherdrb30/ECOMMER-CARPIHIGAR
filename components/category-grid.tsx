@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 type Cat = { id: string; name: string; slug: string; image?: string; productCount?: number; children?: Array<{ id: string; name: string; slug: string }>; };
 
-export default function CategoryGrid({ items }: { items: Cat[] }) {
+export default function CategoryGrid({ items, showSearch = true }: { items: Cat[]; showSearch?: boolean }) {
   const [q, setQ] = useState("");
   const filtered = useMemo(() => {
     if (!q.trim()) return items;
@@ -15,14 +15,16 @@ export default function CategoryGrid({ items }: { items: Cat[] }) {
 
   return (
     <div>
-      <div className="mb-6 flex items-center gap-3">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar categoría..."
-          className="w-full md:max-w-md border rounded px-3 py-2 shadow-sm focus:ring-brand focus:border-brand"
-        />
-      </div>
+      {showSearch && (
+        <div className="mb-6 flex items-center gap-3">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar categoría..."
+            className="w-full md:max-w-md border rounded px-3 py-2 shadow-sm focus:ring-brand focus:border-brand"
+          />
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
         {filtered.map((cat) => {
           const hasImg = !!cat.image;
@@ -54,4 +56,3 @@ export default function CategoryGrid({ items }: { items: Cat[] }) {
     </div>
   );
 }
-

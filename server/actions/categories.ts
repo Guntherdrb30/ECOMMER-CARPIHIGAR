@@ -138,23 +138,49 @@ export async function deleteCategoryByForm(formData: FormData) {
 
 // Root categories with a representative image and quick children for the grid UI
 export async function getCategoryGridData() {
-    // Fetch all root categories
-    const roots = await prisma.category.findMany({ where: { parentId: null }, orderBy: { name: 'asc' }, include: { children: { orderBy: { name: 'asc' } } } });
-    // For each root, try to find a representative image from its latest products
-    const out: Array<{ id: string; name: string; slug: string; image: string; productCount: number; children: Array<{ id: string; name: string; slug: string }> }> = [];
+    // Fetch all root categories with children
+    const roots = await prisma.category.findMany({
+        where: { parentId: null },
+        orderBy: { name: 'asc' },
+        include: { children: { orderBy: { name: 'asc' } } },
+    });
+
+    type ChildOut = { id: string; name: string; slug: string; image: string; productCount: number };
+    const out: Array<{ id: string; name: string; slug: string; image: string; productCount: number; children: ChildOut[] }> = [];
+
     for (const r of roots) {
+        // Root representative image from recent products
         let image = '';
         try {
-            const prods = await prisma.product.findMany({ where: { categoryId: r.id, NOT: { images: { isEmpty: true } } } as any, select: { images: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 30 });
-            if (prods.length) {
-                image = prods[0].images?.[0] || '';
-            }
+            const prods = await prisma.product.findMany({
+                where: { categoryId: r.id, NOT: { images: { isEmpty: true } } } as any,
+                select: { images: true, createdAt: true },
+                orderBy: { createdAt: 'desc' },
+                take: 30,
+            });
+            if (prods.length) image = prods[0].images?.[0] || '';
         } catch {}
         let productCount = 0;
-        try {
-            productCount = await prisma.product.count({ where: { categoryId: r.id } });
-        } catch {}
-        out.push({ id: r.id, name: r.name, slug: r.slug, image, productCount, children: (r.children || []).slice(0, 6).map((c) => ({ id: c.id, name: c.name, slug: c.slug })) });
+        try { productCount = await prisma.product.count({ where: { categoryId: r.id } }); } catch {}
+
+        // Children with images and counts
+        const kids: ChildOut[] = [];
+        for (const c of (r.children || [])) {
+            let cimg = '';
+            try {
+                const cp = await prisma.product.findFirst({
+                    where: { categoryId: c.id, NOT: { images: { isEmpty: true } } } as any,
+                    select: { images: true, createdAt: true },
+                    orderBy: { createdAt: 'desc' },
+                });
+                if (cp) cimg = (cp.images as any)?.[0] || '';
+            } catch {}
+            let ccount = 0;
+            try { ccount = await prisma.product.count({ where: { categoryId: c.id } }); } catch {}
+            kids.push({ id: c.id, name: c.name, slug: c.slug, image: cimg, productCount: ccount });
+        }
+
+        out.push({ id: r.id, name: r.name, slug: r.slug, image, productCount, children: kids });
     }
     return out;
 }
