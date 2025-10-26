@@ -12,20 +12,25 @@ export async function getWishlistItems(params?: { take?: number }) {
     return [];
   }
 
-  const wishlistItems = await prisma.wishlistItem.findMany({
-    where: {
-      user: { email: session.user.email },
-    },
-    include: {
-      product: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: params?.take,
-  });
+  try {
+    const wishlistItems = await prisma.wishlistItem.findMany({
+      where: {
+        user: { email: session.user.email },
+      },
+      include: {
+        product: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: params?.take,
+    });
 
-  return wishlistItems;
+    return wishlistItems;
+  } catch (e) {
+    console.warn('[getWishlistItems] DB error, returning empty list.', e);
+    return [] as any[];
+  }
 }
 
 // Toggle an item in the user's wishlist

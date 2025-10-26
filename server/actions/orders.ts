@@ -1,12 +1,12 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createPayment } from './payments';
 import type { Currency } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// Use the shared Prisma client to avoid creating multiple connections
 
 export async function getMyOrders(params?: { take?: number }) {
     const session = await getServerSession(authOptions);
@@ -16,19 +16,23 @@ export async function getMyOrders(params?: { take?: number }) {
         return [] as any[];
     }
 
-    const orders = await prisma.order.findMany({
-        where: { userId },
-        include: {
-            items: true,
-            payment: true,
-        },
-        orderBy: {
-            createdAt: 'desc',
-        },
-        take: params?.take,
-    });
-
-    return orders;
+    try {
+        const orders = await prisma.order.findMany({
+            where: { userId },
+            include: {
+                items: true,
+                payment: true,
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+            take: params?.take,
+        });
+        return orders;
+    } catch (e) {
+        console.warn('[getMyOrders] DB error, returning empty list.', e);
+        return [] as any[];
+    }
 }
 
 export async function getAllOrders() {
@@ -273,12 +277,17 @@ export async function getMyShipments() {
     if (!userId) {
         throw new Error('Not authenticated');
     }
-    const orders = await prisma.order.findMany({
-        where: { userId, shipping: { isNot: null } },
-        include: { shipping: true, shippingAddress: true },
-        orderBy: { createdAt: 'desc' },
-    });
-    return orders as any;
+    try {
+        const orders = await prisma.order.findMany({
+            where: { userId, shipping: { isNot: null } },
+            include: { shipping: true, shippingAddress: true },
+            orderBy: { createdAt: 'desc' },
+        });
+        return orders as any;
+    } catch (e) {
+        console.warn('[getMyShipments] DB error, returning empty list.', e);
+        return [] as any[];
+    }
 }
 
 export async function markShipmentReceived(orderId: string) {

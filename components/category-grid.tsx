@@ -29,10 +29,10 @@ export default function CategoryGrid({ items, showSearch = true }: { items: Cat[
         {filtered.map((cat) => {
           const hasImg = !!cat.image;
           return (
-            <Link key={cat.id} href={`/productos?categoria=${cat.slug}`} className="group relative rounded-xl overflow-hidden shadow hover:shadow-lg transition-all bg-white">
+            <Link key={cat.id} href={`/productos?categoria=${cat.slug}`} className="group relative rounded-xl overflow-hidden shadow hover:shadow-lg transition-all bg-white aspect-square">
               <div className={`absolute inset-0 ${hasImg ? 'bg-cover bg-center' : 'bg-gray-200'} transition-transform duration-500 group-hover:scale-105`} style={hasImg ? { backgroundImage: `url('${cat.image}')` } : undefined} />
               <div className="absolute inset-0 bg-black/40" />
-              <div className="relative p-4 min-h-[180px] flex flex-col justify-end text-white">
+              <div className="relative z-10 h-full p-4 flex flex-col justify-end text-white">
                 <div className="flex items-baseline justify-between gap-3">
                   <h3 className="text-lg font-bold truncate">{cat.name}</h3>
                   {typeof cat.productCount === 'number' && (
@@ -40,7 +40,7 @@ export default function CategoryGrid({ items, showSearch = true }: { items: Cat[
                   )}
                 </div>
                 {!!(cat.children?.length) && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
+                  <div className="mt-2 flex flex-wrap gap-1.5 overflow-hidden">
                     {cat.children!.slice(0, 6).map((c) => (
                       <span key={c.id} className="text-[11px] bg-white/10 hover:bg-white/20 rounded-full px-2 py-0.5 truncate">
                         {c.name}

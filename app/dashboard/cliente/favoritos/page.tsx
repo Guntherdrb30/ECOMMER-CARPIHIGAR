@@ -18,7 +18,7 @@ export default async function WishlistPage() {
             <ProductCard 
               key={item.product.id} 
               product={item.product as any} 
-              tasa={settings.tasaVES.toNumber()} 
+              tasa={settings.tasaVES} 
               isWishlisted={true} 
             />
           ))}

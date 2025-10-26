@@ -42,12 +42,13 @@ export default function SubcategoryCarousel({ items }: { items: SubCat[] }) {
             const hasImg = !!c.image;
             return (
               <SwiperSlide key={c.id}>
-                <Link href={`/productos?categoria=${c.slug}`} className="block group rounded-lg overflow-hidden shadow hover:shadow-lg bg-white">
-                  <div className={`h-36 ${hasImg ? 'bg-cover bg-center' : 'bg-gray-200'} transition-transform duration-500 group-hover:scale-105`} style={hasImg ? { backgroundImage: `url('${c.image}')` } : undefined} />
-                  <div className="px-3 py-2">
-                    <div className="text-sm font-semibold text-gray-800 truncate">{c.name}</div>
+                <Link href={`/productos?categoria=${c.slug}`} className="group relative block rounded-lg overflow-hidden shadow hover:shadow-lg transition-all bg-white aspect-square">
+                  <div className={`absolute inset-0 ${hasImg ? 'bg-cover bg-center' : 'bg-gray-200'} transition-transform duration-500 group-hover:scale-105`} style={hasImg ? { backgroundImage: `url('${c.image}')` } : undefined} />
+                  <div className="absolute inset-0 bg-black/30" />
+                  <div className="relative z-10 h-full p-3 flex flex-col justify-end text-white">
+                    <div className="text-sm font-semibold truncate">{c.name}</div>
                     {typeof c.productCount === 'number' && (
-                      <div className="text-xs text-gray-500">{c.productCount} productos</div>
+                      <div className="text-[11px] opacity-90">{c.productCount} productos</div>
                     )}
                   </div>
                 </Link>
@@ -59,4 +60,3 @@ export default function SubcategoryCarousel({ items }: { items: SubCat[] }) {
     </div>
   );
 }
-
