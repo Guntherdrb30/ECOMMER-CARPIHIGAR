@@ -29,6 +29,12 @@ model User {
   role         Role         @default(CLIENTE)
   alliedStatus AlliedStatus @default(NONE)
   commissionPercent Decimal?     @db.Decimal(5, 2)
+  // Ally profile fields (optional)
+  profileImageUrl String?
+  bio             String?
+  services        String[]
+  portfolioUrls   String[]
+  portfolioText   String?
   createdAt    DateTime     @default(now())
   addresses    Address[]
   orders       Order[]      @relation("OrderCustomer")
