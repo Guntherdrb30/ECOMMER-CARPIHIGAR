@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 const Swiper = dynamic(() => import('swiper/react').then((m) => m.Swiper), { ssr: false });
 const SwiperSlide = dynamic(() => import('swiper/react').then((m) => m.SwiperSlide), { ssr: false });
@@ -43,7 +44,19 @@ export default function SubcategoryCarousel({ items }: { items: SubCat[] }) {
             return (
               <SwiperSlide key={c.id}>
                 <Link href={`/productos?categoria=${c.slug}`} className="group relative block rounded-lg overflow-hidden shadow hover:shadow-lg transition-all bg-white aspect-square">
-                  <div className={`absolute inset-0 ${hasImg ? 'bg-cover bg-center' : 'bg-gray-200'} transition-transform duration-500 group-hover:scale-105`} style={hasImg ? { backgroundImage: `url('${c.image}')` } : undefined} />
+                  {hasImg ? (
+                    <Image
+                      src={c.image as string}
+                      alt={c.name}
+                      fill
+                      sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      placeholder="blur"
+                      blurDataURL="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gray-200" />
+                  )}
                   <div className="absolute inset-0 bg-black/30" />
                   <div className="relative z-10 h-full p-3 flex flex-col justify-end text-white">
                     <div className="text-sm font-semibold truncate">{c.name}</div>
