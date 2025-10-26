@@ -132,8 +132,16 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
             </button>
           )}
         </nav>
-        <div className="md:hidden ml-auto">
-          <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600 hover:text-brand focus:outline-none">
+        <div className="md:hidden ml-auto flex items-center gap-4">
+          <Link href="/carrito" className="relative text-gray-600 hover:text-brand focus:outline-none" aria-label="Carrito">
+            <ShoppingCart size={22} />
+            {isClient && totalItems > 0 && (
+              <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] leading-none rounded-full h-4 w-4 flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
+          </Link>
+          <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600 hover:text-brand focus:outline-none" aria-label="Abrir menú">
             {isOpen ? <X /> : <Menu />}
           </button>
         </div>
@@ -144,7 +152,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
             <ProductLiveSearch placeholder="Buscar productos..." />
           </div>
           <nav className="flex flex-col space-y-4">
-            {allLinks.filter(l => l.href !== '/carrito').map((link) => (
+            {allLinks.map((link) => (
               <Link key={link.href} href={link.href} className="relative text-gray-600 hover:text-brand transition-colors py-2" onClick={() => setIsOpen(false)}>
                 <span className="flex items-center">
                   <link.icon className="mr-2" size={20} />
