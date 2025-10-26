@@ -2,6 +2,7 @@ import HeroCarousel from '@/components/hero-carousel-simple';
 import FeaturedCategories from '@/components/featured-categories';
 import NewProducts from '@/components/new-products';
 import TrendingProducts from '@/components/trending-products';
+import AlliesRanking from '@/components/allies-ranking';
 import { getSettings } from '@/server/actions/settings';
 
 export default async function Home() {
@@ -15,6 +16,7 @@ export default async function Home() {
       <FeaturedCategories />
       <NewProducts />
       <TrendingProducts />
+      <AlliesRanking />
     </div>
   );
 }
