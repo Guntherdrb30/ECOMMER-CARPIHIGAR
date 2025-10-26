@@ -170,49 +170,44 @@ export async function getCategoryGridData() {
     type ChildOut = { id: string; name: string; slug: string; image: string; productCount: number };
     const out: Array<{ id: string; name: string; slug: string; image: string; productCount: number; children: ChildOut[] }> = [];
 
-    const windowMs = 6 * 60 * 60 * 1000; // 6 hours rotation window
-    const win = Math.floor(Date.now() / windowMs);
-
-    const pickIndex = (len: number, salt: string) => {
-        if (len <= 0) return 0;
-        const s = Array.from(salt).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-        return (win + s) % len;
-    };
-
-    for (const r of roots) {
-        // Root representative image from recent products
-        let image = '';
+    // Helper: top-selling product image per category; fallback to most recent product image
+    async function topImageForCategory(catId: string): Promise<string> {
         try {
-            const prods = await prisma.product.findMany({
-                where: { categoryId: r.id, NOT: { images: { isEmpty: true } } } as any,
-                select: { images: true, createdAt: true },
-                orderBy: { createdAt: 'desc' },
-                take: 30,
+            const top = await (prisma as any).orderItem.groupBy({
+                by: ['productId'],
+                where: { order: { status: { in: ['PAGADO','COMPLETADO'] } }, product: { categoryId: catId } },
+                _sum: { quantity: true },
+                orderBy: { _sum: { quantity: 'desc' } },
+                take: 1,
             });
-            if (prods.length) {
-                const idx = pickIndex(prods.length, r.slug);
-                image = prods[idx].images?.[0] || '';
+            const topId = Array.isArray(top) && top.length ? String(top[0].productId) : null;
+            if (topId) {
+                const p = await prisma.product.findUnique({ where: { id: topId }, select: { images: true } });
+                const img = (p?.images || [])[0] || '';
+                if (img) return img;
             }
         } catch {}
+        // Fallback: most recent with image
+        try {
+            const prods = await prisma.product.findMany({
+                where: { categoryId: catId, NOT: { images: { isEmpty: true } } } as any,
+                select: { images: true, createdAt: true },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+            });
+            return (prods[0]?.images || [])[0] || '';
+        } catch { return ''; }
+    }
+
+    for (const r of roots) {
+        let image = await topImageForCategory(r.id);
         let productCount = 0;
         try { productCount = await prisma.product.count({ where: { categoryId: r.id } }); } catch {}
 
-        // Children with images and counts
+        // Children with top-selling images and counts
         const kids: ChildOut[] = [];
         for (const c of (r.children || [])) {
-            let cimg = '';
-            try {
-                const cps = await prisma.product.findMany({
-                    where: { categoryId: c.id, NOT: { images: { isEmpty: true } } } as any,
-                    select: { images: true, createdAt: true },
-                    orderBy: { createdAt: 'desc' },
-                    take: 20,
-                });
-                if (cps && cps.length) {
-                    const idx = pickIndex(cps.length, c.slug);
-                    cimg = (cps[idx].images as any)?.[0] || '';
-                }
-            } catch {}
+            let cimg = await topImageForCategory(c.id);
             let ccount = 0;
             try { ccount = await prisma.product.count({ where: { categoryId: c.id } }); } catch {}
             kids.push({ id: c.id, name: c.name, slug: c.slug, image: cimg, productCount: ccount });
