@@ -15,7 +15,8 @@ export default async function AllyPublicPage({ params }: { params: Promise<{ id:
       <div className="container mx-auto px-4 py-10">
         <div className="flex items-start gap-5">
           <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex-none">
-            {ally.profileImageUrl ? <Image src={ally.profileImageUrl} alt={ally.name || 'Aliado'} fill className="object-cover" /> : null}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {ally.profileImageUrl ? <img src={ally.profileImageUrl} alt={ally.name || 'Aliado'} className="w-full h-full object-cover" /> : null}
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-bold text-gray-900">{ally.name || 'Aliado'}</h1>
@@ -59,4 +60,3 @@ export default async function AllyPublicPage({ params }: { params: Promise<{ id:
     </div>
   );
 }
-

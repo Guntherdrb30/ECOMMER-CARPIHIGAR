@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useMemo, useState } from "react";
 
 type AllySummary = {
@@ -52,7 +51,9 @@ export default function AlliesRankingClient({ items }: { items: AllySummary[] })
               <div className="p-4 flex items-center gap-3">
                 <div className="relative w-14 h-14 rounded-full overflow-hidden bg-gray-100 flex-none">
                   {a.profileImageUrl ? (
-                    <Image src={a.profileImageUrl} alt={a.name || 'Aliado'} fill className="object-cover" />
+                    // Use plain img to support any external hosts without Next/Image domain config
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={a.profileImageUrl} alt={a.name || 'Aliado'} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-gray-200" />
                   )}
@@ -87,4 +88,3 @@ export default function AlliesRankingClient({ items }: { items: AllySummary[] })
     </section>
   );
 }
-
