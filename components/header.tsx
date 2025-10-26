@@ -122,9 +122,20 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                     <div className="p-3 text-sm text-gray-600">{"A\u00fan no has agregado productos."}</div>
                   ) : (
                     cartItems.slice(0,4).map((it) => (
-                      <div key={it.id} className="p-3 text-sm flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0"><div className="w-10 h-10 rounded overflow-hidden bg-gray-100 flex-none">{it.image ? <img src={it.image} className="w-full h-full object-cover" /> : null}</div><div className="truncate">{it.name}</div></div>
-                        <div className="ml-2 text-gray-700 whitespace-nowrap">x{it.quantity}</div><div className="ml-2 text-gray-700 whitespace-nowrap">${(it.priceUSD * it.quantity).toFixed(2)}</div>
+                      <div key={it.id} className="p-3 text-sm flex items-center gap-2">
+                        <div className="w-10 h-10 rounded overflow-hidden bg-gray-100 flex-none">
+                          {it.image ? <img src={it.image} className="w-full h-full object-cover" /> : null}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate">{it.name}</div>
+                          <div className="mt-1 flex items-center gap-1">
+                            <button aria-label="Disminuir" onClick={() => { const n = it.quantity - 1; if (n <= 0) { removeItem(it.id); toast.success('Producto eliminado del carrito'); } else { updateQty(it.id, n); toast.info(`Cantidad actualizada a ${n}`); } }} className="p-1 rounded border hover:bg-gray-50"><Minus size={12} /></button>
+                            <span className="px-1">{it.quantity}</span>
+                            <button aria-label="Aumentar" onClick={() => { const max = typeof it.stock === 'number' ? it.stock : Infinity; if (it.quantity >= (max as number)) { toast.warning(`Stock máximo disponible: ${max}`); return; } const n = it.quantity + 1; updateQty(it.id, n); toast.info(`Cantidad actualizada a ${n}`); }} className="p-1 rounded border hover:bg-gray-50"><Plus size={12} /></button>
+                            <button aria-label="Eliminar" onClick={() => { removeItem(it.id); toast.success('Producto eliminado del carrito'); }} className="ml-2 p-1 rounded border hover:bg-gray-50 text-red-600"><Trash2 size={12} /></button>
+                          </div>
+                        </div>
+                        <div className="text-gray-700 whitespace-nowrap font-medium">${(it.priceUSD * it.quantity).toFixed(2)}</div>
                       </div>
                     ))
                   )}

@@ -6,6 +6,8 @@ import { STOCK_POLL_MS } from '@/lib/constants';
 import { useCartStore } from '@/store/cart';
 import Price from '@/components/price';
 import Link from 'next/link';
+import { Minus, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Cart({ tasa }: { tasa: number }) {
   const { items, updateQty, removeItem, getTotalUSD, refreshStocks } = useCartStore();
@@ -79,15 +81,50 @@ export default function Cart({ tasa }: { tasa: number }) {
                 </td>
                 <td className="p-4">
                   <div className="flex items-center gap-2">
+                    <button
+                      aria-label="Disminuir"
+                      onClick={() => {
+                        const next = item.quantity - 1;
+                        if (next <= 0) { removeItem(item.id); toast.success('Producto eliminado del carrito'); }
+                        else { updateQty(item.id, next); toast.info(`Cantidad actualizada a ${next}`); }
+                      }}
+                      className="p-1 rounded border hover:bg-gray-50"
+                    >
+                      <Minus size={14} />
+                    </button>
                     <input
                       type="number"
                       min={1}
                       max={Math.max(1, item.stock ?? 1)}
                       value={item.quantity}
-                      onChange={(e) => updateQty(item.id, parseInt(e.target.value, 10))}
-                      className="w-20 border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand"
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value, 10);
+                        const max = typeof item.stock === 'number' ? item.stock : Infinity;
+                        if (!isFinite(v) || isNaN(v)) return;
+                        if (v < 1) { removeItem(item.id); toast.success('Producto eliminado del carrito'); return; }
+                        if (v > (max as number)) { updateQty(item.id, max as number); toast.warning(`Stock máximo disponible: ${max}`); return; }
+                        updateQty(item.id, v); toast.info(`Cantidad actualizada a ${v}`);
+                      }}
+                      className="w-20 border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand text-center"
                     />
-                    <button onClick={() => removeItem(item.id)} className="ml-2 text-red-500 hover:text-red-700">X</button>
+                    <button
+                      aria-label="Aumentar"
+                      onClick={() => {
+                        const max = typeof item.stock === 'number' ? item.stock : Infinity;
+                        if (item.quantity >= (max as number)) { toast.warning(`Stock máximo disponible: ${max}`); return; }
+                        const next = item.quantity + 1; updateQty(item.id, next); toast.info(`Cantidad actualizada a ${next}`);
+                      }}
+                      className="p-1 rounded border hover:bg-gray-50"
+                    >
+                      <Plus size={14} />
+                    </button>
+                    <button
+                      onClick={() => { removeItem(item.id); toast.success('Producto eliminado del carrito'); }}
+                      className="ml-2 p-1 rounded border hover:bg-gray-50 text-red-600"
+                      aria-label="Eliminar"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">{(item.stock ?? Infinity) === Infinity ? '' : `Stock: ${item.stock}`}</div>
                 </td>
