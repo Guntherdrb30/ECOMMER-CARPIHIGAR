@@ -133,14 +133,14 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
           )}
         </nav>
         <div className="md:hidden ml-auto flex items-center gap-4">
-          <Link href="/carrito" className="relative text-gray-600 hover:text-brand focus:outline-none" aria-label="Carrito">
+          <button onClick={() => setCartOpen(true)} className="relative text-gray-600 hover:text-brand focus:outline-none" aria-label="Carrito">
             <ShoppingCart size={22} />
             {isClient && totalItems > 0 && (
               <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] leading-none rounded-full h-4 w-4 flex items-center justify-center">
                 {totalItems}
               </span>
             )}
-          </Link>
+          </button>
           <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600 hover:text-brand focus:outline-none" aria-label="Abrir menú">
             {isOpen ? <X /> : <Menu />}
           </button>
@@ -174,6 +174,46 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
               </button>
             )}
           </nav>
+        </div>
+      )}
+      {/* Mobile cart drawer */}
+      {cartOpen && (
+        <div className="md:hidden fixed inset-0 z-[60]">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setCartOpen(false)} />
+          <div className="absolute inset-y-0 right-0 w-80 max-w-[90%] bg-white shadow-xl flex flex-col">
+            <div className="flex items-center justify-between p-3 border-b">
+              <div className="font-semibold">Tu Carrito</div>
+              <button onClick={() => setCartOpen(false)} aria-label="Cerrar" className="p-1 rounded hover:bg-gray-100">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto divide-y">
+              {cartItems.length === 0 ? (
+                <div className="p-4 text-sm text-gray-600">{"A\u00fan no has agregado productos."}</div>
+              ) : (
+                cartItems.slice(0, 20).map((it) => (
+                  <div key={it.id} className="p-3 text-sm flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 flex-none">
+                        {it.image ? <img src={it.image} className="w-full h-full object-cover" /> : null}
+                      </div>
+                      <div className="truncate">{it.name}</div>
+                    </div>
+                    <div className="ml-2 text-gray-700 whitespace-nowrap">x{it.quantity}</div>
+                    <div className="ml-2 text-gray-700 whitespace-nowrap">${(it.priceUSD * it.quantity).toFixed(2)}</div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="p-3 border-t text-sm flex items-center justify-between">
+              <span>Total aprox.</span>
+              <span className="font-semibold">${cartTotalUSD.toFixed(2)}</span>
+            </div>
+            <div className="p-3 pt-0 flex gap-2">
+              <a href="/carrito" className="flex-1 text-center border rounded py-2" onClick={() => setCartOpen(false)}>Ver Carrito</a>
+              <a href="/checkout/revisar" className="flex-1 text-center bg-brand text-white rounded py-2" onClick={() => setCartOpen(false)}>Pagar</a>
+            </div>
+          </div>
         </div>
       )}
     </header>
