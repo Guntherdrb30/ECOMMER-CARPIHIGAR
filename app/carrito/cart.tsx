@@ -8,11 +8,13 @@ import Price from '@/components/price';
 import Link from 'next/link';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import ConfirmDialog from '@/components/confirm-dialog';
 
 export default function Cart({ tasa }: { tasa: number }) {
   const { items, updateQty, removeItem, clearCart, getTotalUSD, refreshStocks } = useCartStore();
   const [moneda, setMoneda] = useState<'USD' | 'VES'>('USD');
   const [syncInfo, setSyncInfo] = useState<{ removed: string[]; adjusted: Array<{ id: string; from: number; to: number }> } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +54,7 @@ export default function Cart({ tasa }: { tasa: number }) {
       {/* Actions */}
       <div className="flex items-center justify-between mb-4">
         <button
-          onClick={() => { if (confirm('¿Vaciar el carrito?')) { clearCart(); toast.success('Carrito vaciado'); } }}
+          onClick={() => setConfirmOpen(true)}
           className="text-sm px-3 py-2 border border-red-500 text-red-600 rounded"
         >
           Vaciar carrito
@@ -157,5 +159,14 @@ export default function Cart({ tasa }: { tasa: number }) {
         </div>
       </div>
     </div>
+    <ConfirmDialog
+      open={confirmOpen}
+      title="Vaciar carrito"
+      message="Esta acción vaciará todos los productos del carrito."
+      confirmText="Sí, vaciar"
+      cancelText="Cancelar"
+      onConfirm={() => { clearCart(); setConfirmOpen(false); toast.success('Carrito vaciado'); }}
+      onClose={() => setConfirmOpen(false)}
+    />
   );
 }

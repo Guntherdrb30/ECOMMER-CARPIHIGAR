@@ -7,6 +7,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X, Minus, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProductLiveSearch from '@/components/product-live-search';
+import ConfirmDialog from '@/components/confirm-dialog';
 
 type HeaderProps = {
   logoUrl?: string;
@@ -24,6 +25,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
   const clearCart = useCartStore((s) => s.clearCart);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartVisible, setCartVisible] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const cartRef = useRef<HTMLDivElement | null>(null);
   const { data: session, status } = useSession();
 
@@ -148,7 +150,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                 <div className="p-3 pt-0 flex gap-2 items-center">
                   <button
                     onClick={() => {
-                      if (confirm('¿Vaciar el carrito?')) { clearCart(); toast.success('Carrito vaciado'); }
+                      setConfirmClear(true);
                     }}
                     className="text-xs px-2 py-1 border border-red-500 text-red-600 rounded"
                   >
@@ -289,7 +291,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
             </div>
             <div className="p-3 pt-0 flex gap-2 items-center">
               <button
-                onClick={() => { if (confirm('¿Vaciar el carrito?')) { clearCart(); toast.success('Carrito vaciado'); } }}
+                onClick={() => { setConfirmClear(true); }}
                 className="text-xs px-2 py-2 border border-red-500 text-red-600 rounded"
               >
                 Vaciar
@@ -300,9 +302,20 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
           </div>
         </div>
       )}
+      {/* Confirm clear cart (global) */}
+      <ConfirmDialog
+        open={confirmClear}
+        title="Vaciar carrito"
+        message="Esta acción vaciará todos los productos del carrito."
+        confirmText="Sí, vaciar"
+        cancelText="Cancelar"
+        onConfirm={() => { clearCart(); setConfirmClear(false); toast.success('Carrito vaciado'); }}
+        onClose={() => setConfirmClear(false)}
+      />
     </header>
   );
 }
+
 
 
 
