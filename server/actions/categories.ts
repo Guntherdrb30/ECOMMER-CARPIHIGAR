@@ -7,6 +7,16 @@ import { redirect } from 'next/navigation';
 
 const prisma = new PrismaClient();
 
+async function ensureCategoryColumns() {
+    try {
+        await prisma.$executeRawUnsafe(
+            'ALTER TABLE "public"."Category" ' +
+            'ADD COLUMN IF NOT EXISTS "description" TEXT, ' +
+            'ADD COLUMN IF NOT EXISTS "bannerUrl" TEXT'
+        );
+    } catch {}
+}
+
 export async function getCategories() {
     const categories = await prisma.category.findMany({ 
         select: { id: true, name: true, slug: true, parentId: true },
@@ -43,6 +53,18 @@ export async function createCategory(data: any) {
 export async function getCategoryById(id: string) {
     const c = await prisma.category.findUnique({ where: { id }, select: { id: true, name: true, slug: true, parentId: true } });
     return c;
+}
+
+export async function getCategoryLandingBySlug(slug: string) {
+    await ensureCategoryColumns();
+    const cat = await prisma.category.findUnique({ where: { slug }, select: { id: true, name: true, slug: true, parentId: true, description: true, bannerUrl: true, children: { select: { id: true, name: true, slug: true } } } });
+    if (!cat) return null;
+    let products: any[] = [];
+    try {
+        const { getProducts } = await import('@/server/actions/products');
+        products = await getProducts({ categorySlug: slug });
+    } catch {}
+    return { category: cat, products };
 }
 
 export async function createCategoryByForm(formData: FormData) {
