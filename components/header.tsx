@@ -19,6 +19,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
   const cartItems = useCartStore((s) => s.items);
   const cartTotalUSD = useCartStore((s) => s.getTotalUSD());
   const [cartOpen, setCartOpen] = useState(false);
+  const [cartVisible, setCartVisible] = useState(false);
   const cartRef = useRef<HTMLDivElement | null>(null);
   const { data: session, status } = useSession();
 
@@ -61,6 +62,16 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
   };
 
   const allLinks = getLinks();
+
+  // Mobile cart open/close with animation mount control
+  const openCart = () => {
+    setCartVisible(true);
+    setTimeout(() => setCartOpen(true), 10);
+  };
+  const closeCart = () => {
+    setCartOpen(false);
+    setTimeout(() => setCartVisible(false), 250);
+  };
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -133,7 +144,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
           )}
         </nav>
         <div className="md:hidden ml-auto flex items-center gap-4">
-          <button onClick={() => setCartOpen(true)} className="relative text-gray-600 hover:text-brand focus:outline-none" aria-label="Carrito">
+          <button onClick={openCart} className="relative text-gray-600 hover:text-brand focus:outline-none" aria-label="Carrito">
             <ShoppingCart size={22} />
             {isClient && totalItems > 0 && (
               <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] leading-none rounded-full h-4 w-4 flex items-center justify-center">
@@ -177,13 +188,13 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
         </div>
       )}
       {/* Mobile cart drawer */}
-      {cartOpen && (
+      {cartVisible && (
         <div className="md:hidden fixed inset-0 z-[60]">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setCartOpen(false)} />
-          <div className="absolute inset-y-0 right-0 w-80 max-w-[90%] bg-white shadow-xl flex flex-col">
+          <div className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${cartOpen ? 'opacity-100' : 'opacity-0'}`} onClick={closeCart} />
+          <div className={`absolute inset-y-0 right-0 w-80 max-w-[90%] bg-white shadow-xl flex flex-col transform transition-transform duration-300 ${cartOpen ? 'translate-x-0' : 'translate-x-full'}`}>
             <div className="flex items-center justify-between p-3 border-b">
               <div className="font-semibold">Tu Carrito</div>
-              <button onClick={() => setCartOpen(false)} aria-label="Cerrar" className="p-1 rounded hover:bg-gray-100">
+              <button onClick={closeCart} aria-label="Cerrar" className="p-1 rounded hover:bg-gray-100">
                 <X size={18} />
               </button>
             </div>
@@ -210,8 +221,8 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
               <span className="font-semibold">${cartTotalUSD.toFixed(2)}</span>
             </div>
             <div className="p-3 pt-0 flex gap-2">
-              <a href="/carrito" className="flex-1 text-center border rounded py-2" onClick={() => setCartOpen(false)}>Ver Carrito</a>
-              <a href="/checkout/revisar" className="flex-1 text-center bg-brand text-white rounded py-2" onClick={() => setCartOpen(false)}>Pagar</a>
+              <a href="/carrito" className="flex-1 text-center border rounded py-2" onClick={closeCart}>Ver Carrito</a>
+              <a href="/checkout/revisar" className="flex-1 text-center bg-brand text-white rounded py-2" onClick={closeCart}>Pagar</a>
             </div>
           </div>
         </div>
