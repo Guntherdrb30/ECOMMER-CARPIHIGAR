@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -32,10 +31,10 @@ export default function Cart({ tasa }: { tasa: number }) {
   if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        <h1 className="text-4xl font-bold mb-4">Tu Carrito está Vacío</h1>
-        <p className="text-gray-600 mb-8">Parece que no has añadido nada a tu carrito todavía.</p>
+        <h1 className="text-4xl font-bold mb-4">Tu carrito esta vacio</h1>
+        <p className="text-gray-600 mb-8">Parece que no has agregado nada a tu carrito todavia.</p>
         <Link href="/productos" className="bg-brand hover:bg-opacity-90 text-white font-bold py-3 px-6 rounded-full transition-colors">
-          Ver Productos
+          Ver productos
         </Link>
       </div>
     );
@@ -110,7 +109,7 @@ export default function Cart({ tasa }: { tasa: number }) {
                         const max = typeof item.stock === 'number' ? item.stock : Infinity;
                         if (!isFinite(v) || isNaN(v)) return;
                         if (v < 1) { removeItem(item.id); toast.success('Producto eliminado del carrito'); return; }
-                        if (v > (max as number)) { updateQty(item.id, max as number); toast.warning(`Stock máximo disponible: ${max}`); return; }
+                        if (v > (max as number)) { updateQty(item.id, max as number); toast.warning(`Stock maximo disponible: ${max}`); return; }
                         updateQty(item.id, v); toast.info(`Cantidad actualizada a ${v}`);
                       }}
                       className="w-20 border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand text-center"
@@ -119,7 +118,7 @@ export default function Cart({ tasa }: { tasa: number }) {
                       aria-label="Aumentar"
                       onClick={() => {
                         const max = typeof item.stock === 'number' ? item.stock : Infinity;
-                        if (item.quantity >= (max as number)) { toast.warning(`Stock máximo disponible: ${max}`); return; }
+                        if (item.quantity >= (max as number)) { toast.warning(`Stock maximo disponible: ${max}`); return; }
                         const next = item.quantity + 1; updateQty(item.id, next); toast.info(`Cantidad actualizada a ${next}`);
                       }}
                       className="p-1 rounded border hover:bg-gray-50"
@@ -158,15 +157,19 @@ export default function Cart({ tasa }: { tasa: number }) {
           </Link>
         </div>
       </div>
+
+      {/* Confirm clear cart modal */}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Vaciar carrito"
+        message="Esta accion vaciara todos los productos del carrito."
+        confirmText="Si, vaciar"
+        cancelText="Cancelar"
+        onConfirm={() => { clearCart(); setConfirmOpen(false); toast.success('Carrito vaciado'); }}
+        onClose={() => setConfirmOpen(false)}
+      />
+
     </div>
-    <ConfirmDialog
-      open={confirmOpen}
-      title="Vaciar carrito"
-      message="Esta acción vaciará todos los productos del carrito."
-      confirmText="Sí, vaciar"
-      cancelText="Cancelar"
-      onConfirm={() => { clearCart(); setConfirmOpen(false); toast.success('Carrito vaciado'); }}
-      onClose={() => setConfirmOpen(false)}
-    />
   );
 }
+
