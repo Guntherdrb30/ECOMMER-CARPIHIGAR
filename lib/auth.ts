@@ -35,6 +35,17 @@ export const authOptions: AuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        // Ensure DB has ally profile columns to avoid runtime errors on SELECT *
+        try {
+          await prisma.$executeRawUnsafe(
+            'ALTER TABLE "public"."User" ' +
+            'ADD COLUMN IF NOT EXISTS "profileImageUrl" TEXT, ' +
+            'ADD COLUMN IF NOT EXISTS "bio" TEXT, ' +
+            'ADD COLUMN IF NOT EXISTS "services" TEXT[], ' +
+            'ADD COLUMN IF NOT EXISTS "portfolioUrls" TEXT[], ' +
+            'ADD COLUMN IF NOT EXISTS "portfolioText" TEXT'
+          );
+        } catch {}
         if (!credentials?.email || !credentials.password) {
           return null;
         }
@@ -89,6 +100,17 @@ export const authOptions: AuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }: any) {
+      // Ensure DB has ally profile columns for any user lookups
+      try {
+        await prisma.$executeRawUnsafe(
+          'ALTER TABLE "public"."User" ' +
+          'ADD COLUMN IF NOT EXISTS "profileImageUrl" TEXT, ' +
+          'ADD COLUMN IF NOT EXISTS "bio" TEXT, ' +
+          'ADD COLUMN IF NOT EXISTS "services" TEXT[], ' +
+          'ADD COLUMN IF NOT EXISTS "portfolioUrls" TEXT[], ' +
+          'ADD COLUMN IF NOT EXISTS "portfolioText" TEXT'
+        );
+      } catch {}
       // On initial sign-in, populate the token
       if (user) {
         // If signing in with Google, ensure we have a local User record
