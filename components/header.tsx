@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { useSession, signOut } from 'next-auth/react';
 import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X, Minus, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import ProductLiveSearch from '@/components/product-live-search';
 
 type HeaderProps = {
@@ -212,10 +213,46 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                     <div className="flex-1 min-w-0">
                       <div className="truncate font-medium text-gray-800">{it.name}</div>
                       <div className="mt-1 flex items-center gap-2">
-                        <button aria-label="Disminuir" onClick={() => updateQty(it.id, it.quantity - 1)} className="p-1 rounded border hover:bg-gray-50"><Minus size={14} /></button>
+                        <button
+                          aria-label="Disminuir"
+                          onClick={() => {
+                            const next = it.quantity - 1;
+                            if (next <= 0) {
+                              removeItem(it.id);
+                              toast.success('Producto eliminado del carrito');
+                            } else {
+                              updateQty(it.id, next);
+                              toast.info(`Cantidad actualizada a ${next}`);
+                            }
+                          }}
+                          className="p-1 rounded border hover:bg-gray-50"
+                        >
+                          <Minus size={14} />
+                        </button>
                         <span className="min-w-[2ch] text-center">{it.quantity}</span>
-                        <button aria-label="Aumentar" onClick={() => updateQty(it.id, it.quantity + 1)} className="p-1 rounded border hover:bg-gray-50"><Plus size={14} /></button>
-                        <button aria-label="Eliminar" onClick={() => removeItem(it.id)} className="ml-2 p-1 rounded border hover:bg-gray-50 text-red-600"><Trash2 size={14} /></button>
+                        <button
+                          aria-label="Aumentar"
+                          onClick={() => {
+                            const max = typeof it.stock === 'number' ? it.stock : Infinity;
+                            if (it.quantity >= (max as number)) {
+                              toast.warning(`Stock máximo disponible: ${max}`);
+                              return;
+                            }
+                            const next = it.quantity + 1;
+                            updateQty(it.id, next);
+                            toast.info(`Cantidad actualizada a ${next}`);
+                          }}
+                          className="p-1 rounded border hover:bg-gray-50"
+                        >
+                          <Plus size={14} />
+                        </button>
+                        <button
+                          aria-label="Eliminar"
+                          onClick={() => { removeItem(it.id); toast.success('Producto eliminado del carrito'); }}
+                          className="ml-2 p-1 rounded border hover:bg-gray-50 text-red-600"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                         {typeof it.stock === 'number' && isFinite(it.stock) && (
                           <span className="ml-1 text-[11px] text-gray-500">({it.stock} disp.)</span>
                         )}
