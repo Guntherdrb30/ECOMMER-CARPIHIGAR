@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { useSession, signOut } from 'next-auth/react';
-import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X } from 'lucide-react';
+import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X, Minus, Plus, Trash2 } from 'lucide-react';
 import ProductLiveSearch from '@/components/product-live-search';
 
 type HeaderProps = {
@@ -18,6 +18,8 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
   const totalItems = useCartStore((state) => state.getTotalItems());
   const cartItems = useCartStore((s) => s.items);
   const cartTotalUSD = useCartStore((s) => s.getTotalUSD());
+  const updateQty = useCartStore((s) => s.updateQty);
+  const removeItem = useCartStore((s) => s.removeItem);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartVisible, setCartVisible] = useState(false);
   const cartRef = useRef<HTMLDivElement | null>(null);
@@ -203,15 +205,23 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                 <div className="p-4 text-sm text-gray-600">{"A\u00fan no has agregado productos."}</div>
               ) : (
                 cartItems.slice(0, 20).map((it) => (
-                  <div key={it.id} className="p-3 text-sm flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 flex-none">
-                        {it.image ? <img src={it.image} className="w-full h-full object-cover" /> : null}
-                      </div>
-                      <div className="truncate">{it.name}</div>
+                  <div key={it.id} className="p-3 text-sm flex items-center gap-2">
+                    <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 flex-none">
+                      {it.image ? <img src={it.image} className="w-full h-full object-cover" /> : null}
                     </div>
-                    <div className="ml-2 text-gray-700 whitespace-nowrap">x{it.quantity}</div>
-                    <div className="ml-2 text-gray-700 whitespace-nowrap">${(it.priceUSD * it.quantity).toFixed(2)}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate font-medium text-gray-800">{it.name}</div>
+                      <div className="mt-1 flex items-center gap-2">
+                        <button aria-label="Disminuir" onClick={() => updateQty(it.id, it.quantity - 1)} className="p-1 rounded border hover:bg-gray-50"><Minus size={14} /></button>
+                        <span className="min-w-[2ch] text-center">{it.quantity}</span>
+                        <button aria-label="Aumentar" onClick={() => updateQty(it.id, it.quantity + 1)} className="p-1 rounded border hover:bg-gray-50"><Plus size={14} /></button>
+                        <button aria-label="Eliminar" onClick={() => removeItem(it.id)} className="ml-2 p-1 rounded border hover:bg-gray-50 text-red-600"><Trash2 size={14} /></button>
+                        {typeof it.stock === 'number' && isFinite(it.stock) && (
+                          <span className="ml-1 text-[11px] text-gray-500">({it.stock} disp.)</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-gray-700 whitespace-nowrap font-medium">${(it.priceUSD * it.quantity).toFixed(2)}</div>
                   </div>
                 ))
               )}
