@@ -1,17 +1,27 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { shimmer, toBase64 } from '@/lib/image-placeholder';
 import { getFeaturedCategoryBannersNoCache } from '@/server/actions/featured';
 
 type CategoryCard = { name: string; href: string; image: string };
 
 const FeaturedCategoryCard = ({ category }: { category: CategoryCard }) => {
   const hasImg = !!category.image && !category.image.includes('/images/hero-');
-  const style = hasImg ? { backgroundImage: `url('${category.image}')` } : undefined;
   return (
   <Link href={category.href} className="relative block group h-96">
-    <div
-      className={`absolute inset-0 ${hasImg ? 'bg-cover bg-center' : 'bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_60%)] bg-[length:20px_20px] bg-neutral-700'} rounded-lg transition-transform duration-500 group-hover:scale-105`}
-      style={style}
-    ></div>
+    {hasImg ? (
+      <Image
+        src={category.image}
+        alt={category.name}
+        fill
+        sizes="(min-width: 1024px) 50vw, 100vw"
+        className="object-cover rounded-lg transition-transform duration-500 group-hover:scale-105"
+        placeholder="blur"
+        blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(1200, 600, 16))}`}
+      />
+    ) : (
+      <div className="absolute inset-0 rounded-lg bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_60%)] bg-[length:20px_20px] bg-neutral-700 transition-transform duration-500 group-hover:scale-105" />
+    )}
     <div className="absolute inset-0 bg-black/40 rounded-lg"></div>
     <div className="relative h-full flex flex-col items-center justify-center text-white text-center p-4">
       <h3 className="text-4xl font-extrabold">{category.name}</h3>

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { shimmer, toBase64 } from "@/lib/image-placeholder";
 
 const Swiper = dynamic(() => import('swiper/react').then((m) => m.Swiper), { ssr: false });
 const SwiperSlide = dynamic(() => import('swiper/react').then((m) => m.SwiperSlide), { ssr: false });
@@ -52,7 +53,7 @@ export default function SubcategoryCarousel({ items }: { items: SubCat[] }) {
                       sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                       placeholder="blur"
-                      blurDataURL="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+                      blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(600, 600, 12))}`}
                     />
                   ) : (
                     <div className="absolute inset-0 bg-gray-200" />

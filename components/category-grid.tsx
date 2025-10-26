@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { shimmer, toBase64 } from "@/lib/image-placeholder";
 import { useMemo, useState } from "react";
 
 type Cat = { id: string; name: string; slug: string; image?: string; productCount?: number; children?: Array<{ id: string; name: string; slug: string }>; };
@@ -39,7 +40,7 @@ export default function CategoryGrid({ items, showSearch = true }: { items: Cat[
                   sizes="(min-width: 1536px) 16vw, (min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   placeholder="blur"
-                  blurDataURL="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+                  blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(800, 800, 16))}`}
                 />
               ) : (
                 <div className="absolute inset-0 bg-gray-100" />
