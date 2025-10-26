@@ -21,6 +21,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
   const cartTotalUSD = useCartStore((s) => s.getTotalUSD());
   const updateQty = useCartStore((s) => s.updateQty);
   const removeItem = useCartStore((s) => s.removeItem);
+  const clearCart = useCartStore((s) => s.clearCart);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartVisible, setCartVisible] = useState(false);
   const cartRef = useRef<HTMLDivElement | null>(null);
@@ -144,7 +145,15 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                   <span>Total aprox.</span>
                   <span className="font-semibold">${cartTotalUSD.toFixed(2)}</span>
                 </div>
-                <div className="p-3 pt-0 flex gap-2">
+                <div className="p-3 pt-0 flex gap-2 items-center">
+                  <button
+                    onClick={() => {
+                      if (confirm('¿Vaciar el carrito?')) { clearCart(); toast.success('Carrito vaciado'); }
+                    }}
+                    className="text-xs px-2 py-1 border border-red-500 text-red-600 rounded"
+                  >
+                    Vaciar
+                  </button>
                   <a href="/carrito" className="flex-1 text-center border rounded py-1" onClick={() => setCartOpen(false)}>Ver Carrito</a>
                   <a href="/checkout/revisar" className="flex-1 text-center bg-brand text-white rounded py-1" onClick={() => setCartOpen(false)}>Pagar</a>
                 </div>
@@ -278,7 +287,13 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
               <span>Total aprox.</span>
               <span className="font-semibold">${cartTotalUSD.toFixed(2)}</span>
             </div>
-            <div className="p-3 pt-0 flex gap-2">
+            <div className="p-3 pt-0 flex gap-2 items-center">
+              <button
+                onClick={() => { if (confirm('¿Vaciar el carrito?')) { clearCart(); toast.success('Carrito vaciado'); } }}
+                className="text-xs px-2 py-2 border border-red-500 text-red-600 rounded"
+              >
+                Vaciar
+              </button>
               <a href="/carrito" className="flex-1 text-center border rounded py-2" onClick={closeCart}>Ver Carrito</a>
               <a href="/checkout/revisar" className="flex-1 text-center bg-brand text-white rounded py-2" onClick={closeCart}>Pagar</a>
             </div>

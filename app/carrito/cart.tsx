@@ -10,7 +10,7 @@ import { Minus, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Cart({ tasa }: { tasa: number }) {
-  const { items, updateQty, removeItem, getTotalUSD, refreshStocks } = useCartStore();
+  const { items, updateQty, removeItem, clearCart, getTotalUSD, refreshStocks } = useCartStore();
   const [moneda, setMoneda] = useState<'USD' | 'VES'>('USD');
   const [syncInfo, setSyncInfo] = useState<{ removed: string[]; adjusted: Array<{ id: string; from: number; to: number }> } | null>(null);
 
@@ -49,8 +49,14 @@ export default function Cart({ tasa }: { tasa: number }) {
         </div>
       )}
 
-      {/* Currency Switcher */}
-      <div className="flex justify-end mb-4">
+      {/* Actions */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => { if (confirm('¿Vaciar el carrito?')) { clearCart(); toast.success('Carrito vaciado'); } }}
+          className="text-sm px-3 py-2 border border-red-500 text-red-600 rounded"
+        >
+          Vaciar carrito
+        </button>
         <select
           value={moneda}
           onChange={(e) => setMoneda(e.target.value as 'USD' | 'VES')}
