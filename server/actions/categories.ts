@@ -199,8 +199,21 @@ export async function getCategoryGridData() {
         } catch { return ''; }
     }
 
+    // Read configured banners for main categories (carpinteria/hogar)
+    let bannerCarp = '';
+    let bannerHogar = '';
+    try {
+        const { getSettings } = await import('@/server/actions/settings');
+        const settings = await getSettings();
+        bannerCarp = (settings as any).categoryBannerCarpinteriaUrl || '';
+        bannerHogar = (settings as any).categoryBannerHogarUrl || '';
+    } catch {}
+
     for (const r of roots) {
-        let image = await topImageForCategory(r.id);
+        let image = '';
+        if (r.slug === 'carpinteria' && bannerCarp) image = bannerCarp;
+        else if (r.slug === 'hogar' && bannerHogar) image = bannerHogar;
+        else image = await topImageForCategory(r.id);
         let productCount = 0;
         try { productCount = await prisma.product.count({ where: { categoryId: r.id } }); } catch {}
 
