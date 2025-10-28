@@ -1,6 +1,7 @@
 'use server';
 
 import prisma from '@/lib/prisma';
+import { normalizeVePhone } from '@/lib/phone';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
@@ -64,6 +65,7 @@ export async function createOfflineSale(formData: FormData) {
   const userEmail = String(formData.get('customerEmail') || '');
   const userName = String(formData.get('customerName') || '');
   const customerPhone = String(formData.get('customerPhone') || '');
+  const normalizedPhone = normalizeVePhone(customerPhone || '');
   let sellerId = String(formData.get('sellerId') || '');
   const itemsJson = String(formData.get('items') || '[]');
   const items: Array<{ productId: string; name?: string; priceUSD: number; quantity: number } > = JSON.parse(itemsJson || '[]');
@@ -103,9 +105,9 @@ export async function createOfflineSale(formData: FormData) {
     try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_VALIDATION_FAILED', details: 'No hay items' } }); } catch {}
     redirect(`${backNewSale}?error=Debes%20agregar%20al%20menos%20un%20producto`);
   }
-  if (!customerPhone.trim()) {
+  if (!normalizedPhone) {
     try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_VALIDATION_FAILED', details: 'Telefono requerido' } }); } catch {}
-    redirect(`${backNewSale}?error=El%20tel%C3%A9fono%20del%20cliente%20es%20obligatorio`);
+    redirect(`${backNewSale}?error=El%20tel%C3%A9fono%20del%20cliente%20es%20obligatorio%20y%20debe%20ser%20v%C3%A1lido`);
   }
   if (saleType === 'CONTADO' && !['PAGO_MOVIL','TRANSFERENCIA','ZELLE'].includes(paymentMethod)) {
     try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_VALIDATION_FAILED', details: 'Método de pago inválido' } }); } catch {}
@@ -131,7 +133,7 @@ export async function createOfflineSale(formData: FormData) {
   }
   // Update phone if provided
   try {
-    if (customerPhone && user.phone !== customerPhone) {
+    if (normalizedPhone && user.phone !== normalizedPhone) {
       await prisma.user.update({ where: { id: user.id }, data: { phone: customerPhone } });
     }
   } catch {}
@@ -157,7 +159,7 @@ export async function createOfflineSale(formData: FormData) {
       if (addr) finalShippingAddressId = addr.id;
     }
     if (!finalShippingAddressId && addrState && addrCity && addr1) {
-      const created = await prisma.address.create({ data: { userId: user.id, fullname: user.name || userEmail || 'Cliente', phone: customerPhone || (user.phone || ''), state: addrState, city: addrCity, zone: (addrZone || null) as any, address1: addr1, address2: (addr2 || null) as any, notes: (addrNotes || null) as any } });
+      const created = await prisma.address.create({ data: { userId: user.id, fullname: user.name || userEmail || 'Cliente', phone: normalizedPhone || (user.phone || ''), state: addrState, city: addrCity, zone: (addrZone || null) as any, address1: addr1, address2: (addr2 || null) as any, notes: (addrNotes || null) as any } });
       finalShippingAddressId = created.id;
     }
   } catch {}
@@ -215,13 +217,13 @@ export async function createOfflineSale(formData: FormData) {
   let successMessage = saleType === 'CREDITO' ? 'Venta a crédito creada' : 'Venta creada';
   // Also send WhatsApp receipt summary if phone provided and messaging configured
   try {
-    if (customerPhone) {
+    if (normalizedPhone) {
       const { sendWhatsAppText } = await import('@/lib/whatsapp');
       const brand = (await prisma.siteSettings.findUnique({ where: { id: 1 } }))?.brandName || 'Carpihogar';
       const totalTxt = paymentCurrency === 'VES' ? `Bs ${Number(totalVES).toFixed(2)}` : `$${Number(totalUSD).toFixed(2)}`;
       const code = order.id.slice(-6);
       const body = `Hola ${user.name || 'cliente'}!\nTu ${docType} ${code} ha sido generado.\nTotal: ${totalTxt}.\n¡Gracias por tu compra en ${brand}!`;
-      const res = await sendWhatsAppText(customerPhone, body);
+      const res = await sendWhatsAppText(normalizedPhone, body);
       try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'WHATSAPP_RECEIPT_SENT', details: `${order.id}:${customerPhone}:${res.ok ? 'OK' : ('ERR ' + (res.error || ''))}` } }); } catch {}
       if (res.ok) successMessage += ' - WhatsApp enviado';
     }
@@ -285,6 +287,39 @@ export async function sendOrderWhatsAppByForm(formData: FormData) {
   redirect(`${backTo}?message=${encodeURIComponent(msg)}&orderId=${encodeURIComponent(orderId)}`);
 }
 
+export async function sendOrderWhatsAppPdfByForm(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  const role = String((session?.user as any)?.role || '');
+  if (!['ADMIN','VENDEDOR','ALIADO'].includes(role)) throw new Error('Not authorized');
+  const orderId = String(formData.get('orderId') || '');
+  const tipo = String(formData.get('tipo') || 'factura').toLowerCase();
+  const moneda = String(formData.get('moneda') || 'USD').toUpperCase();
+  const backToDefault = role === 'ALIADO' ? '/dashboard/aliado/ventas' : '/dashboard/admin/ventas';
+  const backTo = String(formData.get('backTo') || '') || backToDefault;
+  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { user: true } });
+  if (!order) redirect(`${backTo}?message=${encodeURIComponent('Orden no encontrada')}`);
+  if (role === 'ALIADO') {
+    const myId = String((session?.user as any)?.id || '');
+    if (String(order!.sellerId || '') !== myId) throw new Error('Not authorized');
+  }
+  const phone = String((order!.user as any)?.phone || '') || '';
+  if (!phone) redirect(`${backTo}?message=${encodeURIComponent('El cliente no tiene teléfono registrado')}`);
+  const code = order!.id.slice(-6);
+  const pdf = `${process.env.NEXT_PUBLIC_URL || ''}/api/orders/${order!.id}/pdf?tipo=${encodeURIComponent(tipo)}&moneda=${encodeURIComponent(moneda)}`;
+  let msg = 'PDF enviado por WhatsApp';
+  try {
+    const { sendWhatsAppDocument } = await import('@/lib/whatsapp');
+    const caption = `Tu ${tipo} #${code}`;
+    const filename = `${tipo}_${order!.id}.pdf`;
+    const res = await sendWhatsAppDocument(phone, pdf, filename, caption);
+    if (!res.ok) msg = 'No se pudo enviar PDF por WhatsApp';
+    try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'WHATSAPP_PDF_SENT', details: `${order!.id}:${phone}:${res.ok ? 'OK' : ('ERR ' + (res.error || ''))}` } }); } catch {}
+  } catch {
+    msg = 'No se pudo enviar PDF por WhatsApp';
+  }
+  redirect(`${backTo}?message=${encodeURIComponent(msg)}&orderId=${encodeURIComponent(order!.id)}`);
+}
+
 export async function approveAllySaleByForm(formData: FormData) {
   const session = await getServerSession(authOptions);
   if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
@@ -319,6 +354,7 @@ export async function rejectAllySaleByForm(formData: FormData) {
   try { revalidatePath('/dashboard/aliado/ventas'); } catch {}
   redirect('/dashboard/admin/ventas/aliados?message=' + encodeURIComponent('Venta rechazada'));
 }
+
 
 
 

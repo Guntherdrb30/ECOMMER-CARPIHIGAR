@@ -29,8 +29,8 @@ export default function DatosEnvioPage() {
             <input id="fullname" name="fullname" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
           </div>
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">TelÃ©fono</label>
-            <input id="phone" name="phone" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono</label>
+            <input id="phone" name="phone" required inputMode="tel" pattern="[0-9+()\s-]{10,}" title="Ej: +58 412 1234567 o 0412-1234567" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
           </div>
           <div>
             <label htmlFor="state" className="block text-sm font-medium text-gray-700">Estado</label>

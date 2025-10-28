@@ -1,7 +1,7 @@
 'use client';
 
 import MainImageUploader from '@/components/admin/main-image-uploader';
-import ImagesUploader from '@/components/admin/images-uploader';
+import ImagesUploader from '@/components/admin/images-uploader2';
 import HeroMediaUploader from '@/components/admin/hero-media-uploader';
 
 function isVideoUrl(url?: string | null) {
@@ -83,3 +83,4 @@ export default function ProductMediaManager({
     </div>
   );
 }
+

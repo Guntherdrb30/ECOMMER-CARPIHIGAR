@@ -13,7 +13,7 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0];
     if (!file) { setError('Selecciona un archivo'); setOk(false); return; }
-    // Client-side validation
+    // Validaciones del lado cliente
     const MAX = 50 * 1024 * 1024; // 50MB
     const allowed = ['video/mp4', 'video/webm', 'video/ogg'];
     const name = (file as any).name ? String((file as any).name).toLowerCase() : '';
@@ -28,6 +28,25 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
       setOk(false);
       return;
     }
+    // Validar duración <= 20s antes de subir
+    try {
+      const metaUrl = URL.createObjectURL(file);
+      const vid = document.createElement('video');
+      vid.preload = 'metadata';
+      const durationOk = await new Promise<boolean>((resolve) => {
+        vid.onloadedmetadata = () => {
+          URL.revokeObjectURL(metaUrl);
+          resolve((vid.duration || 0) <= 20.5);
+        };
+        vid.onerror = () => resolve(false);
+        vid.src = metaUrl;
+      });
+      if (!durationOk) {
+        setError('El video debe durar máximo 20 segundos.');
+        setOk(false);
+        return;
+      }
+    } catch {}
     setLoading(true);
     setError(undefined);
     setOk(false);
@@ -64,7 +83,24 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
   return (
     <div className="space-y-2">
       {preview && (
-        <video src={preview} controls className="w-full rounded-lg" />
+        <div>
+          <video src={preview} controls className="w-full rounded-lg" />
+          <div className="mt-2">
+            <button
+              type="button"
+              className="px-3 py-1 rounded border text-sm"
+              onClick={() => {
+                if (!window.confirm('¿Quitar el video?')) return;
+                setPreview(undefined);
+                const input = document.querySelector<HTMLInputElement>(`input[name=\"${targetInputName}\"]`);
+                if (input) input.value = '';
+                setOk(false);
+              }}
+            >
+              Quitar video
+            </button>
+          </div>
+        </div>
       )}
       <div className="flex items-center gap-2">
         <input ref={fileRef} type="file" accept="video/*" onChange={handleChange} />
@@ -72,7 +108,7 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
           {loading ? 'Subiendo...' : 'Subir'}
         </button>
       </div>
-      <p className="text-xs text-gray-500">Formatos permitidos: MP4, WEBM, OGG. Tamaño máximo: 50MB.</p>
+      <p className="text-xs text-gray-500">Formatos permitidos: MP4, WEBM, OGG. Máximo 20 segundos, 50MB.</p>
       {error && <div className="text-red-600 text-sm">{error}</div>}
       {ok && !error && <div className="text-green-700 text-sm">Video subido</div>}
     </div>

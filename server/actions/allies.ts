@@ -132,6 +132,12 @@ export async function getAllyPublicProfile(id: string) {
     },
   });
   if (!u) return null;
+  const projects = await prisma.allyProject.findMany({
+    where: { userId: id },
+    orderBy: { createdAt: 'desc' },
+    take: 2,
+    select: { id: true, images: true, videoUrl: true, caption: true, createdAt: true },
+  });
   const agg = await prisma.order.groupBy({
     by: ['sellerId'],
     where: { sellerId: id, status: { in: ['PAGADO', 'COMPLETADO'] as any } },
@@ -141,6 +147,7 @@ export async function getAllyPublicProfile(id: string) {
   const m = Array.isArray(agg) && agg.length ? agg[0] : undefined;
   return {
     ...u,
+    projects,
     totalRevenueUSD: Number(m?._sum?.totalUSD || 0),
     ordersCount: Number(m?._count?._all || 0),
   } as any;

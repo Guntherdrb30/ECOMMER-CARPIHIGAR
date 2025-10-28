@@ -1,5 +1,6 @@
 import { getMySalesAsAlly } from "@/server/actions/ally";
 import { sendOrderWhatsAppByForm } from "@/server/actions/sales";
+import PdfCopyMenu from "@/components/pdf-copy-menu";
 
 export default async function VentasAliadoPage({ searchParams }: { searchParams?: Promise<{ message?: string; orderId?: string }> }) {
   const sp = (await searchParams) || ({} as any);
@@ -35,6 +36,7 @@ export default async function VentasAliadoPage({ searchParams }: { searchParams?
                 <th className="px-3 py-2">Total USD</th>
                 <th className="px-3 py-2">Fecha</th>
                 <th className="px-3 py-2">Acciones</th>
+                <th className="px-3 py-2">Comprobantes</th>
               </tr>
             </thead>
             <tbody>
@@ -61,6 +63,40 @@ export default async function VentasAliadoPage({ searchParams }: { searchParams?
                       <input type="hidden" name="backTo" value="/dashboard/aliado/ventas" />
                       <button className="text-green-700 hover:underline" type="submit">WhatsApp</button>
                     </form>
+                  </td>
+                  <td className="border px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-600">Ver:</span>
+                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/dashboard/aliado/ventas/${o.id}/print?tipo=recibo&moneda=USD`}>Recibo</a>
+                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/dashboard/aliado/ventas/${o.id}/print?tipo=nota&moneda=USD`}>Nota</a>
+                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/dashboard/aliado/ventas/${o.id}/print?tipo=factura&moneda=USD`}>Factura</a>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-600">PDF:</span>
+                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/api/orders/${o.id}/pdf?tipo=recibo&moneda=USD`}>Recibo</a>
+                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/api/orders/${o.id}/pdf?tipo=nota&moneda=USD`}>Nota</a>
+                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/api/orders/${o.id}/pdf?tipo=factura&moneda=USD`}>Factura</a>
+                        <PdfCopyMenu orderId={o.id} hasPhone={!!o.user?.phone} />
+                      </div>
+                      {o.user?.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-gray-600">Compartir:</span>
+                          <a
+                            className="px-2 py-0.5 border rounded text-green-700"
+                            target="_blank"
+                            href={(function(){
+                              const pdf = `${process.env.NEXT_PUBLIC_URL || ''}/api/orders/${o.id}/pdf?tipo=factura&moneda=USD`;
+                              const code = o.id.slice(-6);
+                              const body = `Hola ${o.user?.name || 'cliente'}! Te comparto tu factura #${code}: ${pdf}`;
+                              const phone = String(o.user?.phone || '').replace(/[^0-9]/g,'');
+                              return `https://wa.me/${phone}?text=${encodeURIComponent(body)}`;
+                            })()}
+                            rel="noreferrer"
+                          >WhatsApp</a>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -8,7 +8,7 @@ export default async function AllyPublicPage({ params }: { params: Promise<{ id:
     return <div className="container mx-auto px-4 py-16">Aliado no encontrado.</div>;
   }
   const services: string[] = Array.isArray((ally as any).services) ? ((ally as any).services as string[]) : [];
-  const portfolio: string[] = Array.isArray((ally as any).portfolioUrls) ? ((ally as any).portfolioUrls as string[]) : [];
+  const projects: any[] = Array.isArray((ally as any).projects) ? ((ally as any).projects as any[]) : [];
 
   return (
     <div className="bg-white">
@@ -44,13 +44,25 @@ export default async function AllyPublicPage({ params }: { params: Promise<{ id:
           </div>
         )}
 
-        {!!portfolio.length && (
+        {!!projects.length && (
           <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">Mis trabajos</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {portfolio.map((u, i) => (
-                <div key={i} className="relative w-full aspect-square rounded overflow-hidden bg-gray-100">
-                  <Image src={u} alt={`work-${i}`} fill className="object-cover" />
+            <h2 className="text-xl font-semibold mb-4">Proyectos</h2>
+            <div className="space-y-6">
+              {projects.map((p, idx) => (
+                <div key={p.id || idx} className="border rounded-lg p-3">
+                  {p.caption && <div className="text-gray-800 mb-2 whitespace-pre-line">{p.caption}</div>}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {(p.images || []).slice(0,4).map((u: string, i: number) => (
+                      <div key={i} className="relative w-full aspect-square rounded overflow-hidden bg-gray-100">
+                        <Image src={u} alt={`work-${i}`} fill className="object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                  {p.videoUrl && (
+                    <div className="mt-3">
+                      <video src={p.videoUrl} controls className="w-full rounded" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

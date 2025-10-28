@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { normalizeVePhone } from '@/lib/phone';
 
 const AddressSchema = z.object({
   id: z.string().optional(),
@@ -64,6 +65,13 @@ export async function saveAddress(formData: FormData) {
   const { id, ...data } = validation.data;
 
   try {
+    // Normalize phone
+    const normalized = normalizeVePhone((data as any).phone || '');
+    if (!normalized) {
+      return { success: false, message: 'Teléfono inválido' } as any;
+    }
+    (data as any).phone = normalized;
+
     if (id) {
       // Update
       await prisma.address.update({
@@ -76,6 +84,16 @@ export async function saveAddress(formData: FormData) {
         data: { ...data, userId: user.id },
       });
     }
+    // Sync user's phone with the address phone if different
+    try {
+      const phone = String((data as any).phone || '').trim();
+      if (phone) {
+        const current = await prisma.user.findUnique({ where: { id: user.id }, select: { phone: true } });
+        if (!current?.phone || current.phone !== phone) {
+          await prisma.user.update({ where: { id: user.id }, data: { phone } });
+        }
+      }
+    } catch {}
     try { revalidatePath('/dashboard/cliente/direcciones', 'page' as any); } catch { revalidatePath('/dashboard/cliente/direcciones'); }
     return { success: true, message: 'Dirección guardada con éxito.' };
   } catch (error) {

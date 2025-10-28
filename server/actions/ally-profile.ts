@@ -14,23 +14,18 @@ export async function updateAllyProfile(formData: FormData) {
 
   const profileImageUrl = String(formData.get('profileImageUrl') || '').trim() || null;
   const bio = String(formData.get('bio') || '').trim() || null;
-  const portfolioText = String(formData.get('portfolioText') || '').trim() || null;
   const servicesRaw = String(formData.get('services') || '').trim();
   const services = servicesRaw
     ? Array.from(new Set(servicesRaw.split(',').map(s => s.trim()).filter(Boolean)))
     : [];
-  const portfolioUrls = Array.from(formData.getAll('portfolioUrls[]') || [])
-    .map((v) => String(v || '').trim())
-    .filter(Boolean);
+  
 
   await prisma.user.update({
     where: { id: user.id },
     data: {
       profileImageUrl,
       bio,
-      portfolioText,
       services,
-      portfolioUrls,
     },
   });
 

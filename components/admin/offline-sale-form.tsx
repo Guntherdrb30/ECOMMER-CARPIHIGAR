@@ -204,7 +204,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
         </div>
         <div>
           <label className="block text-sm text-gray-700">Teléfono</label>
-          <input name="customerPhone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="04xx-xxxxxxx" />
+          <input name="customerPhone" required inputMode="tel" pattern="[0-9+()\s-]{10,}" title="Ej: +58 412 1234567 o 0412-1234567" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="04xx-xxxxxxx" />
         </div>
         <div>
           <label className="block text-sm text-gray-700">Tipo de venta</label>
@@ -450,3 +450,4 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
     </form>
   );
 }
+

@@ -568,3 +568,30 @@ model Message {
   @@index([conversationId, createdAt])
 }
 
+// Noticias generadas a partir de proyectos de aliados
+model News {
+  id        String   @id @default(cuid())
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  imageUrl  String
+  title     String?
+  excerpt   String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([authorId, createdAt])
+}
+
+// Proyectos de aliados: se guardan solo los 2 más recientes
+model AllyProject {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images    String[]
+  videoUrl  String?
+  caption   String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+

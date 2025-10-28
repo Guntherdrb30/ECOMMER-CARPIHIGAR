@@ -125,8 +125,33 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
         if (!selectedAddress) {
             try { await prisma.auditLog.create({ data: { userId, action: 'CHECKOUT_VALIDATION_FAILED', details: 'No address on file' } }); } catch {}
             return { ok: false, error: 'Debes agregar una direcci√≥n de env√≠o antes de confirmar.' };
+        // Ensure phone is present and sync to user profile
+        try {
+            const phoneRaw = String((selectedAddress as any).phone || '').trim();
+            const digits = phoneRaw.replace(/[^0-9]/g, '');
+            if (!digits || digits.length < 7) {
+                try { await prisma.auditLog.create({ data: { userId, action: 'CHECKOUT_VALIDATION_FAILED', details: 'Missing phone in address' } }); } catch {}
+                return { ok: false, error: 'Tu telÈfono es obligatorio en la direcciÛn de envÌo.' };
+            }
+            const current = await prisma.user.findUnique({ where: { id: userId }, select: { phone: true } });
+            if (!current?.phone || String(current.phone) !== phoneRaw) {
+                await prisma.user.update({ where: { id: userId }, data: { phone: phoneRaw } });
+            }
+        } catch {}
         }
-
+        // Ensure phone is present and sync to user profile
+        try {
+            const phoneRaw = String((selectedAddress as any).phone || '').trim();
+            const digits = phoneRaw.replace(/[^0-9]/g, '');
+            if (!digits || digits.length < 7) {
+                try { await prisma.auditLog.create({ data: { userId, action: 'CHECKOUT_VALIDATION_FAILED', details: 'Missing phone in address' } }); } catch {}
+                return { ok: false, error: 'Tu telÈfono es obligatorio en la direcciÛn de envÌo.' };
+            }
+            const current = await prisma.user.findUnique({ where: { id: userId }, select: { phone: true } });
+            if (!current?.phone || String(current.phone) !== phoneRaw) {
+                await prisma.user.update({ where: { id: userId }, data: { phone: phoneRaw } });
+            }
+        } catch {}
         const subtotalUSD = items.reduce((sum, it) => sum + (Number(it.priceUSD) * Number(it.quantity)), 0);
         const ivaAmount = subtotalUSD * (ivaPercent / 100);
         const totalUSD = subtotalUSD + ivaAmount;
@@ -309,3 +334,4 @@ export async function markShipmentReceived(orderId: string) {
     try { const { revalidatePath } = await import('next/cache'); revalidatePath('/dashboard/admin/envios'); } catch {}
     return { ok: true };
 }
+
