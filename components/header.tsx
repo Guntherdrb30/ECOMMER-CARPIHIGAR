@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -135,7 +135,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                           <div className="mt-1 flex items-center gap-1">
                             <button aria-label="Disminuir" onClick={() => { const n = it.quantity - 1; if (n <= 0) { removeItem(it.id); toast.success('Producto eliminado del carrito'); } else { updateQty(it.id, n); toast.info(`Cantidad actualizada a ${n}`); } }} className="p-1 rounded border hover:bg-gray-50"><Minus size={12} /></button>
                             <span className="px-1">{it.quantity}</span>
-                            <button aria-label="Aumentar" onClick={() => { const max = typeof it.stock === 'number' ? it.stock : Infinity; if (it.quantity >= (max as number)) { toast.warning(`Stock máximo disponible: ${max}`); return; } const n = it.quantity + 1; updateQty(it.id, n); toast.info(`Cantidad actualizada a ${n}`); }} className="p-1 rounded border hover:bg-gray-50"><Plus size={12} /></button>
+                            <button aria-label="Aumentar" onClick={() => { const max = typeof it.stock === 'number' ? it.stock : Infinity; if (it.quantity >= (max as number)) { toast.warning(`Stock mÃ¡ximo disponible: ${max}`); return; } const n = it.quantity + 1; updateQty(it.id, n); toast.info(`Cantidad actualizada a ${n}`); }} className="p-1 rounded border hover:bg-gray-50"><Plus size={12} /></button>
                             <button aria-label="Eliminar" onClick={() => { removeItem(it.id); toast.success('Producto eliminado del carrito'); }} className="ml-2 p-1 rounded border hover:bg-gray-50 text-red-600"><Trash2 size={12} /></button>
                           </div>
                         </div>
@@ -178,7 +178,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
               </span>
             )}
           </button>
-          <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600 hover:text-brand focus:outline-none" aria-label="Abrir menú">
+          <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600 hover:text-brand focus:outline-none" aria-label="Abrir menÃº">
             {isOpen ? <X /> : <Menu />}
           </button>
         </div>
@@ -258,7 +258,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                           onClick={() => {
                             const max = typeof it.stock === 'number' ? it.stock : Infinity;
                             if (it.quantity >= (max as number)) {
-                              toast.warning(`Stock máximo disponible: ${max}`);
+                              toast.warning(`Stock mÃ¡ximo disponible: ${max}`);
                               return;
                             }
                             const next = it.quantity + 1;
@@ -304,11 +304,11 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
         </div>
       )}
       {/* Confirm clear cart (global) */}
-      <ConfirmDialog
+            <ConfirmDialog
         open={confirmClear}
-        title="vaciarcarrito"
-        message="Esta accion vaciar� todos los productos del carrito."
-        confirmText="Sí, vaciar
+        title="Vaciar carrito"
+        message="Esta accion vaciara todos los productos del carrito."
+        confirmText="Si, vaciar"
         cancelText="Cancelar"
         onConfirm={() => { clearCart(); setConfirmClear(false); toast.success('Carrito vaciado'); }}
         onClose={() => setConfirmClear(false)}
@@ -316,6 +316,10 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
     </header>
   );
 }
+
+
+
+
 
 
 
