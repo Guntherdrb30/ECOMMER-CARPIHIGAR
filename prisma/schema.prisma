@@ -47,6 +47,10 @@ model User {
   wishlistItems WishlistItem[]
   createdPurchases Purchase[] @relation("PurchaseCreatedBy")
 
+  // Ally content relations
+  news         News[]
+  allyProjects AllyProject[]
+
   // Messaging relations
   conversations Conversation[] @relation("ConversationUser")
   assignedConversations Conversation[] @relation("ConversationAssignedTo")
