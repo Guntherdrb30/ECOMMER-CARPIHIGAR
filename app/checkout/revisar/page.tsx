@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -28,7 +28,7 @@ function SubmitButton() {
       disabled={pending}
       className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-60"
     >
-      {pending ? 'Enviando…' : 'Confirmar pago'}
+      {pending ? 'Enviandoâ€¦' : 'Confirmar pago'}
     </button>
   );
 }
@@ -50,7 +50,7 @@ export default function RevisarPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Configuración (puede venir de BD/ajustes si se requiere)
+  // ConfiguraciÃ³n (puede venir de BD/ajustes si se requiere)
   const ivaPercent = 16; // %
   const tasaVES = 40; // tasa de ejemplo
 
@@ -184,7 +184,7 @@ export default function RevisarPage() {
     try { if (selectedAddressId) localStorage.setItem('checkout.addressId', selectedAddressId); } catch {}
   }, [selectedAddressId]);
 
-  // If no address on file, redirect to Datos de Env�o and come back after
+  // If no address on file, redirect to Datos de Envío and come back after
   useEffect(() => {
     if (hasAddress === false) {
       try {
@@ -208,8 +208,8 @@ export default function RevisarPage() {
     return (
       <div className="container mx-auto p-4">
         <div className="bg-white shadow-md rounded-lg p-8 text-center">
-          <h1 className="text-2xl font-bold mb-2">¡Gracias!</h1>
-          <p className="text-gray-700">Hemos recibido tu pago y está en revisión.</p>
+          <h1 className="text-2xl font-bold mb-2">Â¡Gracias!</h1>
+          <p className="text-gray-700">Hemos recibido tu pago y estÃ¡ en revisiÃ³n.</p>
         </div>
       </div>
     );
@@ -263,16 +263,16 @@ export default function RevisarPage() {
             const pmPhone = (form.querySelector('#pm_phone') as HTMLInputElement | null)?.value || '';
             const zelleEmail = (form.querySelector('#zelle_email') as HTMLInputElement | null)?.value || '';
             if (!reference.trim()) next.reference = 'La referencia es obligatoria';
-            if (paymentMethod === 'PAGO_MOVIL' && !pmPhone.trim()) next.pm_phone = 'El teléfono es obligatorio';
+            if (paymentMethod === 'PAGO_MOVIL' && !pmPhone.trim()) next.pm_phone = 'El telÃ©fono es obligatorio';
             if (paymentMethod === 'ZELLE') {
               if (!zelleEmail.trim()) next.zelle_email = 'El correo es obligatorio';
-              else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(zelleEmail)) next.zelle_email = 'Correo inválido';
+              else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(zelleEmail)) next.zelle_email = 'Correo invÃ¡lido';
             }
             setErrors(next);
             if (Object.keys(next).length) e.preventDefault();
           }}>
             <div>
-              <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700">Método de pago</label>
+              <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700">MÃ©todo de pago</label>
               <select
                 id="paymentMethod"
                 name="paymentMethod"
@@ -280,7 +280,7 @@ export default function RevisarPage() {
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               >
-                <option value="PAGO_MOVIL">Pago Móvil</option>
+                <option value="PAGO_MOVIL">Pago MÃ³vil</option>
                 <option value="TRANSFERENCIA">Transferencia</option>
                 <option value="ZELLE">Zelle</option>
               </select>
@@ -302,9 +302,9 @@ export default function RevisarPage() {
 
             {paymentMethod === 'PAGO_MOVIL' && (
               <div className="space-y-3">
-                <div className="text-sm text-gray-600">Realiza tu Pago Móvil y coloca los datos:</div>
+                <div className="text-sm text-gray-600">Realiza tu Pago MÃ³vil y coloca los datos:</div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700" htmlFor="pm_phone">Tel�fono</label>
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="pm_phone">Teléfono</label>
                   <input id="pm_phone" name="pm_phone" type="text" required inputMode="tel" pattern="[0-9+()\s-]{10,}" title="Ej: +58 412 1234567 o 0412-1234567" className={`mt-1 block w-full rounded-md shadow-sm ${errors.pm_phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} />
                   {errors.pm_phone && <div className="text-xs text-red-600 mt-1">{errors.pm_phone}</div>}
                 </div>
@@ -326,7 +326,7 @@ export default function RevisarPage() {
 
             {paymentMethod === 'TRANSFERENCIA' && (
               <div className="space-y-3">
-                <div className="text-sm text-gray-600">Realiza la transferencia y coloca el número de referencia:</div>
+                <div className="text-sm text-gray-600">Realiza la transferencia y coloca el nÃºmero de referencia:</div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="reference">Referencia</label>
                   <input id="reference" name="reference" type="text" className={`mt-1 block w-full rounded-md shadow-sm ${errors.reference ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} />
@@ -337,7 +337,7 @@ export default function RevisarPage() {
 
             {paymentMethod === 'ZELLE' && (
               <div className="space-y-3">
-                <div className="text-sm text-gray-600">Envía el pago por Zelle y coloca los datos:</div>
+                <div className="text-sm text-gray-600">EnvÃ­a el pago por Zelle y coloca los datos:</div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="zelle_email">Correo Zelle</label>
                   <input id="zelle_email" name="zelle_email" type="email" required className={`mt-1 block w-full rounded-md shadow-sm ${errors.zelle_email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} />
@@ -353,8 +353,8 @@ export default function RevisarPage() {
 
             {!hasAddress && (
               <div className="bg-red-50 border-l-4 border-red-400 p-3 text-sm text-red-800 rounded mb-3">
-                Aún no has agregado una dirección de envío. Por favor completa tus datos en
-                <a className="underline ml-1" href="/checkout/datos-envio">Datos de Envío</a>
+                AÃºn no has agregado una direcciÃ³n de envÃ­o. Por favor completa tus datos en
+                <a className="underline ml-1" href="/checkout/datos-envio">Datos de EnvÃ­o</a>
                 {" "}o en
                 <a className="underline ml-1" href="/dashboard/cliente">Mi Cuenta</a> para evitar errores en la entrega.
               </div>
@@ -366,19 +366,19 @@ export default function RevisarPage() {
               </div>
             ) : (
               <div className="bg-blue-50 border-l-4 border-blue-400 p-3 text-sm text-blue-800 rounded">
-                Para envíos nacionales, puedes seleccionar TEALCA o MRW.
+                Para envÃ­os nacionales, puedes seleccionar TEALCA o MRW.
               </div>
             )}
 
             {/* Address selection */}
             <div>
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">Direcci�n de env�o</label>
-                <a className="text-sm text-blue-600 underline" href="/checkout/datos-envio?next=/checkout/revisar">A�adir nueva</a>
+                <label className="block text-sm font-medium text-gray-700">Dirección de envío</label>
+                <a className="text-sm text-blue-600 underline" href="/checkout/datos-envio?next=/checkout/revisar">Añadir nueva</a>
               </div>
               {addresses.length === 0 ? (
                 <div className="bg-red-50 border-l-4 border-red-400 p-3 text-sm text-red-800 rounded mb-3">
-                  A�n no tienes direcciones guardadas. Agrega una en Datos de Env�o.
+                  Aún no tienes direcciones guardadas. Agrega una en Datos de Envío.
                 </div>
               ) : (
                 <div className="mt-2 space-y-2">
@@ -392,7 +392,7 @@ export default function RevisarPage() {
                         onChange={() => setSelectedAddressId(a.id)}
                       />
                       <div className="text-sm">
-                        <div className="font-medium">{a.fullname} � {a.phone}</div>
+                        <div className="font-medium">{a.fullname} • {a.phone}</div>
                         <div>{a.address1}{a.address2 ? `, ${a.address2}` : ''}</div>
                         <div>{a.zone ? `${a.zone}, ` : ''}{a.city}, {a.state}</div>
                       </div>
@@ -411,15 +411,15 @@ export default function RevisarPage() {
                 value={shippingOption}
                 onChange={(e) => setShippingOption(e.target.value as ShippingOption)}
               >
-                <option value="">Automática</option>
+                <option value="">AutomÃ¡tica</option>
                 <option value="RETIRO_TIENDA">Retiro en tienda</option>
                 <option value="DELIVERY">Delivery (incluido)</option>
               </select>
-              <div className="text-xs text-gray-500 mt-1">Si estás en Barinas puedes elegir Retiro en tienda o Delivery incluido.</div>
+              <div className="text-xs text-gray-500 mt-1">Si estÃ¡s en Barinas puedes elegir Retiro en tienda o Delivery incluido.</div>
             </div>
 
             <div>
-              <label htmlFor="shippingCarrier" className="block text-sm font-medium text-gray-700">Carrier (si no estás en Barinas)</label>
+              <label htmlFor="shippingCarrier" className="block text-sm font-medium text-gray-700">Carrier (si no estÃ¡s en Barinas)</label>
               <select
                 id="shippingCarrier"
                 name="shippingCarrier"
@@ -428,11 +428,11 @@ export default function RevisarPage() {
                 onChange={(e) => setShippingCarrier(e.target.value as ShippingCarrier)}
                 disabled={isLocalBarinas}
               >
-                <option value="">Automático</option>
+                <option value="">AutomÃ¡tico</option>
                 <option value="TEALCA">TEALCA</option>
                 <option value="MRW">MRW</option>
               </select>
-              <div className="text-xs text-gray-500 mt-1">{isLocalBarinas ? 'No aplica para entregas locales.' : 'Para envíos nacionales puedes elegir TEALCA o MRW.'}</div>
+              <div className="text-xs text-gray-500 mt-1">{isLocalBarinas ? 'No aplica para entregas locales.' : 'Para envÃ­os nacionales puedes elegir TEALCA o MRW.'}</div>
             </div>
 
             {/* Hidden payload */}
@@ -460,6 +460,7 @@ export default function RevisarPage() {
     </div>
   );
 }
+
 
 
 

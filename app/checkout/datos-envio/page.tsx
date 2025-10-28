@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -20,7 +20,7 @@ export default function DatosEnvioPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Datos de Envío</h1>
+      <h1 className="text-2xl font-bold mb-4">Datos de EnvÃ­o</h1>
       <form action={saveAddressFromCheckout} className="space-y-4 max-w-xl">
         <input type="hidden" name="next" value={next} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -29,7 +29,7 @@ export default function DatosEnvioPage() {
             <input id="fullname" name="fullname" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
           </div>
           <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Tel�fono</label>
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono</label>
             <input id="phone" name="phone" required inputMode="tel" pattern="[0-9+()\s-]{10,}" title="Ej: +58 412 1234567 o 0412-1234567" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
           </div>
           <div>
@@ -68,7 +68,7 @@ export default function DatosEnvioPage() {
             <input id="zone" name="zone" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="address1" className="block text-sm font-medium text-gray-700">Dirección</label>
+            <label htmlFor="address1" className="block text-sm font-medium text-gray-700">DirecciÃ³n</label>
             <input id="address1" name="address1" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
           </div>
           <div className="md:col-span-2">
@@ -88,3 +88,4 @@ export default function DatosEnvioPage() {
     </div>
   );
 }
+
