@@ -20,7 +20,7 @@ export default async function AllyPublicPage({ params }: { params: Promise<{ id:
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-bold text-gray-900">{ally.name || 'Aliado'}</h1>
-            <div className="mt-1 text-gray-600 text-sm">{ally.ordersCount} ventas · ${Number((ally as any).totalRevenueUSD || 0).toFixed(2)} facturado</div>
+            <div className="mt-1 text-gray-600 text-sm">{ally.ordersCount} ventas ${Number((ally as any).totalRevenueUSD || 0).toFixed(2)} facturado</div>
             <div className="mt-3 flex flex-wrap gap-2">
               {services.slice(0, 8).map((s, i) => (
                 <span key={i} className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-0.5">{s}</span>
@@ -39,7 +39,7 @@ export default async function AllyPublicPage({ params }: { params: Promise<{ id:
 
         {ally.bio && (
           <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-2">Sobre mí</h2>
+            <h2 className="text-xl font-semibold mb-2">Sobre mi</h2>
             <p className="text-gray-700 whitespace-pre-line">{ally.bio}</p>
           </div>
         )}
@@ -72,3 +72,4 @@ export default async function AllyPublicPage({ params }: { params: Promise<{ id:
     </div>
   );
 }
+

@@ -33,7 +33,7 @@ export default function AlliesRankingClient({ items }: { items: AllySummary[] })
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
           <div>
             <h2 className="text-3xl font-bold">Aliados Destacados</h2>
-            <p className="text-gray-600">Conoce a nuestros mejores aliados y contáctalos.</p>
+            <p className="text-gray-600">Conoce a nuestros mejores aliados y contactalos.</p>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -88,3 +88,4 @@ export default function AlliesRankingClient({ items }: { items: AllySummary[] })
     </section>
   );
 }
+

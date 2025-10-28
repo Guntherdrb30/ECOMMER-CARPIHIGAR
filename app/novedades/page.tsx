@@ -6,7 +6,7 @@ export default async function NovedadesPage() {
 
   return (
     <div className="bg-gray-50">
-      <div className="container mx-auto px-4 py-16 md:py-24">
+      <div className="contAuner mx-auto px-4 py-16 md:py-24">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight">Novedades de Nuestros Aliados</h1>
           <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
@@ -45,7 +45,7 @@ export default async function NovedadesPage() {
           </div>
         ) : (
           <div className="text-center py-16 border-t border-gray-200 mt-16">
-            <h2 className="text-2xl font-semibold text-gray-700">Próximamente</h2>
+            <h2 className="text-2xl font-semibold text-gray-700">Proximamente</h2>
             <p className="mt-2 text-gray-500">Aún no hay novedades. Vuelve pronto.</p>
           </div>
         )}

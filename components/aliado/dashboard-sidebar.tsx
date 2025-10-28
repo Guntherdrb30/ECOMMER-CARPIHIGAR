@@ -44,7 +44,7 @@ export function AllyDashboardSidebar() {
         </Link>
         <hr className="my-2" />
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname.startsWith(item.href);
           return (
             <Link
               key={item.name}
@@ -59,10 +59,9 @@ export function AllyDashboardSidebar() {
         <hr className="my-4" />
         <button onClick={() => signOut({ callbackUrl: '/auth/login' })} className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
           {icons['LogOut']}
-          <span>Cerrar Sesi��n</span>
+          <span>Cerrar Sesion</span>
         </button>
       </nav>
     </aside>
   );
 }
-

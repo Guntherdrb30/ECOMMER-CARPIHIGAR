@@ -45,13 +45,14 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
   const navLinks = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/productos', label: 'Productos', icon: Box },
-    { href: '/categorias', label: 'Categorías', icon: Star },
+    { href: '/categorias', label: 'Categorias', icon: Star },
     { href: '/novedades', label: 'Novedades', icon: Star },
     { href: '/contacto', label: 'Contacto', icon: Mail },
   ];
 
+  const role = (session?.user as any)?.role as string | undefined;
   const authenticatedLinks = [
-    { href: '/dashboard/cliente', label: 'Mi Perfil', icon: User },
+    { href: role === 'ALIADO' ? '/dashboard/aliado' : '/dashboard/cliente', label: role === 'ALIADO' ? 'Mi Panel' : 'Mi Perfil', icon: User },
     { href: '/carrito', label: 'Carrito', icon: ShoppingCart },
   ];
 
@@ -164,7 +165,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
           </div>
           {status === 'authenticated' && (
             <button onClick={() => signOut()} className="relative text-gray-600 hover:text-brand transition-colors px-2 py-1">
-              Cerrar Sesión
+              Cerrar Sesion
             </button>
           )}
         </nav>
@@ -205,7 +206,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
               <button onClick={() => { signOut(); setIsOpen(false); }} className="relative text-gray-600 hover:text-brand transition-colors py-2">
                 <span className="flex items-center">
                   <LogOut className="mr-2" size={20} />
-                  Cerrar Sesión
+                  Cerrar Sesion
                 </span>
               </button>
             )}
@@ -305,9 +306,9 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
       {/* Confirm clear cart (global) */}
       <ConfirmDialog
         open={confirmClear}
-        title="Vaciar carrito"
-        message="Esta acción vaciará todos los productos del carrito."
-        confirmText="Sí, vaciar"
+        title="vaciarcarrito"
+        message="Esta accion vaciar� todos los productos del carrito."
+        confirmText="Sí, vaciar
         cancelText="Cancelar"
         onConfirm={() => { clearCart(); setConfirmClear(false); toast.success('Carrito vaciado'); }}
         onClose={() => setConfirmClear(false)}
