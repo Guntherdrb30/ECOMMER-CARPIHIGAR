@@ -499,7 +499,7 @@ model ReceivableEntry {
 model WishlistItem {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation("UserAllyProjects", fields: [userId], references: [id], onDelete: Cascade)
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -576,7 +576,7 @@ model Message {
 model News {
   id        String   @id @default(cuid())
   authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
+  author    User     @relation("UserNews", fields: [authorId], references: [id])
   imageUrl  String
   title     String?
   excerpt   String?
@@ -590,7 +590,7 @@ model News {
 model AllyProject {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation("UserAllyProjects", fields: [userId], references: [id], onDelete: Cascade)
   images    String[]
   videoUrl  String?
   caption   String?
@@ -598,4 +598,5 @@ model AllyProject {
 
   @@index([userId, createdAt])
 }
+
 
