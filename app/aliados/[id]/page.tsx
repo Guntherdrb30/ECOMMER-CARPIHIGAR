@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { getAllyPublicProfile } from '@/server/actions/allies';
 
 export default async function AllyPublicPage({ params }: { params: Promise<{ id: string }> }) {
@@ -54,7 +53,8 @@ export default async function AllyPublicPage({ params }: { params: Promise<{ id:
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {(p.images || []).slice(0,4).map((u: string, i: number) => (
                       <div key={i} className="relative w-full aspect-square rounded overflow-hidden bg-gray-100">
-                        <Image src={u} alt={`work-${i}`} fill className="object-cover" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={u} alt={`work-${i}`} className="absolute inset-0 w-full h-full object-cover" />
                       </div>
                     ))}
                   </div>

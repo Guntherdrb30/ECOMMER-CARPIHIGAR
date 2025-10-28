@@ -132,12 +132,18 @@ export async function getAllyPublicProfile(id: string) {
     },
   });
   if (!u) return null;
-  const projects = await prisma.allyProject.findMany({
-    where: { userId: id },
-    orderBy: { createdAt: 'desc' },
-    take: 2,
-    select: { id: true, images: true, videoUrl: true, caption: true, createdAt: true },
-  });
+  let projects: { id: string; images: string[]; videoUrl: string | null; caption: string | null; createdAt?: string }[] = [];
+  try {
+    const rows = await prisma.allyProject.findMany({
+      where: { userId: id },
+      orderBy: { createdAt: 'desc' },
+      take: 2,
+      select: { id: true, images: true, videoUrl: true, caption: true, createdAt: true },
+    });
+    projects = rows.map((r) => ({ id: r.id, images: (r as any).images || [], videoUrl: (r as any).videoUrl || null, caption: (r as any).caption || null, createdAt: ((r as any).createdAt instanceof Date) ? (r as any).createdAt.toISOString() : undefined }));
+  } catch {
+    projects = [];
+  }
   const agg = await prisma.order.groupBy({
     by: ['sellerId'],
     where: { sellerId: id, status: { in: ['PAGADO', 'COMPLETADO'] as any } },
