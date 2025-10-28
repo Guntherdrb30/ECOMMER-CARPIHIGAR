@@ -68,6 +68,19 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
       const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
       if (input) input.value = res.url;
       setOk(true);
+    } catch (e: any) {
+      try {
+        const probe = await fetch('/api/blob/handle-upload', { method: 'GET' });
+        const info = await probe.json().catch(() => ({} as any));
+        if (!probe.ok || info?.hasToken === false) {
+          setError('Falta configurar BLOB_READ_WRITE_TOKEN en Vercel para subir archivos.');
+        } else {
+          setError(e?.message || 'Error al subir el video');
+        }
+      } catch {
+        setError(e?.message || 'Error al subir el video');
+      }
+      setOk(false);
     } finally {
       setLoading(false);
     }

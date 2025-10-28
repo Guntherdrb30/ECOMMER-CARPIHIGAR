@@ -5,30 +5,29 @@ export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      return NextResponse.json({ error: 'BLOB_READ_WRITE_TOKEN faltante en el entorno' }, { status: 400 });
+    }
     const res = await handleUpload({
       request,
-      body,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-      onBeforeGenerateToken: async (pathname, clientPayload, multipart) => {
+      token,
+      onBeforeGenerateToken: async () => {
         return {
           allowedContentTypes: ['image/*', 'video/*', 'application/pdf', 'text/csv'],
           maximumSizeInBytes: 100 * 1024 * 1024, // 100MB
           addRandomSuffix: true,
           cacheControlMaxAge: 60 * 60 * 24 * 365, // 1 year
-          // validUntil: Date.now() + 5 * 60_000, // Optional short-lived token
         };
       },
       onUploadCompleted: async ({ blob }) => {
-        // No-op: the admin forms capture the returned URL via client
-        // You could persist metadata here if needed.
-        console.log('[blob] upload completed', blob.pathname);
+        try { console.log('[blob] upload completed', blob.pathname); } catch {}
       },
     });
     return NextResponse.json(res);
-  } catch (err) {
-    console.error('[blob] handle-upload error', err);
-    return NextResponse.json({ error: 'Blob handle-upload failed' }, { status: 500 });
+  } catch (err: any) {
+    console.error('[blob] handle-upload error', err?.message || err);
+    return NextResponse.json({ error: 'Blob handle-upload failed', details: String(err?.message || err) }, { status: 500 });
   }
 }
 
