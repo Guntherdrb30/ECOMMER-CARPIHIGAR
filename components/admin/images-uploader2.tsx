@@ -18,6 +18,16 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
       const filesArr = Array.from(files);
       const available = typeof max === 'number' ? Math.max(0, max - urls.length) : filesArr.length;
       const limited = filesArr.slice(0, available);
+      const tryServerFallback = async (file: File) => {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('type', 'image');
+        const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+        const data = await resp.json().catch(() => ({} as any));
+        if (!resp.ok || !data?.url) throw new Error(data?.error || 'Upload fallido');
+        return data.url as string;
+      };
+
       for (const file of limited) {
         if (max && (urls.length + next.length) >= max) break;
         const now = new Date();
@@ -29,11 +39,26 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
         const base = (nameGuess || 'image').replace(/[^a-z0-9._-]+/g, '-');
         const pathname = `uploads/${year}/${month}/${base}.${ext}`;
 
-        const res = await upload(pathname, file, {
-          handleUploadUrl: '/api/blob/handle-upload',
-          access: 'public',
-        });
-        next.push(res.url);
+        try {
+          const res = await upload(pathname, file, {
+            handleUploadUrl: '/api/blob/handle-upload',
+            access: 'public',
+          });
+          next.push(res.url);
+        } catch (err: any) {
+          try {
+            const probe = await fetch('/api/blob/handle-upload', { method: 'GET' });
+            const info = await probe.json().catch(() => ({} as any));
+            if (!probe.ok || info?.hasToken === false || String(err?.message || '').toLowerCase().includes('client token')) {
+              const url = await tryServerFallback(file);
+              next.push(url);
+            } else {
+              throw err;
+            }
+          } catch (e) {
+            throw e;
+          }
+        }
       }
       setUrls((prev) => [...prev, ...next]);
     } catch (e: any) {

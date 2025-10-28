@@ -26,7 +26,8 @@ export const runtime = 'nodejs';
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions as any);
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
+    const role = String((session?.user as any)?.role || '');
+    if (!session || !['ADMIN','ALIADO','VENDEDOR'].includes(role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const form = await req.formData();
@@ -92,4 +93,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }
-
