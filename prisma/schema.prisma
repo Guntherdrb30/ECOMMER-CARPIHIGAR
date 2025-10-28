@@ -35,6 +35,10 @@ model User {
   services        String[]
   portfolioUrls   String[]
   portfolioText   String?
+  
+  // Ally content relations
+  news         News[] @relation("UserNews")
+  allyProjects AllyProject[] @relation("UserAllyProjects")
   createdAt    DateTime     @default(now())
   addresses    Address[]
   orders       Order[]      @relation("OrderCustomer")
@@ -46,10 +50,6 @@ model User {
   receivedPOs  PurchaseOrder[] @relation("POReceiver")
   wishlistItems WishlistItem[]
   createdPurchases Purchase[] @relation("PurchaseCreatedBy")
-
-  // Ally content relations
-  news         News[]
-  allyProjects AllyProject[]
 
   // Messaging relations
   conversations Conversation[] @relation("ConversationUser")
@@ -499,7 +499,7 @@ model ReceivableEntry {
 model WishlistItem {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation("UserAllyProjects", fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -590,7 +590,7 @@ model News {
 model AllyProject {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation("UserAllyProjects", fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   images    String[]
   videoUrl  String?
   caption   String?
@@ -598,5 +598,7 @@ model AllyProject {
 
   @@index([userId, createdAt])
 }
+
+
 
 
