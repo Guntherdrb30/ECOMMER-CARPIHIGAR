@@ -16,19 +16,30 @@ export type NewsItem = {
 };
 
 export async function getLatestNews(limit = 12): Promise<NewsItem[]> {
-  const items = await prisma.news.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-    include: { author: { select: { id: true, name: true, profileImageUrl: true } } },
-  });
-  return items as any;
+  try {
+    const items = await prisma.news.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: { author: { select: { id: true, name: true, profileImageUrl: true } } },
+    });
+    return items as any;
+  } catch (e) {
+    console.warn('[getLatestNews] failed, returning empty array', e);
+    return [];
+  }
 }
 
 export async function getNewsById(id: string): Promise<NewsItem | null> {
-  const item = await prisma.news.findUnique({
-    where: { id },
-    include: { author: { select: { id: true, name: true, profileImageUrl: true } } },
-  });
-  return (item as any) || null;
+  try {
+    const item = await prisma.news.findUnique({
+      where: { id },
+      include: { author: { select: { id: true, name: true, profileImageUrl: true } } },
+    });
+    return (item as any) || null;
+  } catch (e) {
+    console.warn('[getNewsById] failed, returning null', e);
+    return null;
+  }
 }
+
 
