@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useFormState, useFormStatus } from 'react-dom';
 import { confirmOrderAction } from '@/server/actions/orders';
-import ProductCard from '@/components/product-card';\nimport PaymentInstructions from '@/components/payment-instructions';
+import ProductCard from '@/components/product-card';
+import PaymentInstructions from '@/components/payment-instructions';
 import { useCartStore } from '@/store/cart';
 
 type PaymentMethod = 'PAGO_MOVIL' | 'TRANSFERENCIA' | 'ZELLE';
@@ -353,7 +354,8 @@ export default function RevisarPage() {
         <option value="TRANSFERENCIA">Transferencia</option>
       </>
     )}
-  </select>\n            <PaymentInstructions method={paymentMethod} currency={paymentCurrency} />\n
+  </select>
+            <PaymentInstructions method={paymentMethod} currency={paymentCurrency} />
 </div>
 
             <div className="order-1">
@@ -601,6 +603,10 @@ export default function RevisarPage() {
       </div>
     );
   }
+
+
+
+
 
 
 
