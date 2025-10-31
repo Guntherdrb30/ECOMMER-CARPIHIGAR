@@ -9,7 +9,7 @@ export async function updateAllyProfile(formData: FormData) {
   const session = await getServerSession(authOptions);
   const user = session?.user as any;
   if (!user?.id || user?.role !== 'ALIADO') {
-    throw new Error('Not authorized');
+    return { ok: false, error: 'No autorizado' };
   }
 
   const profileImageUrl = String(formData.get('profileImageUrl') || '').trim() || null;
@@ -19,15 +19,22 @@ export async function updateAllyProfile(formData: FormData) {
     ? Array.from(new Set(servicesRaw.split(',').map(s => s.trim()).filter(Boolean)))
     : [];
   
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      profileImageUrl,
-      bio,
-      services,
-    },
-  });
+  try {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        profileImageUrl,
+        bio,
+        services,
+      },
+    });
+  } catch (e: any) {
+    const msg = String(e?.message || e || 'Error desconocido');
+    if (/column .* does not exist|UndefinedColumn/i.test(msg)) {
+      return { ok: false, error: 'Error de base de datos: faltan columnas de perfil de aliado. Ejecuta prisma migrate deploy en producción.' };
+    }
+    return { ok: false, error: msg };
+  }
 
   // Revalidate ally pages and potential listings
   try { revalidatePath('/dashboard/aliado/perfil'); } catch {}

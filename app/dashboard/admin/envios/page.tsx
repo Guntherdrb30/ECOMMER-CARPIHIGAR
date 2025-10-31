@@ -57,9 +57,35 @@ export default async function AdminEnviosPage({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">{order.shipping?.tracking}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{order.shippingAddress?.city}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {order.shipping?.status}
-                      </span>
+                      {(() => {
+                        const status = order.shipping?.status || 'PENDIENTE';
+                        let badgeClass = 'bg-gray-100 text-gray-800';
+                        switch (status) {
+                          case 'PENDIENTE':
+                            badgeClass = 'bg-red-100 text-red-800';
+                            break;
+                          case 'ENTREGADO':
+                            badgeClass = 'bg-green-100 text-green-800';
+                            break;
+                          case 'PREPARANDO':
+                            badgeClass = 'bg-yellow-100 text-yellow-800';
+                            break;
+                          case 'DESPACHADO':
+                            badgeClass = 'bg-blue-100 text-blue-800';
+                            break;
+                          case 'EN_TRANSITO':
+                            badgeClass = 'bg-indigo-100 text-indigo-800';
+                            break;
+                          case 'INCIDENCIA':
+                            badgeClass = 'bg-orange-100 text-orange-800';
+                            break;
+                        }
+                        return (
+                          <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}`}>
+                            {status}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-3">

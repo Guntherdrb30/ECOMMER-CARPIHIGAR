@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo } from 'react';
 import { saveShippingDetails } from '@/server/actions/shipping';
 import type { Order, User, Shipping } from '@prisma/client';
 import { ShippingStatus, ShippingCarrier, ShippingChannel } from '@prisma/client';
+import { toast } from 'sonner';
 
 // Tipo enriquecido para las órdenes que se pasarán al componente
 type OrderWithDetails = Order & {
@@ -18,6 +19,10 @@ export function EnviosClient({ orders: initialOrders }: { orders: OrderWithDetai
   const [qCliente, setQCliente] = useState('');
   const [qRif, setQRif] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [selectedStatusByOrder, setSelectedStatusByOrder] = useState<Record<string, ShippingStatus>>({});
+  const [observationsByOrder, setObservationsByOrder] = useState<Record<string, string>>({});
+  const [selectedCarrierByOrder, setSelectedCarrierByOrder] = useState<Record<string, ShippingCarrier>>({});
+  const [trackingByOrder, setTrackingByOrder] = useState<Record<string, string>>({});
 
   const handleSave = async (formData: FormData) => {
     const payload = {
@@ -29,8 +34,61 @@ export function EnviosClient({ orders: initialOrders }: { orders: OrderWithDetai
     };
 
     startTransition(async () => {
-      await saveShippingDetails(payload);
-      // Aquí podrías agregar una notificación (toast) para el usuario
+      try {
+        const res = await saveShippingDetails(payload);
+        if (res?.success) {
+          toast.success('Envío guardado', {
+            description: (
+              <div className="mt-1 text-sm">
+                Orden {payload.orderId.substring(0,8)}… actualizada ·
+                <a
+                  className="ml-2 underline text-blue-700"
+                  href={`/api/shipments/${payload.orderId}/pdf`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ver PDF
+                </a>
+                <a
+                  className="ml-3 underline text-blue-700"
+                  href={`/dashboard/admin/pedidos/${payload.orderId}`}
+                >
+                  Abrir pedido
+                </a>
+              </div>
+            ),
+            action: {
+              label: 'Abrir pedido',
+              onClick: () => window.open(`/dashboard/admin/pedidos/${payload.orderId}`, '_blank'),
+            },
+          });
+          // Limpia los estados locales de la fila para reflejar backend tras recarga
+          setSelectedStatusByOrder((prev) => {
+            const copy = { ...prev };
+            delete copy[payload.orderId];
+            return copy;
+          });
+          setSelectedCarrierByOrder((prev) => {
+            const copy = { ...prev };
+            delete copy[payload.orderId];
+            return copy;
+          });
+          setTrackingByOrder((prev) => {
+            const copy = { ...prev };
+            delete copy[payload.orderId];
+            return copy;
+          });
+          setObservationsByOrder((prev) => {
+            const copy = { ...prev };
+            delete copy[payload.orderId];
+            return copy;
+          });
+        } else {
+          toast.error('No se pudo guardar el envío');
+        }
+      } catch (e) {
+        toast.error('Error al guardar el envío');
+      }
     });
   };
 
@@ -128,24 +186,95 @@ export function EnviosClient({ orders: initialOrders }: { orders: OrderWithDetai
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.id.substring(0, 8)}...</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.user.name || 'N/A'} {order.shipping?.channel ? `· ${order.shipping.channel}` : ''}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <select name="carrier" defaultValue={order.shipping?.carrier || 'TEALCA'} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <select
+                      name="carrier"
+                      value={(selectedCarrierByOrder[order.id] || (order.shipping?.carrier as ShippingCarrier) || 'TEALCA') as ShippingCarrier}
+                      onChange={(e) =>
+                        setSelectedCarrierByOrder((prev) => ({
+                          ...prev,
+                          [order.id]: e.target.value as ShippingCarrier,
+                        }))
+                      }
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                    >
                       {Object.values(ShippingCarrier).map(carrier => (
                         <option key={carrier} value={carrier}>{carrier}</option>
                       ))}
                     </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <input type="text" name="tracking" defaultValue={order.shipping?.tracking || ''} className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
+                    <input
+                      type="text"
+                      name="tracking"
+                      value={trackingByOrder[order.id] ?? (order.shipping?.tracking || '')}
+                      onChange={(e) =>
+                        setTrackingByOrder((prev) => ({
+                          ...prev,
+                          [order.id]: e.target.value,
+                        }))
+                      }
+                      className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                    />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                     <select name="status" defaultValue={order.shipping?.status || 'PENDIENTE'} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                      {Object.values(ShippingStatus).map(status => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
+                    {(() => {
+                      const status = (selectedStatusByOrder[order.id] || (order.shipping?.status as ShippingStatus) || 'PENDIENTE') as ShippingStatus;
+                      let badgeClass = 'bg-gray-100 text-gray-800';
+                      switch (status) {
+                        case 'PENDIENTE':
+                          badgeClass = 'bg-red-100 text-red-800';
+                          break;
+                        case 'ENTREGADO':
+                          badgeClass = 'bg-green-100 text-green-800';
+                          break;
+                        case 'PREPARANDO':
+                          badgeClass = 'bg-yellow-100 text-yellow-800';
+                          break;
+                        case 'DESPACHADO':
+                          badgeClass = 'bg-blue-100 text-blue-800';
+                          break;
+                        case 'EN_TRANSITO':
+                          badgeClass = 'bg-indigo-100 text-indigo-800';
+                          break;
+                        case 'INCIDENCIA':
+                          badgeClass = 'bg-orange-100 text-orange-800';
+                          break;
+                      }
+                      return (
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${badgeClass}`}>{status}</span>
+                          <select
+                            name="status"
+                            value={status}
+                            onChange={(e) =>
+                              setSelectedStatusByOrder((prev) => ({
+                                ...prev,
+                                [order.id]: e.target.value as ShippingStatus,
+                              }))
+                            }
+                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                          >
+                            {Object.values(ShippingStatus).map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <textarea name="observations" defaultValue={order.shipping?.observations || ''} rows={2} className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"></textarea>
+                    <textarea
+                      name="observations"
+                      rows={2}
+                      value={observationsByOrder[order.id] ?? (order.shipping?.observations || '')}
+                      onChange={(e) =>
+                        setObservationsByOrder((prev) => ({
+                          ...prev,
+                          [order.id]: e.target.value,
+                        }))
+                      }
+                      className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                    ></textarea>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                     <button type="submit" disabled={isPending} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">

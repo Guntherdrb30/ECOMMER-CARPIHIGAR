@@ -130,7 +130,36 @@ export default async function ClientePedidoDetalle({ params }: { params: Promise
             )}
             <div><span className="font-semibold">Transportista:</span> {order.shipping.carrier}</div>
             {order.shipping.tracking && <div><span className="font-semibold">Tracking:</span> {order.shipping.tracking}</div>}
-            <div><span className="font-semibold">Estado:</span> {order.shipping.status}</div>
+            <div>
+              <span className="font-semibold">Estado:</span>{' '}
+              {(() => {
+                const status = String(order.shipping.status || 'PENDIENTE');
+                let badgeClass = 'bg-gray-100 text-gray-800';
+                switch (status) {
+                  case 'PENDIENTE':
+                    badgeClass = 'bg-red-100 text-red-800';
+                    break;
+                  case 'ENTREGADO':
+                    badgeClass = 'bg-green-100 text-green-800';
+                    break;
+                  case 'PREPARANDO':
+                    badgeClass = 'bg-yellow-100 text-yellow-800';
+                    break;
+                  case 'DESPACHADO':
+                    badgeClass = 'bg-blue-100 text-blue-800';
+                    break;
+                  case 'EN_TRANSITO':
+                    badgeClass = 'bg-indigo-100 text-indigo-800';
+                    break;
+                  case 'INCIDENCIA':
+                    badgeClass = 'bg-orange-100 text-orange-800';
+                    break;
+                }
+                return (
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${badgeClass}`}>{status}</span>
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}
