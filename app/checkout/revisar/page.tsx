@@ -61,6 +61,7 @@ export default function RevisarPage() {
   }, [addresses, selectedAddressId]);
   const [topItems, setTopItems] = useState<any[]>([]);
   const [tasaTop, setTasaTop] = useState<number>(40);
+  const [proofUrl, setProofUrl] = useState<string>("" );
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -95,6 +96,20 @@ export default function RevisarPage() {
   const initialState = { ok: false as boolean, error: '' as string };
   const [state, formAction] = useFormState(confirmOrderAction as any, initialState);
   const [errors, setErrors] = useState<{ reference?: string; pm_phone?: string; zelle_email?: string }>({});
+
+  async function handleProofUpload(file: File | null) {
+    if (!file) return;
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("type", "image");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json?.url) setProofUrl(String(json.url));
+    } catch {}
+  }
+
 
   
 
@@ -308,6 +323,17 @@ export default function RevisarPage() {
                   <input id="transfer_payer_name" name="transfer_payer_name" type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                 </div>
                 <div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="reference">Referencia</label>
+                  <input id="reference" name="reference" type="text" required className={`mt-1 block w-full rounded-md shadow-sm ${errors.reference ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} />
+                  {errors.reference && <div className="text-xs text-red-600 mt-1">{errors.reference}</div>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="proof_file">Comprobante (imagen, opcional)</label>
+                  <input id="proof_file" type="file" accept="image/*" className="mt-1 block w-full text-sm" onChange={(e) => handleProofUpload((e.target.files && e.target.files[0]) || null)} />
+                  {proofUrl ? (<div className="text-xs text-gray-600 mt-1 break-all">Subido: {proofUrl}</div>) : null}
+                  <input type="hidden" name="proofUrl" value={proofUrl} />
+                </div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="transfer_payer_id">Cédula</label>
                   <input id="transfer_payer_id" name="transfer_payer_id" type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                 </div>
