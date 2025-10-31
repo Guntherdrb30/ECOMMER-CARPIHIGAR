@@ -64,7 +64,26 @@ export default function RevisarPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // ConfiguraciÃ³n (puede venir de BD/ajustes si se requiere)
+    // Load user's addresses and initialize selection
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/addresses/me', { credentials: 'include' });
+        if (!res.ok) return;
+        const list = await res.json();
+        if (cancelled) return;
+        setAddresses(list || []);
+        setHasAddress((list || []).length > 0);
+        let saved = '';
+        try { saved = localStorage.getItem('checkout.addressId') || ''; } catch {}
+        const exists = Array.isArray(list) && list.some((a: any) => a?.id === saved);
+        const initial = exists ? saved : ((Array.isArray(list) && list[0]?.id) || '');
+        setSelectedAddressId(initial);
+      } catch {}
+    })();
+    return () => { cancelled = true };
+  }, []);// ConfiguraciÃ³n (puede venir de BD/ajustes si se requiere)
   const ivaPercent = 16; // %
   const tasaVES = 40; // tasa de ejemplo
 
@@ -313,15 +332,6 @@ export default function RevisarPage() {
               </div>
             )}
 
-            {isLocalBarinas ? (
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 rounded">
-                Detectamos ciudad {detectedCity || 'local'}. Puedes elegir Retiro en tienda o Delivery incluido.
-              </div>
-            ) : (
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-3 text-sm text-blue-800 rounded">
-                Para envÃ­os nacionales, puedes seleccionar TEALCA o MRW.
-              </div>
-            )}
 
             {/* Address selection */}
             <div className="order-40">
