@@ -35,7 +35,7 @@ function SubmitButton() {
   );
 }
 
-export default function RevisarPage() {
+export default function RevisarPage() {  \r\n  // Update locality (Barinas) based on selected address\r\n  useEffect(() => {\r\n    try {\r\n      const a = addresses.find(a => a.id === selectedAddressId) || null;\r\n      const city = String(a?.city || '');\r\n      const local = /barinas/i.test(city);\r\n      setDetectedCity(city);\r\n      setIsLocalBarinas(local);\r\n      if (local) { setShippingCarrier(''); } else { setShippingOption(''); }\r\n    } catch {}\r\n  }, [addresses, selectedAddressId]);\r\n
   const items = useCartStore((s) => s.items);
   const getTotalUSD = useCartStore((s) => s.getTotalUSD);
   const clearCart = useCartStore((s) => s.clearCart);
@@ -67,181 +67,7 @@ export default function RevisarPage() {
   const [state, formAction] = useFormState(confirmOrderAction as any, initialState);
   const [errors, setErrors] = useState<{ reference?: string; pm_phone?: string; zelle_email?: string }>({});
 
-  useEffect(() => {
-    if (state?.ok) {
-      clearCart();
-    }
-  }, [state?.ok, clearCart]);
-  // Load top sold products for success screen
-  useEffect(() => {
-    let cancelled = false;
-    if (!state?.ok) return;
-    (async () => {
-      try {
-        const res = await fetch('/api/products/top-sold?limit=5', { cache: 'no-store' });
-        if (!res.ok) return;
-        const json = await res.json();
-        if (!cancelled) {
-          setTopItems(Array.isArray(json?.items) ? json.items : []);
-          if (typeof json?.tasaVES === 'number') setTasaTop(json.tasaVES);
-        }
-      } catch {}
-    })();
-    return () => { cancelled = true };
-  }, [state?.ok]);
-
-  // hydrate default selections from localStorage if available
-  useEffect(() => {
-    try {
-      const savedMethod = localStorage.getItem('checkout.paymentMethod') as PaymentMethod | null;
-      const savedCurrency = localStorage.getItem('checkout.paymentCurrency') as PaymentCurrency | null;
-      const savedEntrega = localStorage.getItem('checkout.shippingOption') as ShippingOption | null;
-      const savedCarrier = localStorage.getItem('checkout.shippingCarrier') as ShippingCarrier | null;
-      if (savedMethod === 'PAGO_MOVIL' || savedMethod === 'TRANSFERENCIA' || savedMethod === 'ZELLE') {
-        setPaymentMethod(savedMethod);
-      }
-      if (savedCurrency === 'USD' || savedCurrency === 'VES') {
-        setPaymentCurrency(savedCurrency);
-      }
-      if (savedEntrega === 'RETIRO_TIENDA' || savedEntrega === 'DELIVERY' || savedEntrega === '') {
-        setShippingOption(savedEntrega);
-      }
-      if (savedCarrier === 'TEALCA' || savedCarrier === 'MRW' || savedCarrier === '') {
-        setShippingCarrier(savedCarrier);
-      }
-    } catch {}
-  }, []);
-
-  // read querystring (?moneda=USD|VES, ?metodo=...)
-  useEffect(() => {
-    if (!searchParams) return;
-    const qMoneda = (searchParams.get('moneda') || '').toUpperCase();
-    if (qMoneda === 'USD' || qMoneda === 'VES') {
-      setPaymentCurrency(qMoneda as PaymentCurrency);
-      try { localStorage.setItem('checkout.paymentCurrency', qMoneda); } catch {}
-    }
-    const qMetodo = (searchParams.get('metodo') || '').toUpperCase();
-    if (qMetodo === 'PAGO_MOVIL' || qMetodo === 'TRANSFERENCIA' || qMetodo === 'ZELLE') {
-      setPaymentMethod(qMetodo as PaymentMethod);
-      try { localStorage.setItem('checkout.paymentMethod', qMetodo); } catch {}
-    }
-    const qEntrega = (searchParams.get('entrega') || '').toUpperCase();
-    if (qEntrega === 'RETIRO_TIENDA' || qEntrega === 'DELIVERY' || qEntrega === '') {
-      setShippingOption(qEntrega as ShippingOption);
-      try { localStorage.setItem('checkout.shippingOption', qEntrega); } catch {}
-    }
-    const qCarrier = (searchParams.get('carrier') || '').toUpperCase();
-    if (qCarrier === 'TEALCA' || qCarrier === 'MRW' || qCarrier === '') {
-      setShippingCarrier(qCarrier as ShippingCarrier);
-      try { localStorage.setItem('checkout.shippingCarrier', qCarrier); } catch {}
-    }
-  }, [searchParams]);
-
-  // keep URL in sync when currency changes (for shareable links)
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(searchParams?.toString());
-      if (paymentCurrency) params.set('moneda', paymentCurrency);
-      if (shippingOption !== undefined) params.set('entrega', shippingOption);
-      if (shippingCarrier !== undefined) params.set('carrier', shippingCarrier);
-      const url = `${location.pathname}?${params.toString()}`;
-      router.replace(url);
-    } catch {}
-  }, [paymentCurrency, shippingOption, shippingCarrier]);
-
-  // keep URL in sync when payment method changes and persist
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(searchParams?.toString());
-      if (paymentMethod) params.set('metodo', paymentMethod);
-      const url = `${location.pathname}?${params.toString()}`;
-      router.replace(url);
-      localStorage.setItem('checkout.paymentMethod', paymentMethod);
-    } catch {}
-  }, [paymentMethod]);
-
-  // Ensure selected method is valid for chosen currency
-  useEffect(() => {
-    const allowed: PaymentMethod[] = (paymentCurrency === 'USD')
-      ? ['ZELLE','TRANSFERENCIA']
-      : ['PAGO_MOVIL','TRANSFERENCIA'];
-    if (!allowed.includes(paymentMethod)) {
-      setPaymentMethod(allowed[0]);
-    }
-  }, [paymentCurrency]);
-
-  // Hide non-applicable payment method options in the dropdown
-  useEffect(() => {
-    try {
-      const sel = document.getElementById('paymentMethod') as HTMLSelectElement | null;
-      if (!sel) return;
-      const allowed = new Set(paymentCurrency === 'USD' ? ['ZELLE','TRANSFERENCIA'] : ['PAGO_MOVIL','TRANSFERENCIA']);
-      for (const opt of Array.from(sel.options)) {
-        const ok = allowed.has(String(opt.value || '').toUpperCase());
-        (opt as any).hidden = !ok;
-        opt.disabled = !ok;
-      }
-      if (!allowed.has(String(sel.value || '').toUpperCase())) {
-        const firstOk = Array.from(sel.options).find(o => !(o as any).hidden);
-        if (firstOk) setPaymentMethod(firstOk.value as any);
-      }
-    } catch {}
-  }, [paymentCurrency]);
-
-  // Hide irrelevant shipping inputs (local vs nacional)
-  useEffect(() => {
-    try {
-      const labelCarrier = document.querySelector('label[for="shippingCarrier"]') as HTMLElement | null;
-      const labelOption = document.querySelector('label[for="shippingOption"]') as HTMLElement | null;
-      if (labelCarrier) labelCarrier.style.display = isLocalBarinas ? 'none' : '';
-      if (labelOption) labelOption.style.display = isLocalBarinas ? '' : 'none';
-    } catch {}
-  }, [isLocalBarinas]);
-
-  // Detect user location (Barinas) to show guidance
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/me/location', { credentials: 'include' });
-        if (!res.ok) return;
-        const json = await res.json();
-        if (!cancelled) {
-          setDetectedCity(json.city || '');
-          setIsLocalBarinas(!!json.isBarinas);
-          setHasAddress(!!json.hasAddress);
-        }
-      } catch {}
-    })();
-    return () => { cancelled = true };
-  }, []);
-
-  // load user's saved addresses and hydrate selected
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/addresses/me', { credentials: 'include' });
-        if (!res.ok) return;
-        const json = await res.json();
-        if (cancelled) return;
-        setAddresses(json || []);
-        setHasAddress((json || []).length > 0);
-        // Pick from localStorage if valid, else first
-        let saved = '';
-        try { saved = localStorage.getItem('checkout.addressId') || ''; } catch {}
-        const exists = (json || []).some((a: Address) => a.id === saved);
-        const initial = exists ? saved : ((json && json[0]?.id) || '');
-        setSelectedAddressId(initial);
-      } catch {}
-    })();
-    return () => { cancelled = true };
-  }, []);
-
-  // persist selected address
-  useEffect(() => {
-    try { if (selectedAddressId) localStorage.setItem('checkout.addressId', selectedAddressId); } catch {}
-  }, [selectedAddressId]);
+  
 
   // If no address on file, redirect to Datos de Envío and come back after
   useEffect(() => {
@@ -530,7 +356,7 @@ export default function RevisarPage() {
             )}
 
 
-            <div className="order-50">
+            <div className="order-50" style={{ display: isLocalBarinas ? 'block' : 'none' }}>
               <label htmlFor="shippingOption" className="block text-sm font-medium text-gray-700">Entrega local (Barinas)</label>
               <select
                 id="shippingOption"
@@ -546,10 +372,10 @@ export default function RevisarPage() {
               <div className="text-xs text-gray-500 mt-1">Si estÃ¡s en Barinas puedes elegir Retiro en tienda o Delivery incluido.</div>
             </div>
 
-            <div className="order-50">
+            <div className="order-50" style={{ display: isLocalBarinas ? 'none' : 'block' }}>
               <label htmlFor="shippingCarrier" className="block text-sm font-medium text-gray-700">Carrier (si no estÃ¡s en Barinas)</label>
               <select
-                id="shippingCarrier" style={{ display: isLocalBarinas ? 'none' : 'block' }}
+                id="shippingCarrier"
                 name="shippingCarrier"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 value={shippingCarrier}
@@ -588,4 +414,5 @@ export default function RevisarPage() {
     </div>
   );
 }
+
 
