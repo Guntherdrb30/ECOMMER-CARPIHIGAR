@@ -25,10 +25,21 @@ export async function approveAlly(userId: string) {
   try { redirect('/dashboard/admin/usuarios?message=Aliado%20aprobado'); } catch {}
 }
 
-export async function getUsers() {
+export async function getUsers(q?: string) {
   const session = await getServerSession(authOptions);
   if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
-  const users = await prisma.user.findMany({ select: { id:true, name:true, email:true, phone:true, role:true, alliedStatus:true, commissionPercent:true, createdAt:true }, orderBy: { createdAt: 'desc' } });
+  const where: any = {};
+  const query = String(q || '').trim();
+  if (query) {
+    where.OR = [
+      { name: { contains: query, mode: 'insensitive' } as any },
+      { email: { contains: query, mode: 'insensitive' } as any },
+      { phone: { contains: query, mode: 'insensitive' } as any },
+      // Coincidencias por Cédula/RIF a partir de pedidos del usuario
+      { orders: { some: { customerTaxId: { contains: query, mode: 'insensitive' } as any } } },
+    ];
+  }
+  const users = await prisma.user.findMany({ where, select: { id:true, name:true, email:true, phone:true, role:true, alliedStatus:true, commissionPercent:true, createdAt:true }, orderBy: { createdAt: 'desc' } });
   return users.map((u: any) => ({ ...u, commissionPercent: u.commissionPercent == null ? null : Number(u.commissionPercent), createdAt: u.createdAt ? new Date(u.createdAt).toISOString() : null }));
 }
 
@@ -105,4 +116,3 @@ export async function updateUserPasswordByForm(formData: FormData) {
   const target = await prisma.user.findUnique({ where: { id }, select: { id:true, email:true } }); if (!target) redirect('/dashboard/admin/usuarios?pw=err');
   try { const bcrypt = (await import('bcrypt')).default; const hashed = await bcrypt.hash(newPassword, 10); await prisma.user.update({ where: { id }, data: { password: hashed } }); try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'USER_PASSWORD_RESET', details: `target:${id};by:${email}` } }); } catch {}; revalidatePath('/dashboard/admin/usuarios'); redirect('/dashboard/admin/usuarios?pw=ok'); } catch { redirect('/dashboard/admin/usuarios?pw=err'); }
 }
-

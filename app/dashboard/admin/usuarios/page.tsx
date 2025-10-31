@@ -4,9 +4,12 @@ import ShowToastFromSearch from '@/components/show-toast-from-search';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PendingButton } from '@/components/pending-button';
+import UsersSearch from '@/components/admin/users-search';
 
-export default async function AdminUsersPage() {
-  const users = await getUsers();
+export default async function AdminUsersPage({ searchParams }: { searchParams?: Promise<{ q?: string }> }) {
+  const sp = (await searchParams) || ({} as any);
+  const q = String(sp.q || '').trim();
+  const users = await getUsers(q);
   const session = await getServerSession(authOptions);
   const email = String((session?.user as any)?.email || '').toLowerCase();
   const role = String((session?.user as any)?.role || '');
@@ -49,6 +52,11 @@ export default async function AdminUsersPage() {
           <input type="number" step="0.01" min="0" max="100" name="seller_commission" placeholder="% Comisión (opcional)" className="border rounded px-2 py-1" />
           <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creando…">Crear Vendedor</PendingButton>
         </form>
+      </div>
+      {/* Buscador de usuarios */}
+      <div className="bg-white p-4 rounded-lg shadow mb-4">
+        <h2 className="text-lg font-bold mb-2">Buscar Usuarios</h2>
+        <UsersSearch />
       </div>
       <div className="bg-white p-4 rounded-lg shadow mt-4">
         <h2 className="text-lg font-bold mb-2">Todos los Usuarios</h2>
