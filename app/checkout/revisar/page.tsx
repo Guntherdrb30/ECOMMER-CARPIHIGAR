@@ -34,9 +34,7 @@ function SubmitButton() {
     </button>
   );
 }
-
-export default function RevisarPage() {  \r\n  // Update locality (Barinas) based on selected address\r\n  useEffect(() => {\r\n    try {\r\n      const a = addresses.find(a => a.id === selectedAddressId) || null;\r\n      const city = String(a?.city || '');\r\n      const local = /barinas/i.test(city);\r\n      setDetectedCity(city);\r\n      setIsLocalBarinas(local);\r\n      if (local) { setShippingCarrier(''); } else { setShippingOption(''); }\r\n    } catch {}\r\n  }, [addresses, selectedAddressId]);\r\n
-  const items = useCartStore((s) => s.items);
+export default function RevisarPage() {
   const getTotalUSD = useCartStore((s) => s.getTotalUSD);
   const clearCart = useCartStore((s) => s.clearCart);
 
@@ -49,6 +47,17 @@ export default function RevisarPage() {  \r\n  // Update locality (Barinas) base
   const [hasAddress, setHasAddress] = useState(true);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');
+  // Update locality (Barinas) based on selected address
+  useEffect(() => {
+    try {
+      const a = addresses.find(a => a.id === selectedAddressId) || null;
+      const city = String(a?.city || '');
+      const local = /barinas/i.test(city);
+      setDetectedCity(city);
+      setIsLocalBarinas(local);
+      if (local) { setShippingCarrier(''); } else { setShippingOption(''); }
+    } catch {}
+  }, [addresses, selectedAddressId]);
   const [topItems, setTopItems] = useState<any[]>([]);
   const [tasaTop, setTasaTop] = useState<number>(40);
   const searchParams = useSearchParams();
