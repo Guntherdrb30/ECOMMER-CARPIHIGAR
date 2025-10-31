@@ -28,7 +28,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-60"
+      className="order-90 w-full bg-brand text-white py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-60"
     >
       {pending ? 'Enviandoâ€¦' : 'Confirmar pago'}
     </button>
@@ -334,7 +334,7 @@ export default function RevisarPage() {
             setErrors(next);
             if (Object.keys(next).length) e.preventDefault();
           }}>
-            <div className="order-2">
+            <div className="order-20">
   <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700">Método de pago</label>
   <select
     id="paymentMethod"
@@ -358,7 +358,7 @@ export default function RevisarPage() {
             <PaymentInstructions method={paymentMethod} currency={paymentCurrency} />
 </div>
 
-            <div className="order-1">
+            <div className="order-first">
               <label htmlFor="paymentCurrency" className="block text-sm font-medium text-gray-700">Moneda del pago</label>
               <select
                 id="paymentCurrency"
@@ -488,7 +488,7 @@ export default function RevisarPage() {
             )}
 
             {/* Address selection */}
-            <div className="order-1">
+            <div className="order-40">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">Dirección de envío</label>
                 <a className="text-sm text-blue-600 underline" href="/checkout/datos-envio?next=/checkout/revisar">Añadir nueva</a>
@@ -519,7 +519,7 @@ export default function RevisarPage() {
               )}
             </div>
 
-            <div className="order-1">
+            <div className="order-10">
               <label htmlFor="shippingOption" className="block text-sm font-medium text-gray-700">Entrega local (Barinas)</label>
               <select
                 id="shippingOption"
@@ -535,7 +535,7 @@ export default function RevisarPage() {
               <div className="text-xs text-gray-500 mt-1">Si estÃ¡s en Barinas puedes elegir Retiro en tienda o Delivery incluido.</div>
             </div>
 
-            <div className="order-1">
+            <div className="order-10">
               <label htmlFor="shippingCarrier" className="block text-sm font-medium text-gray-700">Carrier (si no estÃ¡s en Barinas)</label>
               <select
                 id="shippingCarrier" style={{ display: isLocalBarinas ? 'none' : 'block' }}
@@ -577,3 +577,4 @@ export default function RevisarPage() {
     </div>
   );
 }
+
