@@ -35,6 +35,7 @@ function SubmitButton() {
   );
 }
 export default function RevisarPage() {
+  const items = useCartStore((s) => s.items);
   const getTotalUSD = useCartStore((s) => s.getTotalUSD);
   const clearCart = useCartStore((s) => s.clearCart);
 
