@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import AllyLiveSearch from "@/components/ally-live-search";
 
 type AllySummary = {
   id: string;
@@ -36,12 +37,7 @@ export default function AlliesRankingClient({ items }: { items: AllySummary[] })
             <p className="text-gray-600">Conoce a nuestros mejores aliados y contactalos.</p>
           </div>
           <div className="flex items-center gap-2">
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar aliado o servicio..."
-              className="w-full md:w-80 border rounded px-3 py-2 shadow-sm focus:ring-brand focus:border-brand"
-            />
+            <AllyLiveSearch placeholder="Buscar aliado o servicio..." onQueryChange={setQ} />
           </div>
         </div>
 
