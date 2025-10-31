@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { shimmer, toBase64 } from '@/lib/image-placeholder';
+// Using <img> instead of Next/Image to avoid domain restrictions when banners
+// are hosted on external storage (e.g., Vercel Blob or same domain).
 import { getFeaturedCategoryBannersNoCache } from '@/server/actions/featured';
 
 type CategoryCard = { name: string; href: string; image: string };
@@ -10,14 +10,11 @@ const FeaturedCategoryCard = ({ category }: { category: CategoryCard }) => {
   return (
   <Link href={category.href} className="relative block group h-96">
     {hasImg ? (
-      <Image
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
         src={category.image}
         alt={category.name}
-        fill
-        sizes="(min-width: 1024px) 50vw, 100vw"
-        className="object-cover rounded-lg transition-transform duration-500 group-hover:scale-105"
-        placeholder="blur"
-        blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(1200, 600, 16))}`}
+        className="absolute inset-0 w-full h-full object-cover rounded-lg transition-transform duration-500 group-hover:scale-105"
       />
     ) : (
       <div className="absolute inset-0 rounded-lg bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_60%)] bg-[length:20px_20px] bg-neutral-700 transition-transform duration-500 group-hover:scale-105" />
