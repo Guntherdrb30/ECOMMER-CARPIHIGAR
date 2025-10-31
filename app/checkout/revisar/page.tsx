@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -30,7 +30,7 @@ function SubmitButton() {
       disabled={pending}
       className="order-90 w-full bg-brand text-white py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-60"
     >
-      {pending ? 'Enviandoâ€¦' : 'Confirmar pago'}
+      {pending ? 'Enviandoâ¦' : 'Confirmar pago'}
     </button>
   );
 }
@@ -95,7 +95,7 @@ export default function RevisarPage() {
 
   const initialState = { ok: false as boolean, error: '' as string };
   const [state, formAction] = useFormState(confirmOrderAction as any, initialState);
-  const [errors, setErrors] = useState<{ reference?: string; pm_phone?: string; zelle_email?: string }>({});
+  const [errors, setErrors] = useState<{ reference?: string; pm_phone?: string; zelle_email?: string; zelle_payer_name?: string }>({});
 
   // Ajuste inicial: si la moneda es USD, forzar 'ZELLE' como método por defecto
   // para que las instrucciones se muestren de inmediato. Si es VES, usar Pago Móvil.
@@ -197,17 +197,6 @@ export default function RevisarPage() {
               ) : null}
             </div>
           </div>
-        </div>
-      </div>
-    );
-  }
-  // --- Bloque legacy de éxito (no se usa) ---
-  if (state?.ok) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="bg-white shadow-md rounded-lg p-8 text-center">
-          <h1 className="text-2xl font-bold mb-2">Â¡Gracias!</h1>
-          <p className="text-gray-700">Hemos recibido tu pago y estÃ¡ en revisiÃ³n.</p>
         </div>
       </div>
     );
@@ -357,7 +346,8 @@ export default function RevisarPage() {
               <div className="order-30 space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="zelle_payer_name">Nombre del titular de la cuenta</label>
-                  <input id="zelle_payer_name" name="zelle_payer_name" type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                  <input id="zelle_payer_name" name="zelle_payer_name" type="text" required className={`mt-1 block w-full rounded-md shadow-sm ${errors.zelle_payer_name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} />
+                  {errors.zelle_payer_name && <div className="text-xs text-red-600 mt-1">{errors.zelle_payer_name}</div>}
                 </div>
               </div>
             )}
@@ -458,7 +448,7 @@ export default function RevisarPage() {
                         onChange={() => setSelectedAddressId(a.id)}
                       />
                       <div className="text-sm">
-                        <div className="font-medium">{a.fullname} • {a.phone}</div>
+                        <div className="font-medium">{a.fullname}  {a.phone}</div>
                         <div>{a.address1}{a.address2 ? `, ${a.address2}` : ''}</div>
                         <div>{a.zone ? `${a.zone}, ` : ''}{a.city}, {a.state}</div>
                       </div>
@@ -533,5 +523,4 @@ export default function RevisarPage() {
     </div>
   );
 }
-
 
