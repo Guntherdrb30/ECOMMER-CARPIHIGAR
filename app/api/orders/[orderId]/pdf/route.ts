@@ -3,6 +3,11 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+// Ensure Node.js runtime for pdfkit on Vercel/Next.js
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function fetchLogoBuffer(logoUrl?: string): Promise<Buffer | null> {
   try {
     if (!logoUrl) return null;

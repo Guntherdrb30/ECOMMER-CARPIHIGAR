@@ -148,7 +148,7 @@ export default function RevisarPage() {
   // Pantalla de éxito personalizada
   if (state?.ok) {
     const orderId = (state as any).orderId as string | undefined;
-    const pdfPath = orderId ? `/api/orders/${orderId}/pdf` : '';
+    const pdfPath = orderId ? `/api/orders/${orderId}/pdf?tipo=recibo&moneda=USD` : '';
     let shareUrl = '';
     try {
       if (orderId && typeof window !== 'undefined') {
