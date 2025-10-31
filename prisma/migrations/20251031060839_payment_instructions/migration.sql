@@ -1,4 +1,4 @@
-﻿-- Payment instructions fields on SiteSettings
+-- Payment instructions fields on SiteSettings
 ALTER TABLE "public"."SiteSettings"
   ADD COLUMN IF NOT EXISTS "paymentZelleEmail" TEXT,
   ADD COLUMN IF NOT EXISTS "paymentPmPhone" TEXT,
