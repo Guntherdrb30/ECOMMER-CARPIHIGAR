@@ -21,17 +21,40 @@ export async function getAllyKpis() {
   const myId = String((session?.user as any)?.id || '');
   if (!myId || (session?.user as any)?.role !== 'ALIADO') throw new Error('Not authorized');
   const orders = await prisma.order.findMany({ where: { sellerId: myId }, include: { items: { include: { product: true } } } });
-  const totalRevenueUSD = orders.reduce((a, o) => a + Number(o.totalUSD || 0), 0);
+  const withOrigin = orders.filter(o => !!(o as any).originQuoteId);
+  let totalRevenueUSD = 0;
   let totalProfitUSD = 0;
-  for (const o of orders) {
-    for (const it of o.items) {
-      const p2 = it.product?.priceAllyUSD != null ? Number(it.product.priceAllyUSD) : null;
-      const unit = Number(it.priceUSD || 0);
-      const qty = Number(it.quantity || 0);
-      // Profit per item: sold price - ally base price (if available)
-      const cost = p2 != null ? p2 : unit; // if no ally price configured, assume no profit difference
-      const gain = Math.max(0, unit - cost) * qty;
-      totalProfitUSD += gain;
+  if (withOrigin.length) {
+    const ids = withOrigin.map((o: any) => String((o as any).originQuoteId));
+    const quotes = await prisma.quote.findMany({ where: { id: { in: ids } }, select: { id: true, totalUSD: true } });
+    const qMap = new Map(quotes.map((q: any) => [q.id, Number(q.totalUSD || 0)]));
+    for (const o of orders) {
+      const qTotal = o && (o as any).originQuoteId ? (qMap.get(String((o as any).originQuoteId)) ?? null) : null;
+      if (qTotal != null) {
+        totalRevenueUSD += qTotal;
+        totalProfitUSD += Math.max(0, qTotal - Number(o.totalUSD || 0));
+      } else {
+        totalRevenueUSD += Number(o.totalUSD || 0);
+        for (const it of o.items) {
+          const p2 = it.product?.priceAllyUSD != null ? Number(it.product.priceAllyUSD) : null;
+          const unit = Number(it.priceUSD || 0);
+          const qty = Number(it.quantity || 0);
+          const cost = p2 != null ? p2 : unit;
+          totalProfitUSD += Math.max(0, unit - cost) * qty;
+        }
+      }
+    }
+  } else {
+    // Fallback: sin enlace a quote, usar lo vendido y p2 como costo
+    totalRevenueUSD = orders.reduce((a, o) => a + Number(o.totalUSD || 0), 0);
+    for (const o of orders) {
+      for (const it of o.items) {
+        const p2 = it.product?.priceAllyUSD != null ? Number(it.product.priceAllyUSD) : null;
+        const unit = Number(it.priceUSD || 0);
+        const qty = Number(it.quantity || 0);
+        const cost = p2 != null ? p2 : unit;
+        totalProfitUSD += Math.max(0, unit - cost) * qty;
+      }
     }
   }
   const ordersCount = orders.length;

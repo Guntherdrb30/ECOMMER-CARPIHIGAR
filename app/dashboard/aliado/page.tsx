@@ -33,8 +33,9 @@ export default async function AliadoHomePage() {
         <Link href="/dashboard/aliado/reportes" className="bg-black text-white rounded-lg p-4 text-center">Ver Reportes</Link>
       </div>
       <div className="text-sm text-gray-600">
-        También puedes acceder a tu panel de cliente: <Link href="/dashboard/cliente" className="text-blue-600 underline">Mi Cuenta</Link>
+        También puedes acceder a tu panel de cliente: <Link href="/dashboard/cliente" className="text-brand underline">Mi Cuenta</Link>
       </div>
     </div>
   );
 }
+

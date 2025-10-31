@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { createOfflineSale } from "@/server/actions/sales";
 import { getAllyQuoteById } from "@/server/actions/quotes";
 
-export default async function NuevaVentaAliadoPage({ searchParams }: { searchParams?: Promise<{ fromQuote?: string; shipping?: string }> }) {
+export default async function NuevaVentaAliadoPage({ searchParams }: { searchParams?: Promise<{ fromQuote?: string; shipping?: string; useP2?: string }> }) {
   const sp = (await searchParams) || ({} as any);
   const [settings, session] = await Promise.all([
     getSettings(),
@@ -18,13 +18,15 @@ export default async function NuevaVentaAliadoPage({ searchParams }: { searchPar
 
   let initialItems: Array<{ productId: string; name: string; p1: number; p2?: number | null; priceUSD: number; quantity: number }> | undefined = undefined;
   const fromQuote = String((sp as any).fromQuote || '');
+  const useP2 = String((sp as any).useP2 || '') === '1';
   if (fromQuote) {
     try {
       const quote = await getAllyQuoteById(fromQuote);
       initialItems = quote.items.map((it: any) => {
         const p1 = Number(it.priceUSD);
         const p2 = it.product?.priceAllyUSD != null ? Number(it.product.priceAllyUSD) : null;
-        return { productId: it.productId, name: it.name, p1, p2, priceUSD: p1, quantity: Number(it.quantity) };
+        const selected = useP2 && p2 != null ? p2 : p1;
+        return { productId: it.productId, name: it.name, p1, p2, priceUSD: selected, quantity: Number(it.quantity) };
       });
     } catch {}
   }
@@ -37,7 +39,7 @@ export default async function NuevaVentaAliadoPage({ searchParams }: { searchPar
     <div className="container mx-auto p-4 space-y-4">
       <h1 className="text-2xl font-bold">Nueva Venta (Aliado)</h1>
       <div className="bg-white p-4 rounded-lg shadow">
-        <OfflineSaleForm sellers={[me]} commissionPercent={commission} ivaPercent={iva} tasaVES={tasa} action={createOfflineSale} initialItems={initialItems} fixedSellerId={me.id} initialShippingLocalOption={initialShipping} />
+        <OfflineSaleForm sellers={[me]} commissionPercent={commission} ivaPercent={iva} tasaVES={tasa} action={createOfflineSale} initialItems={initialItems} fixedSellerId={me.id} initialShippingLocalOption={initialShipping} originQuoteId={fromQuote || undefined} initialPriceMode={useP2 ? 'P2' : 'P1'} />
       </div>
     </div>
   );

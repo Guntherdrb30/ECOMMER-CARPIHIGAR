@@ -6,10 +6,11 @@ import { venezuelaData } from "@/lib/venezuela-data";
 type Prod = { id: string; name: string; sku: string | null; priceUSD: number; priceAllyUSD?: number | null };
 type Line = { productId: string; name: string; p1: number; p2?: number | null; priceUSD: number; quantity: number };
 
-export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent, tasaVES, action, initialItems, fixedSellerId, initialShippingLocalOption }: { sellers: Array<{ id: string; name?: string; email: string }>, commissionPercent: number, ivaPercent: number, tasaVES: number, action: (formData: FormData) => void, initialItems?: Line[], fixedSellerId?: string, initialShippingLocalOption?: 'RETIRO_TIENDA' | 'DELIVERY' | '' }) {
+export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent, tasaVES, action, initialItems, fixedSellerId, initialShippingLocalOption, originQuoteId, initialPriceMode = 'P1' }: { sellers: Array<{ id: string; name?: string; email: string }>, commissionPercent: number, ivaPercent: number, tasaVES: number, action: (formData: FormData) => void, initialItems?: Line[], fixedSellerId?: string, initialShippingLocalOption?: 'RETIRO_TIENDA' | 'DELIVERY' | '', originQuoteId?: string, initialPriceMode?: 'P1' | 'P2' }) {
   const [q, setQ] = useState("");
   const [found, setFound] = useState<Prod[]>([]);
   const [items, setItems] = useState<Line[]>(() => initialItems || []);
+  const [globalMode, setGlobalMode] = useState<'P1'|'P2'>(initialPriceMode);
   const [sellerId, setSellerId] = useState<string>(fixedSellerId || "");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -117,6 +118,11 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
       return [...prev, { productId: p.id, name: p.name, p1, p2, priceUSD: selected, quantity: 1 }];
     });
   };
+
+  // Sincroniza todas las filas cuando cambia el modo global P1/P2
+  useEffect(() => {
+    setItems((prev) => prev.map((l) => ({ ...l, priceUSD: (globalMode === 'P2' && l.p2 != null) ? Number(l.p2) : Number(l.p1) })));
+  }, [globalMode]);
 
   const updateQty = (id: string, qty: number) => {
     setItems((prev) => prev.map((l) => (l.productId === id ? { ...l, quantity: Math.max(1, qty) } : l)));
@@ -230,6 +236,13 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
       </div>
 
       <div className="bg-white p-3 rounded border">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm text-gray-700">Modo de precio</div>
+          <div className="flex items-center gap-3">
+            <label className="text-sm flex items-center gap-1"><input type="radio" name="_priceMode" checked={globalMode==='P1'} onChange={() => setGlobalMode('P1')} /> P1 (Cliente)</label>
+            <label className="text-sm flex items-center gap-1"><input type="radio" name="_priceMode" checked={globalMode==='P2'} onChange={() => setGlobalMode('P2')} /> P2 (Aliado)</label>
+          </div>
+        </div>
         <h3 className="font-semibold mb-2">Dirección de envío</h3>
         {savedAddresses.length > 0 && (
           <div className="mb-3">
@@ -348,6 +361,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
       </div>
 
       <input type="hidden" name="items" value={JSON.stringify(items.map(({ productId, name, priceUSD, quantity }) => ({ productId, name, priceUSD, quantity })))} />
+      {originQuoteId ? (<input type="hidden" name="originQuoteId" value={originQuoteId} />) : null}
       <input type="hidden" name="ivaPercent" value={String(ivaPercent)} />
       <input type="hidden" name="tasaVES" value={String(tasaVES)} />
       <input type="hidden" name="sendEmail" value={sendEmail ? 'true' : 'false'} />

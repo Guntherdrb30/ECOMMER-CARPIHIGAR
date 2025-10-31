@@ -82,6 +82,7 @@ export async function createOfflineSale(formData: FormData) {
   const creditDueDate = creditDueDateStr ? new Date(creditDueDateStr) : null;
   const customerTaxId = (String(formData.get('customerTaxId') || '').trim() || null);
   const customerFiscalAddress = (String(formData.get('customerFiscalAddress') || '').trim() || null);
+  const originQuoteId = (String(formData.get('originQuoteId') || '').trim() || null);
   const ivaPercentForm = formData.get('ivaPercent');
   const tasaVESForm = formData.get('tasaVES');
   const sendEmailFlag = String(formData.get('sendEmail') || '');
@@ -182,6 +183,7 @@ export async function createOfflineSale(formData: FormData) {
       creditDueDate: creditDueDate as any,
       customerTaxId: customerTaxId as any,
       customerFiscalAddress: customerFiscalAddress as any,
+      originQuoteId: originQuoteId as any,
       shippingAddressId: finalShippingAddressId || null,
       items: {
         create: items.map((it) => ({ productId: it.productId, name: it.name || '', priceUSD: it.priceUSD as any, quantity: it.quantity }))

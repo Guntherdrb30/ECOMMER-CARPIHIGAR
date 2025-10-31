@@ -239,6 +239,8 @@ model Order {
   receivable        Receivable?
   customerTaxId       String?
   customerFiscalAddress String?
+  // Vincula la orden con un presupuesto origen (si aplica)
+  originQuoteId     String?
 }
 
 model OrderItem {

@@ -229,6 +229,7 @@ export async function convertQuoteToOrder(formData: FormData) {
     data: {
       userId: quote.userId,
       sellerId: quote.sellerId || null,
+      originQuoteId: id,
       subtotalUSD: quote.subtotalUSD as any,
       ivaPercent: quote.ivaPercent as any,
       tasaVES: quote.tasaVES as any,

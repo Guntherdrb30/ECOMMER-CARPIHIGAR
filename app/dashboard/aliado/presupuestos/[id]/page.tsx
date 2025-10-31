@@ -18,7 +18,7 @@ export default async function VerPresupuestoAliadoPage({ params, searchParams }:
         <div className="flex items-center gap-2">
           <Link href="/dashboard/aliado/presupuestos" className="border px-3 py-1 rounded">Volver</Link>
           <a className="border px-3 py-1 rounded" target="_blank" href={`/api/quotes/${quote.id}/send`}>WhatsApp</a>
-          <Link className="bg-green-600 text-white px-3 py-1 rounded" href={`/dashboard/aliado/ventas/nueva?fromQuote=${quote.id}`}>Hacer venta</Link>
+          <Link className="bg-green-600 text-white px-3 py-1 rounded" href={`/dashboard/aliado/ventas/nueva?fromQuote=${quote.id}&useP2=1`}>Hacer venta</Link>
           <a className="border px-3 py-1 rounded" target="_blank" href={`/dashboard/aliado/presupuestos/${quote.id}/print`}>Presupuesto Aliado</a>
           <Link className="border px-3 py-1 rounded" href={`/dashboard/aliado/presupuestos/${quote.id}/editar`}>Editar</Link>
         </div>
@@ -59,6 +59,7 @@ export default async function VerPresupuestoAliadoPage({ params, searchParams }:
           </form>
           <form method="get" action="/dashboard/aliado/ventas/nueva" className="flex items-center gap-2">
             <input type="hidden" name="fromQuote" value={quote.id} />
+            <input type="hidden" name="useP2" value="1" />
             <label className="text-sm text-gray-700">Envío</label>
             <select name="shipping" className="border rounded px-2 py-1 text-sm">
               <option value="">Automático</option>
