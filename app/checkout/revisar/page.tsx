@@ -519,7 +519,7 @@ export default function RevisarPage() {
               )}
             </div>
 
-            <div className="order-10">
+            <div className="order-50">
               <label htmlFor="shippingOption" className="block text-sm font-medium text-gray-700">Entrega local (Barinas)</label>
               <select
                 id="shippingOption"
@@ -535,7 +535,7 @@ export default function RevisarPage() {
               <div className="text-xs text-gray-500 mt-1">Si estÃ¡s en Barinas puedes elegir Retiro en tienda o Delivery incluido.</div>
             </div>
 
-            <div className="order-10">
+            <div className="order-50">
               <label htmlFor="shippingCarrier" className="block text-sm font-medium text-gray-700">Carrier (si no estÃ¡s en Barinas)</label>
               <select
                 id="shippingCarrier" style={{ display: isLocalBarinas ? 'none' : 'block' }}
