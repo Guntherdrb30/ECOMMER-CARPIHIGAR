@@ -97,6 +97,18 @@ export default function RevisarPage() {
   const [state, formAction] = useFormState(confirmOrderAction as any, initialState);
   const [errors, setErrors] = useState<{ reference?: string; pm_phone?: string; zelle_email?: string }>({});
 
+  // Ajuste inicial: si la moneda es USD, forzar 'ZELLE' como método por defecto
+  // para que las instrucciones se muestren de inmediato. Si es VES, usar Pago Móvil.
+  useEffect(() => {
+    const usdAllowed: PaymentMethod[] = ['ZELLE', 'TRANSFERENCIA'];
+    const vesAllowed: PaymentMethod[] = ['PAGO_MOVIL', 'TRANSFERENCIA'];
+    if (paymentCurrency === 'USD') {
+      if (!usdAllowed.includes(paymentMethod)) setPaymentMethod('ZELLE');
+    } else {
+      if (!vesAllowed.includes(paymentMethod)) setPaymentMethod('PAGO_MOVIL');
+    }
+  }, [paymentCurrency]);
+
   async function handleProofUpload(file: File | null) {
     if (!file) return;
     try {
@@ -133,6 +145,63 @@ export default function RevisarPage() {
     try { localStorage.setItem('checkout.shippingCarrier', shippingCarrier); } catch {}
   }, [shippingCarrier]);
 
+  // Pantalla de éxito personalizada
+  if (state?.ok) {
+    const orderId = (state as any).orderId as string | undefined;
+    const pdfPath = orderId ? `/api/orders/${orderId}/pdf` : '';
+    let shareUrl = '';
+    try {
+      if (orderId && typeof window !== 'undefined') {
+        const full = `${location.origin}${pdfPath}`;
+        const text = `Mi recibo de compra Carpihogar: ${full}`;
+        shareUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      }
+    } catch {}
+    return (
+      <div className="container mx-auto p-4">
+        <div className="bg-white shadow-md rounded-lg p-8 text-center">
+          <h1 className="text-2xl font-bold mb-2">Gracias por tu compra</h1>
+          <p className="text-gray-700 mb-6">Hemos recibido tu pago. Está en revisión.</p>
+
+          <div className="flex flex-col items-center gap-3">
+            <a href="/productos" className="inline-flex items-center justify-center px-4 py-2 bg-brand text-white rounded-lg hover:bg-opacity-90">
+              Seguir comprando
+            </a>
+
+            <div className="flex items-center gap-3">
+              <a
+                href={pdfPath || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex items-center justify-center px-4 py-2 rounded-lg border ${pdfPath ? 'border-gray-300 text-gray-700 hover:bg-gray-50' : 'border-gray-200 text-gray-400 cursor-not-allowed'}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 mr-2">
+                  <path d="M7 2a2 2 0 00-2 2v16l3-1 3 1 3-1 3 1V4a2 2 0 00-2-2H7zM9 7h6v2H9V7zm0 4h6v2H9v-2z" />
+                </svg>
+                Ver PDF del recibo
+              </a>
+
+              {pdfPath ? (
+                <a
+                  href={shareUrl || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600"
+                  title="Compartir por WhatsApp"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" className="w-5 h-5">
+                    <path d="M19.11 17.07c-.28-.14-1.65-.81-1.9-.9-.26-.1-.45-.14-.64.14-.19.28-.74.9-.9 1.09-.17.19-.33.21-.61.07-.28-.14-1.2-.44-2.28-1.41-.84-.75-1.41-1.68-1.58-1.96-.17-.28-.02-.43.12-.57.12-.12.28-.33.42-.5.14-.17.19-.28.28-.47.09-.19.05-.36-.02-.5-.07-.14-.64-1.55-.88-2.12-.23-.56-.47-.48-.64-.49h-.55c-.17 0-.5.07-.76.36-.26.28-1 1-1 2.43s1.03 2.82 1.18 3.01c.14.19 2.03 3.1 4.92 4.35.69.3 1.22.48 1.64.61.69.22 1.31.19 1.81.12.55-.08 1.65-.68 1.88-1.34.23-.66.23-1.22.16-1.34-.07-.12-.26-.19-.54-.33z" />
+                    <path d="M27.1 4.9A14 14 0 103.88 27.11L2 30l3-1.85A14 14 0 1027.1 4.9zM16 27a11 11 0 110-22 11 11 0 010 22z" />
+                  </svg>
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  // --- Bloque legacy de éxito (no se usa) ---
   if (state?.ok) {
     return (
       <div className="container mx-auto p-4">
@@ -225,7 +294,6 @@ export default function RevisarPage() {
       </>
     )}
   </select>
-            <PaymentInstructions method={paymentMethod} currency={paymentCurrency} />
 </div>
 
             <div className="order-first">
@@ -349,6 +417,9 @@ export default function RevisarPage() {
               </div>
             )}
 
+            {/* Instrucciones de pago debajo de los campos del método seleccionado */}
+            <PaymentInstructions method={paymentMethod} currency={paymentCurrency} />
+
             {!hasAddress && (
               <div className="bg-red-50 border-l-4 border-red-400 p-3 text-sm text-red-800 rounded mb-3">
                 AÃºn no has agregado una direcciÃ³n de envÃ­o. Por favor completa tus datos en
@@ -358,6 +429,12 @@ export default function RevisarPage() {
               </div>
             )}
 
+            {/* Aviso de Barinas arriba de las direcciones */}
+            {isLocalBarinas ? (
+              <div className="mt-2 rounded border border-yellow-200 bg-yellow-50 p-2 text-xs text-yellow-800">
+                Detectamos ciudad {detectedCity || 'local'}. Puedes elegir Retiro en tienda o Delivery incluido.
+              </div>
+            ) : null}
 
             {/* Address selection */}
             <div className="order-40">
@@ -390,16 +467,12 @@ export default function RevisarPage() {
                 </div>
               )}
             </div>
-            {/* Shipping info – moved below addresses */}
-            {isLocalBarinas ? (
-              <div className="mt-2 rounded border border-yellow-200 bg-yellow-50 p-2 text-xs text-yellow-800">
-                Detectamos ciudad {detectedCity || 'local'}. Puedes elegir Retiro en tienda o Delivery incluido.
-              </div>
-            ) : (
+            {/* Info para envíos nacionales (si no es Barinas) */}
+            {!isLocalBarinas ? (
               <div className="mt-2 rounded border border-blue-200 bg-blue-50 p-2 text-xs text-blue-800">
                 Para envios nacionales, puedes seleccionar TEALCA o MRW.
               </div>
-            )}
+            ) : null}
 
 
             <div className="order-50" style={{ display: isLocalBarinas ? 'block' : 'none' }}>
