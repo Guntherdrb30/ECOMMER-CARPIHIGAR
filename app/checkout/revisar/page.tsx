@@ -209,7 +209,7 @@ export default function RevisarPage() {
             </div>
 
             {paymentMethod === 'PAGO_MOVIL' && (
-              <div className="space-y-3">
+              <div className="order-30 space-y-3">
                 <div className="text-sm text-gray-600">Realiza tu Pago MÃ³vil y coloca los datos:</div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="pm_phone">Teléfono</label>
@@ -235,7 +235,7 @@ export default function RevisarPage() {
             {/* Sección genérica de Transferencia removida */}
 
             {paymentMethod === 'ZELLE' && (
-              <div className="space-y-3">
+              <div className="order-30 space-y-3">
                 <div className="text-sm text-gray-600">EnvÃ­a el pago por Zelle y coloca los datos:</div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="zelle_email">Correo Zelle</label>
@@ -252,7 +252,7 @@ export default function RevisarPage() {
 
             {/* Campos adicionales según moneda y método */}
             {paymentMethod === 'ZELLE' && (
-              <div className="space-y-3">
+              <div className="order-30 space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="zelle_payer_name">Nombre del titular de la cuenta</label>
                   <input id="zelle_payer_name" name="zelle_payer_name" type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
@@ -261,7 +261,7 @@ export default function RevisarPage() {
             )}
 
             {paymentMethod === 'TRANSFERENCIA' && paymentCurrency === 'USD' && (
-              <div className="space-y-3">
+              <div className="order-30 space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="deposit_bank">Banco</label>
                   <select id="deposit_bank" name="deposit_bank" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" defaultValue="">
@@ -283,7 +283,7 @@ export default function RevisarPage() {
             )}
 
             {paymentMethod === 'TRANSFERENCIA' && paymentCurrency === 'VES' && (
-              <div className="space-y-3">
+              <div className="order-30 space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="transfer_payer_name">Nombre del titular</label>
                   <input id="transfer_payer_name" name="transfer_payer_name" type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
