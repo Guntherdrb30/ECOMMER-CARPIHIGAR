@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "prebuild": "prisma migrate deploy",
+    "prebuild": "prisma migrate resolve --rolled-back 20251031060839_payment_instructions || true && prisma migrate deploy",
     "dev": "next dev",
     "build": "next build",
     "prisma:deploy": "prisma migrate deploy",
