@@ -518,6 +518,17 @@ export default function RevisarPage() {
                 </div>
               )}
             </div>
+            {/* Shipping info – moved below addresses */}
+            {isLocalBarinas ? (
+              <div className="mt-2 rounded border border-yellow-200 bg-yellow-50 p-2 text-xs text-yellow-800">
+                Detectamos ciudad {detectedCity || 'local'}. Puedes elegir Retiro en tienda o Delivery incluido.
+              </div>
+            ) : (
+              <div className="mt-2 rounded border border-blue-200 bg-blue-50 p-2 text-xs text-blue-800">
+                Para envios nacionales, puedes seleccionar TEALCA o MRW.
+              </div>
+            )}
+
 
             <div className="order-50">
               <label htmlFor="shippingOption" className="block text-sm font-medium text-gray-700">Entrega local (Barinas)</label>
