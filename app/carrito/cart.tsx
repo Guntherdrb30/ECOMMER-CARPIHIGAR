@@ -14,6 +14,7 @@ export default function Cart({ tasa }: { tasa: number }) {
   const [moneda, setMoneda] = useState<'USD' | 'VES'>('USD');
   const [syncInfo, setSyncInfo] = useState<{ removed: string[]; adjusted: Array<{ id: string; from: number; to: number }> } | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [proceedHref, setProceedHref] = useState<string>('/checkout/datos-envio');
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +26,22 @@ export default function Cart({ tasa }: { tasa: number }) {
     const t = setInterval(doSync, STOCK_POLL_MS);
     return () => { cancelled = true; clearInterval(t); };
   }, [refreshStocks]);
+
+  // Decide next step: if user logged in and already has an address, jump to revisar con transferencia
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/me/location', { credentials: 'include' });
+        if (!res.ok) return; // not logged in or error
+        const json = await res.json();
+        if (!cancelled && json?.hasAddress) {
+          setProceedHref('/checkout/revisar?metodo=TRANSFERENCIA');
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true };
+  }, []);
 
   const total = getTotalUSD();
 
@@ -152,7 +169,7 @@ export default function Cart({ tasa }: { tasa: number }) {
             <span className="text-lg">Total ({moneda})</span>
             <Price priceUSD={total} tasa={tasa} moneda={moneda} className="text-2xl font-bold text-brand" />
           </div>
-          <Link href="/checkout/datos-envio" className="mt-6 w-full bg-brand hover:bg-opacity-90 text-white font-bold py-3 rounded-full transition-colors text-center block">
+          <Link href={proceedHref} className="mt-6 w-full bg-brand hover:bg-opacity-90 text-white font-bold py-3 rounded-full transition-colors text-center block">
             Proceder al Pago
           </Link>
         </div>
@@ -172,4 +189,3 @@ export default function Cart({ tasa }: { tasa: number }) {
     </div>
   );
 }
-

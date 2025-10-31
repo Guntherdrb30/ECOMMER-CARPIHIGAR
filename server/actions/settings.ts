@@ -16,7 +16,17 @@ async function ensureSiteSettingsColumns() {
       'ADD COLUMN IF NOT EXISTS "instagramHandle" TEXT, ' +
       'ADD COLUMN IF NOT EXISTS "tiktokHandle" TEXT, ' +
       'ADD COLUMN IF NOT EXISTS "categoryBannerCarpinteriaUrl" TEXT, ' +
-      'ADD COLUMN IF NOT EXISTS "categoryBannerHogarUrl" TEXT'
+      'ADD COLUMN IF NOT EXISTS "categoryBannerHogarUrl" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "paymentZelleEmail" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "paymentPmPhone" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "paymentPmRif" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "paymentPmBank" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "paymentBanescoAccount" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "paymentBanescoRif" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "paymentBanescoName" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "paymentMercantilAccount" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "paymentMercantilRif" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "paymentMercantilName" TEXT'
     );
   } catch {}
 }
@@ -62,6 +72,17 @@ export async function getSettings() {
       heroAutoplayMs: Number((settings as any).heroAutoplayMs ?? 5000) || 5000,
       categoryBannerCarpinteriaUrl: (settings as any).categoryBannerCarpinteriaUrl || '',
       categoryBannerHogarUrl: (settings as any).categoryBannerHogarUrl || '',
+      // Payment instructions
+      paymentZelleEmail: (settings as any).paymentZelleEmail || '',
+      paymentPmPhone: (settings as any).paymentPmPhone || '',
+      paymentPmRif: (settings as any).paymentPmRif || '',
+      paymentPmBank: (settings as any).paymentPmBank || '',
+      paymentBanescoAccount: (settings as any).paymentBanescoAccount || '',
+      paymentBanescoRif: (settings as any).paymentBanescoRif || '',
+      paymentBanescoName: (settings as any).paymentBanescoName || '',
+      paymentMercantilAccount: (settings as any).paymentMercantilAccount || '',
+      paymentMercantilRif: (settings as any).paymentMercantilRif || '',
+      paymentMercantilName: (settings as any).paymentMercantilName || '',
     } as any;
   } catch (err) {
     console.warn('[getSettings] DB not reachable, using defaults.', err);
@@ -85,8 +106,45 @@ export async function getSettings() {
       defaultMarginWholesalePct: 20,
       categoryBannerCarpinteriaUrl: '',
       categoryBannerHogarUrl: '',
+      paymentZelleEmail: '',
+      paymentPmPhone: '',
+      paymentPmRif: '',
+      paymentPmBank: '',
+      paymentBanescoAccount: '',
+      paymentBanescoRif: '',
+      paymentBanescoName: '',
+      paymentMercantilAccount: '',
+      paymentMercantilRif: '',
+      paymentMercantilName: '',
     } as any;
   }
+}
+
+export async function setPaymentInstructions(formData: FormData) {
+  await ensureSiteSettingsColumns();
+  const session = await getServerSession(authOptions);
+  const email = (session?.user as any)?.email as string | undefined;
+  const isAdmin = (session?.user as any)?.role === 'ADMIN';
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  if (!isAdmin || String(email || '').toLowerCase() !== rootEmail) {
+    throw new Error('Not authorized');
+  }
+  const data = {
+    paymentZelleEmail: String(formData.get('paymentZelleEmail') || ''),
+    paymentPmPhone: String(formData.get('paymentPmPhone') || ''),
+    paymentPmRif: String(formData.get('paymentPmRif') || ''),
+    paymentPmBank: String(formData.get('paymentPmBank') || ''),
+    paymentBanescoAccount: String(formData.get('paymentBanescoAccount') || ''),
+    paymentBanescoRif: String(formData.get('paymentBanescoRif') || ''),
+    paymentBanescoName: String(formData.get('paymentBanescoName') || ''),
+    paymentMercantilAccount: String(formData.get('paymentMercantilAccount') || ''),
+    paymentMercantilRif: String(formData.get('paymentMercantilRif') || ''),
+    paymentMercantilName: String(formData.get('paymentMercantilName') || ''),
+  } as any;
+  await prisma.siteSettings.update({ where: { id: 1 }, data });
+  revalidatePath('/dashboard/admin/ajustes/sistema');
+  try { revalidatePath('/checkout/revisar'); } catch {}
+  return { ok: true };
 }
 
 export async function updateSettings(data: any) {

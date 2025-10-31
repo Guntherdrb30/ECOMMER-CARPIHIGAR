@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getDeleteSecret, setDeleteSecret, getSettings, setDefaultMargins } from '@/server/actions/settings';
+import { getDeleteSecret, setDeleteSecret, getSettings, setDefaultMargins, setPaymentInstructions } from '@/server/actions/settings';
 import { setRootRecoverySettings } from '@/server/actions/root-recovery';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import { PendingButton } from '@/components/pending-button';
@@ -74,6 +74,64 @@ export default async function SystemSettingsPage() {
           </div>
         </form>
         <p className="text-xs text-gray-500 mt-3">Para envío automático por WhatsApp, configura variables: <code>WHATSAPP_CLOUD_ACCESS_TOKEN</code> y <code>WHATSAPP_CLOUD_PHONE_ID</code>. Sin ellas, se registra en consola (modo desarrollo).</p>
+      </div>
+      <div className="bg-white p-4 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-2">Datos de pago (Root)</h2>
+        <p className="text-sm text-gray-600 mb-3">Estos datos aparecen en el formulario de pago para que el cliente pueda copiarlos facilmente.</p>
+        <form action={async (formData) => { 'use server'; try { await (setPaymentInstructions as any)(formData); redirect('/dashboard/admin/ajustes/sistema?message=Pagos%20actualizados'); } catch (e: any) { const m = encodeURIComponent(String(e?.message || 'No se pudieron guardar los cambios')); redirect('/dashboard/admin/ajustes/sistema?error=' + m); } }} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="md:col-span-3 font-semibold">USD · Zelle</div>
+          <div>
+            <label className="block text-sm text-gray-700">Correo Zelle</label>
+            <input name="paymentZelleEmail" defaultValue={(siteSettings as any).paymentZelleEmail || ''} className="border rounded px-2 py-1 w-full" placeholder="zelle@empresa.com" />
+          </div>
+
+          <div className="md:col-span-3 font-semibold mt-4">VES · Pago Movil</div>
+          <div>
+            <label className="block text-sm text-gray-700">Telefono</label>
+            <input name="paymentPmPhone" defaultValue={(siteSettings as any).paymentPmPhone || ''} className="border rounded px-2 py-1 w-full" placeholder="0412-XXXXXXX" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">RIF</label>
+            <input name="paymentPmRif" defaultValue={(siteSettings as any).paymentPmRif || ''} className="border rounded px-2 py-1 w-full" placeholder="J-XXXXXXXX-X" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">Banco</label>
+            <input name="paymentPmBank" defaultValue={(siteSettings as any).paymentPmBank || ''} className="border rounded px-2 py-1 w-full" placeholder="Nombre del banco" />
+          </div>
+
+          <div className="md:col-span-3 font-semibold mt-4">Depositos/Transferencias · Banesco</div>
+          <div>
+            <label className="block text-sm text-gray-700">Nombre del titular</label>
+            <input name="paymentBanescoName" defaultValue={(siteSettings as any).paymentBanescoName || ''} className="border rounded px-2 py-1 w-full" placeholder="Nombre del titular" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">Numero de cuenta</label>
+            <input name="paymentBanescoAccount" defaultValue={(siteSettings as any).paymentBanescoAccount || ''} className="border rounded px-2 py-1 w-full" placeholder="0000-0000-00-0000000000" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">RIF</label>
+            <input name="paymentBanescoRif" defaultValue={(siteSettings as any).paymentBanescoRif || ''} className="border rounded px-2 py-1 w-full" placeholder="J-XXXXXXXX-X" />
+          </div>
+
+          <div className="md:col-span-3 font-semibold mt-4">Depositos/Transferencias · Mercantil</div>
+          <div>
+            <label className="block text-sm text-gray-700">Nombre del titular</label>
+            <input name="paymentMercantilName" defaultValue={(siteSettings as any).paymentMercantilName || ''} className="border rounded px-2 py-1 w-full" placeholder="Nombre del titular" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">Numero de cuenta</label>
+            <input name="paymentMercantilAccount" defaultValue={(siteSettings as any).paymentMercantilAccount || ''} className="border rounded px-2 py-1 w-full" placeholder="0000-0000-00-0000000000" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">RIF</label>
+            <input name="paymentMercantilRif" defaultValue={(siteSettings as any).paymentMercantilRif || ''} className="border rounded px-2 py-1 w-full" placeholder="J-XXXXXXXX-X" />
+          </div>
+
+          <div className="md:col-span-3 flex gap-2 mt-2">
+            <PendingButton className="px-3 py-2 bg-blue-600 text-white rounded" pendingText="Guardando...">Guardar datos</PendingButton>
+            <a className="px-3 py-2 border rounded" href="/dashboard/admin/ajustes">Volver a ajustes</a>
+          </div>
+        </form>
       </div>
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-2">Ganancias de productos (márgenes %)</h2>

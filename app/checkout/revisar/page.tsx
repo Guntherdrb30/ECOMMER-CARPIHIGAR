@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useFormState, useFormStatus } from 'react-dom';
 import { confirmOrderAction } from '@/server/actions/orders';
+import ProductCard from '@/components/product-card';\nimport PaymentInstructions from '@/components/payment-instructions';
 import { useCartStore } from '@/store/cart';
 
 type PaymentMethod = 'PAGO_MOVIL' | 'TRANSFERENCIA' | 'ZELLE';
@@ -47,6 +48,8 @@ export default function RevisarPage() {
   const [hasAddress, setHasAddress] = useState(true);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');
+  const [topItems, setTopItems] = useState<any[]>([]);
+  const [tasaTop, setTasaTop] = useState<number>(40);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -68,6 +71,23 @@ export default function RevisarPage() {
       clearCart();
     }
   }, [state?.ok, clearCart]);
+  // Load top sold products for success screen
+  useEffect(() => {
+    let cancelled = false;
+    if (!state?.ok) return;
+    (async () => {
+      try {
+        const res = await fetch('/api/products/top-sold?limit=5', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled) {
+          setTopItems(Array.isArray(json?.items) ? json.items : []);
+          if (typeof json?.tasaVES === 'number') setTasaTop(json.tasaVES);
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true };
+  }, [state?.ok]);
 
   // hydrate default selections from localStorage if available
   useEffect(() => {
@@ -138,6 +158,44 @@ export default function RevisarPage() {
       localStorage.setItem('checkout.paymentMethod', paymentMethod);
     } catch {}
   }, [paymentMethod]);
+
+  // Ensure selected method is valid for chosen currency
+  useEffect(() => {
+    const allowed: PaymentMethod[] = (paymentCurrency === 'USD')
+      ? ['ZELLE','TRANSFERENCIA']
+      : ['PAGO_MOVIL','TRANSFERENCIA'];
+    if (!allowed.includes(paymentMethod)) {
+      setPaymentMethod(allowed[0]);
+    }
+  }, [paymentCurrency]);
+
+  // Hide non-applicable payment method options in the dropdown
+  useEffect(() => {
+    try {
+      const sel = document.getElementById('paymentMethod') as HTMLSelectElement | null;
+      if (!sel) return;
+      const allowed = new Set(paymentCurrency === 'USD' ? ['ZELLE','TRANSFERENCIA'] : ['PAGO_MOVIL','TRANSFERENCIA']);
+      for (const opt of Array.from(sel.options)) {
+        const ok = allowed.has(String(opt.value || '').toUpperCase());
+        (opt as any).hidden = !ok;
+        opt.disabled = !ok;
+      }
+      if (!allowed.has(String(sel.value || '').toUpperCase())) {
+        const firstOk = Array.from(sel.options).find(o => !(o as any).hidden);
+        if (firstOk) setPaymentMethod(firstOk.value as any);
+      }
+    } catch {}
+  }, [paymentCurrency]);
+
+  // Hide irrelevant shipping inputs (local vs nacional)
+  useEffect(() => {
+    try {
+      const labelCarrier = document.querySelector('label[for="shippingCarrier"]') as HTMLElement | null;
+      const labelOption = document.querySelector('label[for="shippingOption"]') as HTMLElement | null;
+      if (labelCarrier) labelCarrier.style.display = isLocalBarinas ? 'none' : '';
+      if (labelOption) labelOption.style.display = isLocalBarinas ? '' : 'none';
+    } catch {}
+  }, [isLocalBarinas]);
 
   // Detect user location (Barinas) to show guidance
   useEffect(() => {
@@ -251,42 +309,54 @@ export default function RevisarPage() {
               <span>{formatVES(totalVES)}</span>
             </div>
           </div>
+          {paymentCurrency === 'USD' && (
+            <div className="mt-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded p-3">
+              Pagando en dólares obtienes un 25% de descuento.
+            </div>
+          )}
         </div>
 
         <div className="bg-white shadow-md rounded-lg p-4">
           <h2 className="text-xl font-semibold mb-4">Pago</h2>
 
-          <form action={formAction} className="space-y-4" onSubmit={(e) => {
+          <form action={formAction} className="flex flex-col space-y-4" onSubmit={(e) => {
             const next: any = {};
             const form = e.currentTarget as HTMLFormElement;
             const reference = (form.querySelector('#reference') as HTMLInputElement | null)?.value || '';
             const pmPhone = (form.querySelector('#pm_phone') as HTMLInputElement | null)?.value || '';
-            const zelleEmail = (form.querySelector('#zelle_email') as HTMLInputElement | null)?.value || '';
+            const zellePayerName = (form.querySelector('#zelle_payer_name') as HTMLInputElement | null)?.value || '';
             if (!reference.trim()) next.reference = 'La referencia es obligatoria';
             if (paymentMethod === 'PAGO_MOVIL' && !pmPhone.trim()) next.pm_phone = 'El telÃ©fono es obligatorio';
             if (paymentMethod === 'ZELLE') {
-              if (!zelleEmail.trim()) next.zelle_email = 'El correo es obligatorio';
-              else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(zelleEmail)) next.zelle_email = 'Correo invÃ¡lido';
+              if (!zellePayerName.trim()) next.zelle_payer_name = 'El nombre del titular es obligatorio';
             }
             setErrors(next);
             if (Object.keys(next).length) e.preventDefault();
           }}>
-            <div>
-              <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700">MÃ©todo de pago</label>
-              <select
-                id="paymentMethod"
-                name="paymentMethod"
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              >
-                <option value="PAGO_MOVIL">Pago MÃ³vil</option>
-                <option value="TRANSFERENCIA">Transferencia</option>
-                <option value="ZELLE">Zelle</option>
-              </select>
-            </div>
+            <div className="order-2">
+  <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700">Método de pago</label>
+  <select
+    id="paymentMethod"
+    name="paymentMethod"
+    value={paymentMethod}
+    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+  >
+    {paymentCurrency === 'USD' ? (
+      <>
+        <option value="ZELLE">Zelle</option>
+        <option value="TRANSFERENCIA">Depósito en banco</option>
+      </>
+    ) : (
+      <>
+        <option value="PAGO_MOVIL">Pago Móvil</option>
+        <option value="TRANSFERENCIA">Transferencia</option>
+      </>
+    )}
+  </select>\n            <PaymentInstructions method={paymentMethod} currency={paymentCurrency} />\n
+</div>
 
-            <div>
+            <div className="order-1">
               <label htmlFor="paymentCurrency" className="block text-sm font-medium text-gray-700">Moneda del pago</label>
               <select
                 id="paymentCurrency"
@@ -318,22 +388,13 @@ export default function RevisarPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="reference">Referencia</label>
-                  <input id="reference" name="reference" type="text" className={`mt-1 block w-full rounded-md shadow-sm ${errors.reference ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} />
+                  <input id="reference" name="reference" type="text" required className={`mt-1 block w-full rounded-md shadow-sm ${errors.reference ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} />
                   {errors.reference && <div className="text-xs text-red-600 mt-1">{errors.reference}</div>}
                 </div>
               </div>
             )}
 
-            {paymentMethod === 'TRANSFERENCIA' && (
-              <div className="space-y-3">
-                <div className="text-sm text-gray-600">Realiza la transferencia y coloca el nÃºmero de referencia:</div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700" htmlFor="reference">Referencia</label>
-                  <input id="reference" name="reference" type="text" className={`mt-1 block w-full rounded-md shadow-sm ${errors.reference ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} />
-                  {errors.reference && <div className="text-xs text-red-600 mt-1">{errors.reference}</div>}
-                </div>
-              </div>
-            )}
+            {/* Sección genérica de Transferencia removida */}
 
             {paymentMethod === 'ZELLE' && (
               <div className="space-y-3">
@@ -345,8 +406,62 @@ export default function RevisarPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="reference">Referencia</label>
-                  <input id="reference" name="reference" type="text" className={`mt-1 block w-full rounded-md shadow-sm ${errors.reference ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} />
+                  <input id="reference" name="reference" type="text" required className={`mt-1 block w-full rounded-md shadow-sm ${errors.reference ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} />
                   {errors.reference && <div className="text-xs text-red-600 mt-1">{errors.reference}</div>}
+                </div>
+              </div>
+            )}
+
+            {/* Campos adicionales según moneda y método */}
+            {paymentMethod === 'ZELLE' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="zelle_payer_name">Nombre del titular de la cuenta</label>
+                  <input id="zelle_payer_name" name="zelle_payer_name" type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                </div>
+              </div>
+            )}
+
+            {paymentMethod === 'TRANSFERENCIA' && paymentCurrency === 'USD' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="deposit_bank">Banco</label>
+                  <select id="deposit_bank" name="deposit_bank" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" defaultValue="">
+                    <option value="" disabled>Selecciona banco</option>
+                    <option value="BANESCO">Banesco</option>
+                    <option value="MERCANTIL">Mercantil</option>
+                  </select>
+                  <div className="text-xs text-gray-500 mt-1">Selecciona un banco para ver los datos de depósito y copiarlos.</div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="deposit_payer_name">Nombre del depositante</label>
+                  <input id="deposit_payer_name" name="deposit_payer_name" type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="deposit_payer_id">Cédula</label>
+                  <input id="deposit_payer_id" name="deposit_payer_id" type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                </div>
+              </div>
+            )}
+
+            {paymentMethod === 'TRANSFERENCIA' && paymentCurrency === 'VES' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="transfer_payer_name">Nombre del titular</label>
+                  <input id="transfer_payer_name" name="transfer_payer_name" type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="transfer_payer_id">Cédula</label>
+                  <input id="transfer_payer_id" name="transfer_payer_id" type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="transfer_bank">Banco</label>
+                  <select id="transfer_bank" name="transfer_bank" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" defaultValue="">
+                    <option value="" disabled>Selecciona banco</option>
+                    <option value="BANESCO">Banesco</option>
+                    <option value="MERCANTIL">Mercantil</option>
+                  </select>
+                  <div className="text-xs text-gray-500 mt-1">Selecciona un banco para ver los datos de transferencia y copiarlos.</div>
                 </div>
               </div>
             )}
@@ -371,7 +486,7 @@ export default function RevisarPage() {
             )}
 
             {/* Address selection */}
-            <div>
+            <div className="order-1">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">Dirección de envío</label>
                 <a className="text-sm text-blue-600 underline" href="/checkout/datos-envio?next=/checkout/revisar">Añadir nueva</a>
@@ -402,7 +517,7 @@ export default function RevisarPage() {
               )}
             </div>
 
-            <div>
+            <div className="order-1">
               <label htmlFor="shippingOption" className="block text-sm font-medium text-gray-700">Entrega local (Barinas)</label>
               <select
                 id="shippingOption"
@@ -418,10 +533,10 @@ export default function RevisarPage() {
               <div className="text-xs text-gray-500 mt-1">Si estÃ¡s en Barinas puedes elegir Retiro en tienda o Delivery incluido.</div>
             </div>
 
-            <div>
+            <div className="order-1">
               <label htmlFor="shippingCarrier" className="block text-sm font-medium text-gray-700">Carrier (si no estÃ¡s en Barinas)</label>
               <select
-                id="shippingCarrier"
+                id="shippingCarrier" style={{ display: isLocalBarinas ? 'none' : 'block' }}
                 name="shippingCarrier"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 value={shippingCarrier}
@@ -460,6 +575,37 @@ export default function RevisarPage() {
     </div>
   );
 }
+
+
+
+
+  // Success screen override with CTA and top products
+  if (state?.ok) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="bg-white shadow-md rounded-lg p-8 text-center">
+          <h1 className="text-2xl font-bold mb-2">Su pago está en revisión</h1>
+          <p className="text-gray-700 mb-4">Gracias por tu compra. En breve confirmaremos tu pago.</p>
+          <a href="/productos" className="inline-block bg-brand text-white px-4 py-2 rounded-full font-semibold">Seguir comprando</a>
+        </div>
+        {topItems.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-4">Más vendidos</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {topItems.slice(0,5).map((p: any) => (
+                <ProductCard key={p.id} product={p} tasa={tasaTop} compact />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+
+
+
+
 
 
 

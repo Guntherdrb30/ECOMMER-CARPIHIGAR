@@ -12,7 +12,8 @@ export async function createPayment(
   currency: Currency = 'USD' as any,
   payerName?: string,
   payerPhone?: string,
-  payerBank?: string
+  payerBank?: string,
+  payerId?: string
 ) {
   const payment = await prisma.payment.create({
     data: {
@@ -25,6 +26,7 @@ export async function createPayment(
       payerName: payerName || undefined,
       payerPhone: payerPhone || undefined,
       payerBank: payerBank || undefined,
+      payerId: payerId || undefined,
     },
   });
 

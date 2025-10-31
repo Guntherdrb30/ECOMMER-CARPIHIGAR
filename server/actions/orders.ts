@@ -80,6 +80,13 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
         const pmPayerName = (formData.get('pm_payer_name') as string) || '';
         const pmBank = (formData.get('pm_bank') as string) || '';
         const zelleEmail = (formData.get('zelle_email') as string) || '';
+        const zellePayerName = (formData.get('zelle_payer_name') as string) || '';
+        const depositBank = (formData.get('deposit_bank') as string) || '';
+        const depositPayerName = (formData.get('deposit_payer_name') as string) || '';
+        const depositPayerId = (formData.get('deposit_payer_id') as string) || '';
+        const transferPayerName = (formData.get('transfer_payer_name') as string) || '';
+        const transferPayerId = (formData.get('transfer_payer_id') as string) || '';
+        const transferBank = (formData.get('transfer_bank') as string) || '';
         const shippingOption = ((formData.get('shippingOption') as string) || '').toUpperCase();
         const shippingCarrier = ((formData.get('shippingCarrier') as string) || '').toUpperCase();
         const shippingAddressId = (formData.get('shippingAddressId') as string) || '';
@@ -106,9 +113,32 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
             try { await prisma.auditLog.create({ data: { userId, action: 'CHECKOUT_PAYMENT_VALIDATION_FAILED', details: 'Missing pm_bank' } }); } catch {}
             return { ok: false, error: 'Para Pago MÃ³vil, el banco del titular es obligatorio' };
         }
-        if (String(method) === 'ZELLE' && !zelleEmail.trim()) {
-            try { await prisma.auditLog.create({ data: { userId, action: 'CHECKOUT_PAYMENT_VALIDATION_FAILED', details: 'Missing zelle_email' } }); } catch {}
-            return { ok: false, error: 'Para Zelle, el correo es obligatorio' };
+        if (String(method) === 'ZELLE') {
+            if (!zelleEmail.trim() && !zellePayerName.trim()) {
+                try { await prisma.auditLog.create({ data: { userId, action: 'CHECKOUT_PAYMENT_VALIDATION_FAILED', details: 'Missing zelle payer info' } }); } catch {}
+                return { ok: false, error: 'Para Zelle, indica el nombre del titular o el correo' };
+            }
+        }
+        if (String(method) === 'TRANSFERENCIA') {
+            if (String(paymentCurrency) === 'USD') {
+                if (!depositPayerName.trim() || !depositPayerId.trim() || !depositBank.trim()) {
+                    try { await prisma.auditLog.create({ data: { userId, action: 'CHECKOUT_PAYMENT_VALIDATION_FAILED', details: 'Missing deposit fields' } }); } catch {}
+                    return { ok: false, error: 'Para depósito en USD, nombre, cédula y banco son obligatorios' };
+                }
+            } else if (String(paymentCurrency) === 'VES') {
+                if (!transferPayerName.trim() || !transferPayerId.trim()) {
+                    try { await prisma.auditLog.create({ data: { userId, action: 'CHECKOUT_PAYMENT_VALIDATION_FAILED', details: 'Missing transfer VES fields' } }); } catch {}
+                    return { ok: false, error: 'Para transferencia en Bs, nombre y cédula son obligatorios' };
+                }
+            }
+        }
+
+        // Extra guard for VES transfer bank selection (if not captured above)
+        if (String(method) === 'TRANSFERENCIA' && String(paymentCurrency) === 'VES') {
+            if (!transferBank.trim()) {
+                try { await prisma.auditLog.create({ data: { userId, action: 'CHECKOUT_PAYMENT_VALIDATION_FAILED', details: 'Missing transfer bank (VES)' } }); } catch {}
+                return { ok: false, error: 'Para transferencia en Bs, selecciona el banco (Banesco o Mercantil).' };
+            }
         }
 
         const tasaVES = Number(formData.get('tasaVES') ?? 40);
@@ -200,7 +230,29 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
             return order;
         });
 
-        await createPayment(order.id, method, reference, proofUrl, paymentCurrency, pmPayerName || undefined, pmPhone || undefined, pmBank || undefined);
+        // Map payer info based on method/currency
+        let _payerName: string | undefined = undefined;
+        let _payerPhone: string | undefined = undefined;
+        let _payerBank: string | undefined = undefined;
+        let _payerId: string | undefined = undefined;
+        if (String(method) === 'PAGO_MOVIL') {
+            _payerName = pmPayerName || undefined;
+            _payerPhone = pmPhone || undefined;
+            _payerBank = pmBank || undefined;
+        } else if (String(method) === 'ZELLE') {
+            _payerName = zellePayerName || undefined;
+        } else if (String(method) === 'TRANSFERENCIA') {
+            if (String(paymentCurrency) === 'USD') {
+                _payerName = depositPayerName || undefined;
+                _payerId = depositPayerId || undefined;
+                _payerBank = depositBank || undefined;
+            } else {
+                _payerName = transferPayerName || undefined;
+                _payerId = transferPayerId || undefined;
+                _payerBank = transferBank || undefined;
+            }
+        }
+        await createPayment(order.id, method, reference, proofUrl, paymentCurrency, _payerName, _payerPhone, _payerBank, _payerId);
 
         // Create shipping record for online order with default carrier logic
         try {

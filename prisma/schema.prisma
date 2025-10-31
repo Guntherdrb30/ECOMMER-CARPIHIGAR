@@ -92,6 +92,18 @@ model SiteSettings {
   defaultMarginClientPct   Decimal? @db.Decimal(5, 2)
   defaultMarginAllyPct     Decimal? @db.Decimal(5, 2)
   defaultMarginWholesalePct Decimal? @db.Decimal(5, 2)
+
+  // Payment instructions (root-configurable)
+  paymentZelleEmail        String?
+  paymentPmPhone           String?
+  paymentPmRif             String?
+  paymentPmBank            String?
+  paymentBanescoAccount    String?
+  paymentBanescoRif        String?
+  paymentBanescoName       String?
+  paymentMercantilAccount  String?
+  paymentMercantilRif      String?
+  paymentMercantilName     String?
 }
 
 model Category {
@@ -266,6 +278,7 @@ model Payment {
   payerName String?
   payerPhone String?
   payerBank String?
+  payerId   String?
   createdAt DateTime      @default(now())
 }
 
