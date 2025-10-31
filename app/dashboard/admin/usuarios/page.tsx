@@ -16,6 +16,23 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
   const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
   const isRoot = role === 'ADMIN' && email === rootEmail;
 
+  function escapeRegExp(str: string) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+  function highlight(text: string | null | undefined) {
+    const value = String(text || '');
+    if (!q) return value;
+    try {
+      const re = new RegExp(`(${escapeRegExp(q)})`, 'ig');
+      const parts = value.split(re);
+      return parts.map((part, idx) => (
+        re.test(part) ? <span key={idx} className="bg-yellow-200 rounded px-0.5">{part}</span> : <span key={idx}>{part}</span>
+      ));
+    } catch {
+      return value;
+    }
+  }
+
   return (
     <div className="container mx-auto p-4">
       <ShowToastFromSearch />
@@ -56,10 +73,11 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
       {/* Buscador de usuarios */}
       <div className="bg-white p-4 rounded-lg shadow mb-4">
         <h2 className="text-lg font-bold mb-2">Buscar Usuarios</h2>
-        <UsersSearch />
+        <UsersSearch resultCount={users.length} />
       </div>
       <div className="bg-white p-4 rounded-lg shadow mt-4">
         <h2 className="text-lg font-bold mb-2">Todos los Usuarios</h2>
+        {q ? (<div className="text-sm text-gray-600 mb-2">Mostrando {users.length} resultado{users.length === 1 ? '' : 's'} para "{q}"</div>) : null}
         <div className="overflow-x-auto">
           <table className="w-full table-auto">
             <thead>
@@ -74,8 +92,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td className="border px-4 py-2">{user.name}</td>
-                  <td className="border px-4 py-2">{user.email}</td>
+                  <td className="border px-4 py-2">{highlight(user.name)}</td>
+                  <td className="border px-4 py-2">{highlight(user.email)}</td>
                   <td className="border px-4 py-2">{user.role}</td>
                   <td className="border px-4 py-2">{user.alliedStatus}</td>
                   <td className="border px-4 py-2 space-y-2">
