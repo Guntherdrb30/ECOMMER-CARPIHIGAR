@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
 
@@ -215,7 +215,8 @@ function UploadField({
   setValue: (v: string) => void;
   setUploading: (b: boolean) => void;
 }) {
-  const inputRef = (React as any).useRef<HTMLInputElement | null>(null);
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const [open, setOpen] = React.useState(false);
   const handlePick = () => inputRef.current?.click();
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -243,7 +244,12 @@ function UploadField({
       <label className="block text-gray-700 mb-1">{label}</label>
       <div className="flex items-center gap-3">
         {value ? (
-          <img src={value} alt="preview" className="h-16 w-16 object-cover rounded border" />
+          <img
+            src={value}
+            alt="preview"
+            className="h-16 w-16 object-cover rounded border cursor-zoom-in"
+            onClick={() => setOpen(true)}
+          />
         ) : (
           <div className="h-16 w-16 rounded border bg-gray-50 flex items-center justify-center text-xs text-gray-400">Sin imagen</div>
         )}
@@ -255,7 +261,16 @@ function UploadField({
         </div>
       </div>
       <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+      {value && open && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center" onClick={() => setOpen(false)}>
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <img src={value} alt="preview-full" className="max-h-[85vh] max-w-[90vw] rounded shadow-xl" />
+            <button type="button" className="absolute -top-3 -right-3 bg-white rounded-full px-2 py-1 text-sm shadow" onClick={() => setOpen(false)}>Cerrar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 }
+
