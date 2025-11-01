@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -95,7 +95,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     doc.text(`Cliente: ${user?.name || user?.email || '-'}`);
     if (tipo === 'factura') {
       if (order.customerTaxId) doc.text(`Cedula/RIF: ${order.customerTaxId}`);
-      if (order.customerFiscalAddress) doc.text(`Dirección fiscal: ${order.customerFiscalAddress}`);
+      if (order.customerFiscalAddress) doc.text(`DirecciÃ³n fiscal: ${order.customerFiscalAddress}`);
     } else if (order.payment) {
       doc.text(`Pago: ${(order.payment as any)?.method || '-'} - ${(order.payment as any)?.currency || 'USD'}${(order.payment as any)?.reference ? ` - Ref: ${(order.payment as any)?.reference}` : ''}`);
     }
@@ -117,11 +117,30 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     doc.moveDown(0.3);
     doc.moveTo(startX, doc.y).lineTo(555, doc.y).strokeColor('#eee').stroke();
     let subtotal = 0;
-    \n    // Delivery fee line if present\n    try {\n      const sh = await (await import('@/lib/prisma')).default.shipping.findUnique({ where: { orderId } });\n      const fee = Number((sh as any)?.deliveryFeeUSD || 0);\n      if (fee > 0) {\n        const cols = [ 'Delivery local (moto)', money(toMoney(fee)), '1', money(toMoney(fee)) ];\n        cols.forEach((c, i) => {\n          doc.fillColor('#111').text(c, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), doc.y, { width: colWidths[i] });\n        });\n        doc.moveDown(0.2);\n        subtotal += fee;\n      }\n    } catch {});
+    for (const it of (order.items as any[])) {
+      const p = Number((it as any).priceUSD || 0);
+      const q = Number((it as any).quantity || 0);
+      const sub = p * q;
+      subtotal += sub;
+      const cols = [ (it as any).name || (it as any).product?.name || 'Producto', money(toMoney(p)), String(q), money(toMoney(sub)) ];
+      cols.forEach((c, i) => {
+        doc.fillColor('#111').text(c, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), doc.y, { width: colWidths[i] });
       });
       doc.moveDown(0.2);
     }
-    doc.moveDown(0.5);
+    try {
+      const sh = await prisma.shipping.findUnique({ where: { orderId } });
+      const fee = Number((sh as any)?.deliveryFeeUSD || 0);
+      if (fee > 0) {
+        const cols = [ 'Delivery local (moto)', money(toMoney(fee)), '1', money(toMoney(fee)) ];
+        cols.forEach((c, i) => {
+          doc.fillColor('#111').text(c, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), doc.y, { width: colWidths[i] });
+        });
+        doc.moveDown(0.2);
+        subtotal += fee;
+      }
+    } catch {}
+    doc.moveDown(0.5);    doc.moveDown(0.5);
     const iva = subtotal * (ivaPercent / 100);
     const total = subtotal + iva;
     doc.text(`Subtotal: ${money(toMoney(subtotal))}`, { align: 'right' });
@@ -144,4 +163,5 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     return new NextResponse(`Error: ${String(e)}`, { status: 500 });
   }
 }
+
 
