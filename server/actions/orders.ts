@@ -182,7 +182,15 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
                 await prisma.user.update({ where: { id: userId }, data: { phone: phoneRaw } });
             }
         } catch {}
-        let subtotalUSD = items.reduce((sum, it) => sum + (Number(it.priceUSD) * Number(it.quantity)), 0);\n        // Add local delivery fee (Barinas) if selected\n        const deliverySelected = shippingOption === 'DELIVERY';\n        if (deliverySelected) {\n            subtotalUSD += 6; // Delivery moto Barinas\n        }\n        const ivaAmount = subtotalUSD * (ivaPercent / 100);\n        const totalUSD = subtotalUSD + ivaAmount;\n        const totalVES = totalUSD * tasaVES;
+        let subtotalUSD = items.reduce((sum, it) => sum + (Number(it.priceUSD) * Number(it.quantity)), 0);
+        // Add local delivery fee (Barinas) if selected
+        const deliverySelected = shippingOption === 'DELIVERY';
+        if (deliverySelected) {
+            subtotalUSD += 6; // Delivery moto Barinas
+        }
+        const ivaAmount = subtotalUSD * (ivaPercent / 100);
+        const totalUSD = subtotalUSD + ivaAmount;
+        const totalVES = totalUSD * tasaVES;
 
         // Validate stock and create order atomically with stock deduction
         const ids = Array.from(new Set(items.map(i => i.id)));
@@ -373,7 +381,11 @@ export async function markShipmentReceived(orderId: string) {
     if (!order) throw new Error('Order not found');
     if (!order.shipping) throw new Error('Shipping record not found');
 
-    // Only allow customer to confirm for national shipments (TEALCA/MRW)\n    const carrier = String((order.shipping as any)?.carrier || '');\n    if (carrier !== 'TEALCA' && carrier !== 'MRW') { throw new Error('Not allowed for this carrier'); }\n    // Update shipping and order status\n    await prisma.shipping.update({ where: { orderId }, data: { status: 'ENTREGADO' as any } });
+    // Only allow customer to confirm for national shipments (TEALCA/MRW)
+    const carrier = String((order.shipping as any)?.carrier || '');
+    if (carrier !== 'TEALCA' && carrier !== 'MRW') { throw new Error('Not allowed for this carrier'); }
+    // Update shipping and order status
+    await prisma.shipping.update({ where: { orderId }, data: { status: 'ENTREGADO' as any } });
     try { await prisma.order.update({ where: { id: orderId }, data: { status: 'COMPLETADO' as any } }); } catch {}
     try { await prisma.auditLog.create({ data: { userId, action: 'CUSTOMER_CONFIRMED_DELIVERY', details: `order:${orderId}` } }); } catch {}
 
@@ -382,6 +394,8 @@ export async function markShipmentReceived(orderId: string) {
     try { const { revalidatePath } = await import('next/cache'); revalidatePath('/dashboard/admin/envios'); } catch {}
     return { ok: true };
 }
+
+
 
 
 

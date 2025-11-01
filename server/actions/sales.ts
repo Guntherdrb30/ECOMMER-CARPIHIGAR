@@ -166,7 +166,13 @@ export async function createOfflineSale(formData: FormData) {
     }
   } catch {}
 
-  \n  let _subtotalUSD = items.reduce((sum, it) => sum + (Number(it.priceUSD) * Number(it.quantity)), 0);\n  // Delivery local (Barinas) fee if selected\n  if (shippingLocalOption === 'DELIVERY') { _subtotalUSD += 6; }\n  const subtotalUSD = _subtotalUSD;\n  const totalUSD = subtotalUSD * (1 + ivaPercent/100);\n  const totalVES = totalUSD * tasaVES;
+  
+  let _subtotalUSD = items.reduce((sum, it) => sum + (Number(it.priceUSD) * Number(it.quantity)), 0);
+  // Delivery local (Barinas) fee if selected
+  if (shippingLocalOption === 'DELIVERY') { _subtotalUSD += 6; }
+  const subtotalUSD = _subtotalUSD;
+  const totalUSD = subtotalUSD * (1 + ivaPercent/100);
+  const totalVES = totalUSD * tasaVES;
 
   const order = await prisma.order.create({
     data: ({
@@ -223,7 +229,10 @@ export async function createOfflineSale(formData: FormData) {
       const brand = (await prisma.siteSettings.findUnique({ where: { id: 1 } }))?.brandName || 'Carpihogar';
       const totalTxt = paymentCurrency === 'VES' ? `Bs ${Number(totalVES).toFixed(2)}` : `$${Number(totalUSD).toFixed(2)}`;
       const code = order.id.slice(-6);
-      const body = `Hola ${user.name || 'cliente'}!\nTu ${docType} ${code} ha sido generado.\nTotal: ${totalTxt}.\nÂ¡Gracias por tu compra en ${brand}!`;
+      const body = `Hola ${user.name || 'cliente'}!
+Tu ${docType} ${code} ha sido generado.
+Total: ${totalTxt}.
+Â¡Gracias por tu compra en ${brand}!`;
       const res = await sendWhatsAppText(normalizedPhone, body);
       try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'WHATSAPP_RECEIPT_SENT', details: `${order.id}:${customerPhone}:${res.ok ? 'OK' : ('ERR ' + (res.error || ''))}` } }); } catch {}
       if (res.ok) successMessage += ' - WhatsApp enviado';
@@ -278,7 +287,10 @@ export async function sendOrderWhatsAppByForm(formData: FormData) {
     const brand = (await prisma.siteSettings.findUnique({ where: { id: 1 } }))?.brandName || 'Carpihogar';
     const totalTxt = `$${Number(order.totalUSD).toFixed(2)}`;
     const code = order.id.slice(-6);
-    const body = `Hola ${order.user?.name || 'cliente'}!\nTu recibo ${code} ha sido generado.\nTotal: ${totalTxt}.\nGracias por tu compra en ${brand}!`;
+    const body = `Hola ${order.user?.name || 'cliente'}!
+Tu recibo ${code} ha sido generado.
+Total: ${totalTxt}.
+Gracias por tu compra en ${brand}!`;
     const res = await sendWhatsAppText(phone, body);
     if (!res.ok) msg = 'No se pudo enviar por WhatsApp';
     try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'WHATSAPP_RECEIPT_SENT_MANUAL', details: `${order.id}:${phone}:${res.ok ? 'OK' : ('ERR ' + (res.error || ''))}` } }); } catch {}
@@ -355,6 +367,8 @@ export async function rejectAllySaleByForm(formData: FormData) {
   try { revalidatePath('/dashboard/aliado/ventas'); } catch {}
   redirect('/dashboard/admin/ventas/aliados?message=' + encodeURIComponent('Venta rechazada'));
 }
+
+
 
 
 
