@@ -24,9 +24,14 @@ async function fetchLogoBuffer(logoUrl?: string): Promise<Buffer | null> {
   return null;
 }
 
-export async function GET(_req: Request, { params }: { params: { orderId: string } }) {
+export async function GET(req: Request, { params }: { params: { orderId: string } }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) return new NextResponse('Unauthorized', { status: 401 });
+  if (!session?.user) {
+    const url = new URL(req.url);
+    const login = new URL('/auth/login', url.origin);
+    login.searchParams.set('callbackUrl', `${url.origin}/api/shipments/${params.orderId}/pdf`);
+    return NextResponse.redirect(login);
+  }
   const orderId = params.orderId;
   try {
     const order = await prisma.order.findFirst({

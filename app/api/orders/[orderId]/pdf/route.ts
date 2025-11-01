@@ -30,7 +30,17 @@ async function fetchLogoBuffer(logoUrl?: string): Promise<Buffer | null> {
 
 export async function GET(req: Request, { params }: { params: { orderId: string } }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) return new NextResponse('Unauthorized', { status: 401 });
+  if (!session?.user) {
+    const url = new URL(req.url);
+    const tipoRaw = (url.searchParams.get('tipo') || 'recibo').toLowerCase();
+    const monedaRaw = (url.searchParams.get('moneda') || 'USD').toUpperCase();
+    const login = new URL('/auth/login', url.origin);
+    const callbackUrl = new URL(`/api/orders/${params.orderId}/pdf`, url.origin);
+    callbackUrl.searchParams.set('tipo', tipoRaw);
+    callbackUrl.searchParams.set('moneda', monedaRaw);
+    login.searchParams.set('callbackUrl', callbackUrl.toString());
+    return NextResponse.redirect(login);
+  }
   const url = new URL(req.url);
   const tipoRaw = (url.searchParams.get('tipo') || 'recibo').toLowerCase();
   const monedaRaw = (url.searchParams.get('moneda') || 'USD').toUpperCase();
@@ -47,7 +57,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     if (!order) return new NextResponse('Not Found', { status: 404 });
     const isOwner = order.userId === userId;
     const isSeller = String(order.sellerId || '') === String(userId || '');
-    const isAdminLike = ['ADMIN','VENDEDOR'].includes(String(role || ''));
+    const isAdminLike = ['ADMIN','VENDEDOR','ALIADO'].includes(String(role || ''));
     if (!(isOwner || isSeller || isAdminLike)) return new NextResponse('Forbidden', { status: 403 });
 
     const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });

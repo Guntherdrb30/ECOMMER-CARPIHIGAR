@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { signIn, getSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -10,6 +10,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = useMemo(() => {
+    try { return searchParams?.get('callbackUrl') || ''; } catch { return ''; }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +28,11 @@ export default function LoginPage() {
     if (result?.error) {
       setError(result.error);
     } else {
+      const next = (callbackUrl || '').trim();
+      if (next) {
+        router.replace(next);
+        return;
+      }
       const session = await getSession();
       const role = (session?.user as any)?.role as string | undefined;
       if (role === 'ADMIN') {
