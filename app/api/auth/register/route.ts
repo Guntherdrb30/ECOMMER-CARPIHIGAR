@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, isAlly } = await req.json();
+    const { name, email, password, isAlly, isDelivery, deliveryCedula, deliveryAddress, deliveryMotoPlate, deliveryChassisSerial, deliveryIdImageUrl, deliverySelfieUrl } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
@@ -30,6 +30,13 @@ export async function POST(req: Request) {
         password: hashedPassword,
         role: 'CLIENTE',
         alliedStatus: isAlly ? 'PENDING' : 'NONE',
+        deliveryStatus: isDelivery ? 'PENDING' as any : 'NONE' as any,
+        deliveryCedula: isDelivery ? (deliveryCedula || null) : null,
+        deliveryAddress: isDelivery ? (deliveryAddress || null) : null,
+        deliveryMotoPlate: isDelivery ? (deliveryMotoPlate || null) : null,
+        deliveryChassisSerial: isDelivery ? (deliveryChassisSerial || null) : null,
+        deliveryIdImageUrl: isDelivery ? (deliveryIdImageUrl || null) : null,
+        deliverySelfieUrl: isDelivery ? (deliverySelfieUrl || null) : null,
       },
     });
 

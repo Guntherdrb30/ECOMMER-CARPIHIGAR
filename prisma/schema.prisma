@@ -21,6 +21,12 @@ enum AlliedStatus {
   APPROVED
 }
 
+enum DeliveryStatus {
+  NONE
+  PENDING
+  APPROVED
+}
+
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
@@ -61,6 +67,15 @@ model User {
 
   passwordResetToken          String?   @unique
   passwordResetTokenExpiresAt DateTime?
+
+  // Delivery registration fields
+  deliveryStatus        DeliveryStatus @default(NONE)
+  deliveryCedula        String?
+  deliveryAddress       String?
+  deliveryMotoPlate     String?
+  deliveryChassisSerial String?
+  deliveryIdImageUrl    String?
+  deliverySelfieUrl     String?
 }
 
 
