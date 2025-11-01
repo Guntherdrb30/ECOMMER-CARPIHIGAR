@@ -72,7 +72,7 @@ export default async function EnviosClientePage() {
                 <div className="flex items-center gap-2">
                   <a className="px-3 py-2 rounded border" href={`/api/shipments/${o.id}/pdf`} target="_blank" rel="noreferrer">PDF</a>
                   <a className="px-3 py-2 rounded border text-green-600 border-green-600" href={`https://wa.me/?text=${encodeURIComponent(waMsg)}`} target="_blank" rel="noreferrer">WhatsApp</a>
-                  {!delivered && (
+                  {!delivered && (String(s.carrier || '') !== 'RETIRO_TIENDA') && (String(s.carrier || '') !== 'DELIVERY') && (
                     <form action={async (formData) => { 'use server'; await markShipmentReceived(formData.get('orderId') as string); }}>
                       <input type="hidden" name="orderId" value={o.id} />
                       <button className="px-3 py-2 rounded bg-green-600 text-white">Producto recibido</button>
@@ -88,3 +88,4 @@ export default async function EnviosClientePage() {
     </div>
   );
 }
+

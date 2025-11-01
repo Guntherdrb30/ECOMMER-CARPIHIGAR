@@ -110,7 +110,7 @@ export default async function PrintSalePage({
               <th className="text-right px-2 py-1">Subtotal</th>
             </tr>
           </thead>
-          <tbody>
+                    <tbody>
             {order.items.map((it: any) => {
               const priceUSD = Number(it.priceUSD);
               const subUSD = priceUSD * Number(it.quantity);
@@ -123,6 +123,14 @@ export default async function PrintSalePage({
                 </tr>
               );
             })}
+            {(order as any)?.shipping?.deliveryFeeUSD && Number((order as any).shipping.deliveryFeeUSD) > 0 && (
+              <tr>
+                <td className="border px-2 py-1">Delivery local (moto)</td>
+                <td className="border px-2 py-1 text-right">{fmt(toMoney(Number((order as any).shipping.deliveryFeeUSD)))}</td>
+                <td className="border px-2 py-1 text-right">1</td>
+                <td className="border px-2 py-1 text-right">{fmt(toMoney(Number((order as any).shipping.deliveryFeeUSD)))}</td>
+              </tr>
+            )}
           </tbody>
         </table>
 
@@ -139,3 +147,5 @@ export default async function PrintSalePage({
     </div>
   );
 }
+
+

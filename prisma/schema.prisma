@@ -12,6 +12,7 @@ enum Role {
   ALIADO
   VENDEDOR
   ADMIN
+  DELIVERY
 }
 
 enum AlliedStatus {
@@ -478,6 +479,10 @@ model Shipping {
   observations String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
+  assignedToId String?
+  assignedTo   User?           @relation("DeliveryAssignee", fields: [assignedToId], references: [id])
+  assignedAt   DateTime?
+  deliveryFeeUSD Decimal?      @db.Decimal(10, 2)
 }
 // Estado de cuentas por cobrar
 enum ReceivableStatus {

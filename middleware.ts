@@ -17,6 +17,13 @@ export default withAuth(
     ) {
       return NextResponse.rewrite(new URL("/auth/login?message=You Are Not Authorized!", req.url));
     }
+    // Protect delivery dashboard for DELIVERY role
+    if (
+      req.nextUrl.pathname.startsWith("/dashboard/delivery") &&
+      req.nextauth.token?.role !== "DELIVERY"
+    ) {
+      return NextResponse.rewrite(new URL("/auth/login?message=You Are Not Authorized!", req.url));
+    }
   },
   {
     callbacks: {
@@ -25,4 +32,4 @@ export default withAuth(
   }
 );
 
-export const config = { matcher: ["/dashboard/admin/:path*", "/checkout/:path*", "/dashboard/cliente/:path*", "/dashboard/aliado/:path*"] };
+export const config = { matcher: ["/dashboard/admin/:path*", "/checkout/:path*", "/dashboard/cliente/:path*", "/dashboard/aliado/:path*", "/dashboard/delivery/:path*"] };

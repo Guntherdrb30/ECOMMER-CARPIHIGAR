@@ -166,9 +166,7 @@ export async function createOfflineSale(formData: FormData) {
     }
   } catch {}
 
-  const subtotalUSD = items.reduce((acc, it) => acc + (Number(it.priceUSD) * Number(it.quantity)), 0);
-  const totalUSD = subtotalUSD * (1 + ivaPercent/100);
-  const totalVES = totalUSD * tasaVES;
+  \n  let _subtotalUSD = items.reduce((sum, it) => sum + (Number(it.priceUSD) * Number(it.quantity)), 0);\n  // Delivery local (Barinas) fee if selected\n  if (shippingLocalOption === 'DELIVERY') { _subtotalUSD += 6; }\n  const subtotalUSD = _subtotalUSD;\n  const totalUSD = subtotalUSD * (1 + ivaPercent/100);\n  const totalVES = totalUSD * tasaVES;
 
   const order = await prisma.order.create({
     data: ({
@@ -357,6 +355,7 @@ export async function rejectAllySaleByForm(formData: FormData) {
   try { revalidatePath('/dashboard/aliado/ventas'); } catch {}
   redirect('/dashboard/admin/ventas/aliados?message=' + encodeURIComponent('Venta rechazada'));
 }
+
 
 
 
