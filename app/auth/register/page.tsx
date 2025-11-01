@@ -238,9 +238,14 @@ function UploadField({
   return (
     <div>
       <label className="block text-gray-700 mb-1">{label}</label>
-      <input type="file" accept="image/*" onChange={handleFile} />
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFile}
+        className="block w-full text-sm file:mr-3 file:px-3 file:py-2 file:rounded file:border file:border-gray-300 file:bg-gray-50 file:text-gray-700"
+      />
       {value && (
-        <div className="text-xs text-green-700 mt-1 break-all">Subido: {value}</div>
+        <div className="text-xs text-green-700 mt-2 break-all">Subido: {value}</div>
       )}
     </div>
   );
