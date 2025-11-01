@@ -52,6 +52,9 @@ model User {
   wishlistItems WishlistItem[]
   createdPurchases Purchase[] @relation("PurchaseCreatedBy")
 
+  // Delivery assignments (for DELIVERY role)
+  deliveriesAssigned Shipping[] @relation("DeliveryAssignee")
+
   // Messaging relations
   conversations Conversation[] @relation("ConversationUser")
   assignedConversations Conversation[] @relation("ConversationAssignedTo")
