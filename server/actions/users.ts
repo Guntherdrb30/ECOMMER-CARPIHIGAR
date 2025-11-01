@@ -25,6 +25,50 @@ export async function approveAlly(userId: string) {
   try { redirect('/dashboard/admin/usuarios?message=Aliado%20aprobado'); } catch {}
 }
 
+export async function getPendingDeliveries() {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const list = await prisma.user.findMany({
+    where: { deliveryStatus: 'PENDING' as any },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      deliveryStatus: true,
+      deliveryCedula: true,
+      deliveryAddress: true,
+      deliveryMotoPlate: true,
+      deliveryChassisSerial: true,
+      deliveryIdImageUrl: true,
+      deliverySelfieUrl: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return list;
+}
+
+export async function approveDeliveryByForm(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const id = String(formData.get('userId') || '');
+  if (!id) throw new Error('Missing userId');
+  await prisma.user.update({ where: { id }, data: { role: 'DELIVERY' as any, deliveryStatus: 'APPROVED' as any } });
+  try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'DELIVERY_APPROVED', details: id } }); } catch {}
+  try { revalidatePath('/dashboard/admin/delivery/solicitudes'); } catch {}
+}
+
+export async function rejectDeliveryByForm(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const id = String(formData.get('userId') || '');
+  if (!id) throw new Error('Missing userId');
+  await prisma.user.update({ where: { id }, data: { deliveryStatus: 'NONE' as any } });
+  try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'DELIVERY_REJECTED', details: id } }); } catch {}
+  try { revalidatePath('/dashboard/admin/delivery/solicitudes'); } catch {}
+}
+
 export async function getUsers(q?: string) {
   const session = await getServerSession(authOptions);
   if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
