@@ -215,6 +215,8 @@ function UploadField({
   setValue: (v: string) => void;
   setUploading: (b: boolean) => void;
 }) {
+  const inputRef = (React as any).useRef<HTMLInputElement | null>(null);
+  const handlePick = () => inputRef.current?.click();
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -222,31 +224,38 @@ function UploadField({
       setUploading(true);
       const now = new Date();
       const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
       const base = `uploads/delivery/${yyyy}/${mm}/`;
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const name = `${base}${Math.random().toString(36).slice(2)}.${ext}`;
-      const res = await upload(name, file, { handleUploadUrl: "/api/blob/handle-upload" });
+      const res = await upload(name, file, { handleUploadUrl: '/api/blob/handle-upload' });
       if ((res as any)?.url) setValue((res as any).url);
     } catch (err) {
-      console.error("Upload error", err);
-      alert("No se pudo subir el archivo. Intenta de nuevo.");
+      console.error('Upload error', err);
+      alert('No se pudo subir el archivo. Intenta de nuevo.');
     } finally {
       setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
     }
   };
   return (
     <div>
       <label className="block text-gray-700 mb-1">{label}</label>
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleFile}
-        className="block w-full text-sm file:mr-3 file:px-3 file:py-2 file:rounded file:border file:border-gray-300 file:bg-gray-50 file:text-gray-700"
-      />
-      {value && (
-        <div className="text-xs text-green-700 mt-2 break-all">Subido: {value}</div>
-      )}
+      <div className="flex items-center gap-3">
+        {value ? (
+          <img src={value} alt="preview" className="h-16 w-16 object-cover rounded border" />
+        ) : (
+          <div className="h-16 w-16 rounded border bg-gray-50 flex items-center justify-center text-xs text-gray-400">Sin imagen</div>
+        )}
+        <div className="flex flex-col gap-1">
+          <button type="button" onClick={handlePick} className="px-3 py-1.5 rounded bg-gray-800 text-white text-sm disabled:opacity-50">{value ? 'Cambiar imagen' : 'Subir imagen'}</button>
+          {value && (
+            <button type="button" onClick={() => setValue('')} className="text-xs text-red-600 text-left">Quitar</button>
+          )}
+        </div>
+      </div>
+      <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
     </div>
   );
+}
 }
