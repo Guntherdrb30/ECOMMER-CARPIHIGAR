@@ -77,9 +77,10 @@ export async function createOfflineSale(formData: FormData) {
   const payerBank = String(formData.get('pm_bank') || '') || null;
   const shippingLocalOption = String(formData.get('shippingLocalOption') || '').toUpperCase();
   const saleTypeRaw = String(formData.get('saleType') || 'CONTADO').toUpperCase();
-  const saleType = saleTypeRaw === 'CREDITO' ? 'CREDITO' : 'CONTADO';
+  let saleType: 'CONTADO' | 'CREDITO' = saleTypeRaw === 'CREDITO' ? 'CREDITO' : 'CONTADO';
   const creditDueDateStr = String(formData.get('creditDueDate') || '');
-  const creditDueDate = creditDueDateStr ? new Date(creditDueDateStr) : null;
+  let creditDueDate: Date | null = creditDueDateStr ? new Date(creditDueDateStr) : null;
+  if (role === 'ALIADO') { saleType = 'CONTADO'; creditDueDate = null; }
   const customerTaxId = (String(formData.get('customerTaxId') || '').trim() || null);
   const customerFiscalAddress = (String(formData.get('customerFiscalAddress') || '').trim() || null);
   const originQuoteId = (String(formData.get('originQuoteId') || '').trim() || null);

@@ -6,7 +6,7 @@ import { venezuelaData } from "@/lib/venezuela-data";
 type Prod = { id: string; name: string; sku: string | null; priceUSD: number; priceAllyUSD?: number | null };
 type Line = { productId: string; name: string; p1: number; p2?: number | null; priceUSD: number; quantity: number };
 
-export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent, tasaVES, action, initialItems, fixedSellerId, initialShippingLocalOption, originQuoteId, initialPriceMode = 'P1' }: { sellers: Array<{ id: string; name?: string; email: string }>, commissionPercent: number, ivaPercent: number, tasaVES: number, action: (formData: FormData) => void, initialItems?: Line[], fixedSellerId?: string, initialShippingLocalOption?: 'RETIRO_TIENDA' | 'DELIVERY' | '', originQuoteId?: string, initialPriceMode?: 'P1' | 'P2' }) {
+export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent, tasaVES, action, initialItems, fixedSellerId, initialShippingLocalOption, originQuoteId, initialPriceMode = 'P1', allowCredit = true }: { sellers: Array<{ id: string; name?: string; email: string }>, commissionPercent: number, ivaPercent: number, tasaVES: number, action: (formData: FormData) => void, initialItems?: Line[], fixedSellerId?: string, initialShippingLocalOption?: 'RETIRO_TIENDA' | 'DELIVERY' | '', originQuoteId?: string, initialPriceMode?: 'P1' | 'P2', allowCredit?: boolean }) {
   const [q, setQ] = useState("");
   const [found, setFound] = useState<Prod[]>([]);
   const [items, setItems] = useState<Line[]>(() => initialItems || []);
@@ -29,6 +29,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
   const [docType, setDocType] = useState<'recibo' | 'nota' | 'factura'>('factura');
   const [shippingLocalOption, setShippingLocalOption] = useState<'RETIRO_TIENDA' | 'DELIVERY' | ''>(initialShippingLocalOption || '');
   const [saleType, setSaleType] = useState<'CONTADO' | 'CREDITO'>('CONTADO');
+  useEffect(() => { if (!allowCredit && saleType !== 'CONTADO') setSaleType('CONTADO'); }, [allowCredit]);
   const [creditDueDate, setCreditDueDate] = useState<string>("");
   // Direcciones
   type Address = { id: string; fullname: string; phone: string; state: string; city: string; zone?: string | null; address1: string; address2?: string | null; notes?: string | null };
@@ -219,7 +220,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
             <option value="CREDITO">Crédito</option>
           </select>
         </div>
-        {saleType === 'CREDITO' && (
+        {allowCredit && saleType === 'CREDITO' && (
           <div>
             <label className="block text-sm text-gray-700">Fecha de vencimiento (opcional)</label>
             <input type="date" name="creditDueDate" value={creditDueDate} onChange={(e) => setCreditDueDate(e.target.value)} className="border rounded px-2 py-1 w-full" />

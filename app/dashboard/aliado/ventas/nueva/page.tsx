@@ -39,7 +39,7 @@ export default async function NuevaVentaAliadoPage({ searchParams }: { searchPar
     <div className="container mx-auto p-4 space-y-4">
       <h1 className="text-2xl font-bold">Nueva Venta (Aliado)</h1>
       <div className="bg-white p-4 rounded-lg shadow">
-        <OfflineSaleForm sellers={[me]} commissionPercent={commission} ivaPercent={iva} tasaVES={tasa} action={createOfflineSale} initialItems={initialItems} fixedSellerId={me.id} initialShippingLocalOption={initialShipping} originQuoteId={fromQuote || undefined} initialPriceMode={useP2 ? 'P2' : 'P1'} />
+        <OfflineSaleForm sellers={[me]} commissionPercent={commission} ivaPercent={iva} tasaVES={tasa} action={createOfflineSale} initialItems={initialItems} fixedSellerId={me.id} initialShippingLocalOption={initialShipping} originQuoteId={fromQuote || undefined} initialPriceMode={useP2 ? 'P2' : 'P1'} allowCredit={false} />
       </div>
     </div>
   );
