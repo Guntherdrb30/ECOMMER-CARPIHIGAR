@@ -1,4 +1,4 @@
-import { getServerSession } from 'next-auth';
+ï»¿import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { claimDelivery, completeDelivery } from '@/server/actions/shipping';
@@ -32,7 +32,7 @@ export default async function DeliveryDashboard() {
               <div className="text-sm">
                 <div className="font-medium">Pedido #{o.id.slice(0,8)}</div>
                 <div className="text-gray-700">Cliente: {o.user?.name || o.user?.email}</div>
-                <div className="text-gray-700">Dirección: {o.shippingAddress?.address1}, {o.shippingAddress?.city}</div>
+                <div className="text-gray-700">DirecciÃ³n: {o.shippingAddress?.address1}, {o.shippingAddress?.city}</div>
               </div>
               <form action={async () => { 'use server'; await claimDelivery(o.id); }}>
                 <button className="px-3 py-2 rounded bg-blue-600 text-white">Tomar entrega</button>
@@ -50,8 +50,8 @@ export default async function DeliveryDashboard() {
             <div key={o.id} className="p-4 flex items-center justify-between">
               <div className="text-sm">
                 <div className="font-medium">Pedido #{o.id.slice(0,8)}</div>
-                <div className="text-gray-700">Cliente: {o.user?.name || o.user?.email} · Tel: {(o.user as any)?.phone || '-'}</div>
-                <div className="text-gray-700">Dirección: {o.shippingAddress?.address1}, {o.shippingAddress?.city}</div>
+                <div className="text-gray-700">Cliente: {o.user?.name || o.user?.email} Â· Tel: {(o.user as any)?.phone || '-'}</div>
+                <div className="text-gray-700">DirecciÃ³n: {o.shippingAddress?.address1}, {o.shippingAddress?.city}</div>
               </div>
               <div className="flex items-center gap-2">
                 <a className="px-3 py-2 rounded border" href={`/api/shipments/${o.id}/pdf`} target="_blank">PDF</a>
