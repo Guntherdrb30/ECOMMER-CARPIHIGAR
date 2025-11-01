@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import PDFDocument from 'pdfkit';
 
 // Ensure Node.js runtime for pdfkit on Vercel/Next.js
 export const runtime = 'nodejs';
@@ -62,11 +63,13 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
 
     const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
     const logoBuf = await fetchLogoBuffer((settings as any)?.logoUrl);
-    const PDFDocument = (await import('pdfkit')).default as any;
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
-    const chunks: any[] = [];
+    const chunks: Uint8Array[] = [];
     doc.on('data', (c: any) => chunks.push(c));
-    const done = new Promise<Buffer>((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
+    const done = new Promise<Buffer>((resolve, reject) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err: any) => reject(err));
+    });
 
     const ivaPercent = Number(order.ivaPercent || (settings as any)?.ivaPercent || 16);
     const tasaVES = Number(order.tasaVES || (settings as any)?.tasaVES || 40);
@@ -135,7 +138,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     doc.end();
     const pdfBuf = await done;
     const fname = `${tipo}_${order.id}.pdf`;
-    const resp = new NextResponse(pdfBuf, {
+    const resp = new NextResponse(new Uint8Array(pdfBuf), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="${fname}"`,
@@ -144,6 +147,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     });
     return resp;
   } catch (e) {
+    console.error('[orders/pdf] Error generating PDF:', e);
     return new NextResponse(`Error: ${String(e)}`, { status: 500 });
   }
 }

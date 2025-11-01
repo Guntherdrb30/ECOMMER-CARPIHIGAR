@@ -59,10 +59,11 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     const logoBuf = await fetchLogoBuffer((settings as any)?.logoUrl);
 
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
-    const chunks: any[] = [];
-    doc.on('data', (c) => chunks.push(c));
-    const done = new Promise<Buffer>((resolve) => {
+    const chunks: Uint8Array[] = [];
+    doc.on('data', (c: any) => chunks.push(c));
+    const done = new Promise<Buffer>((resolve, reject) => {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err: any) => reject(err));
     });
 
     // Header
@@ -168,7 +169,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
 
     doc.end();
     const pdfBuf = await done;
-    const resp = new NextResponse(pdfBuf, {
+    const resp = new NextResponse(new Uint8Array(pdfBuf), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="envio_${effectiveOrder.id}.pdf"`,
@@ -177,6 +178,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     });
     return resp;
   } catch (e) {
+    console.error('[shipments/pdf] Error generating PDF:', e);
     return new NextResponse(`Error: ${String(e)}`, { status: 500 });
   }
 }
