@@ -248,8 +248,7 @@ function UploadField({
       const maxBytes = 5 * 1024 * 1024;
       if (!isImage) throw new Error('Solo se permiten imágenes');
       if (file.size > maxBytes) throw new Error('La imagen debe pesar ≤ 5MB');
-      const res = await upload(name, file, { handleUploadUrl: '/api/blob/handle-upload', access: 'public' });
-      if ((res as any)?.url) setValue((res as any).url);
+      let finalUrl: string | null = null;\n      try {\n        const res = await upload(name, file, { handleUploadUrl: '/api/blob/handle-upload', access: 'public' });\n        finalUrl = (res as any)?.url || null;\n      } catch (err: any) {\n        try {\n          const probe = await fetch('/api/blob/handle-upload', { method: 'GET' });\n          const info = await probe.json().catch(() => ({} as any));\n          const msg = String(err?.message || '').toLowerCase();\n          const tokenMissing = !probe.ok || info?.hasToken === false || msg.includes('client token') || msg.includes('access must be');\n          if (tokenMissing) {\n            const fd = new FormData();\n            fd.append('file', file);\n            fd.append('type', 'image');\n            const resp = await fetch('/api/upload', { method: 'POST', body: fd });\n            const data = await resp.json().catch(() => ({} as any));\n            if (resp.ok && data?.url) finalUrl = String(data.url);\n            else throw new Error(data?.error || 'Upload fallido');\n          } else {\n            throw err;\n          }\n        } catch (e) {\n          throw e;\n        }\n      }\n      if (finalUrl) setValue(finalUrl);
     } catch (err) {
       console.error('Upload error', err);
       alert('No se pudo subir el archivo. Intenta de nuevo.');
@@ -291,6 +290,7 @@ function UploadField({
     </div>
   );
 }
+
 
 
 
