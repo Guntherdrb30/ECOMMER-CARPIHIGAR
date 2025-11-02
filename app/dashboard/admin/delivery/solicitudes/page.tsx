@@ -1,4 +1,4 @@
-import { getServerSession } from 'next-auth';
+﻿import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getPendingDeliveries, approveDeliveryByForm, rejectDeliveryByForm } from '@/server/actions/users';
@@ -21,16 +21,19 @@ export default async function DeliveryRequestsPage() {
                 <div className="font-semibold">{u.name || u.email}</div>
                 <div className="text-sm text-gray-700">Email: {u.email}</div>
                 <div className="text-sm text-gray-700">Tel: {u.phone || '-'}</div>
-                <div className="text-sm text-gray-700">Cédula: {u.deliveryCedula || '-'}</div>
-                <div className="text-sm text-gray-700">Dirección: {u.deliveryAddress || '-'}</div>
+                <div className="text-sm text-gray-700">CÃ©dula: {u.deliveryCedula || '-'}</div>
+                <div className="text-sm text-gray-700">DirecciÃ³n: {u.deliveryAddress || '-'}</div>
                 <div className="text-sm text-gray-700">Placa moto: {u.deliveryMotoPlate || '-'}</div>
-                <div className="text-sm text-gray-700">Serial carrocería: {u.deliveryChassisSerial || '-'}</div>
+                <div className="text-sm text-gray-700">Serial carrocerÃ­a: {u.deliveryChassisSerial || '-'}</div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <div>
                   <div className="text-xs text-gray-600 mb-1">Foto Cédula</div>
                   {u.deliveryIdImageUrl ? (
-                    <a className="text-blue-600 underline break-all" href={u.deliveryIdImageUrl} target="_blank" rel="noreferrer">{u.deliveryIdImageUrl}</a>
+                    <a href={u.deliveryIdImageUrl} target="_blank" rel="noreferrer" className="inline-block">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={u.deliveryIdImageUrl} alt="Foto cédula" className="w-40 h-28 object-cover rounded border shadow-sm" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-default.svg'; }} />
+                    </a>
                   ) : (
                     <div className="text-gray-500 text-sm">No cargada</div>
                   )}
@@ -38,7 +41,10 @@ export default async function DeliveryRequestsPage() {
                 <div>
                   <div className="text-xs text-gray-600 mb-1">Selfie</div>
                   {u.deliverySelfieUrl ? (
-                    <a className="text-blue-600 underline break-all" href={u.deliverySelfieUrl} target="_blank" rel="noreferrer">{u.deliverySelfieUrl}</a>
+                    <a href={u.deliverySelfieUrl} target="_blank" rel="noreferrer" className="inline-block">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={u.deliverySelfieUrl} alt="Selfie de registro" className="w-40 h-28 object-cover rounded border shadow-sm" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-default.svg'; }} />
+                    </a>
                   ) : (
                     <div className="text-gray-500 text-sm">No cargada</div>
                   )}
