@@ -22,10 +22,10 @@ export default async function DeliveryRequestsPage() {
                 <div className="font-semibold">{u.name || u.email}</div>
                 <div className="text-sm text-gray-700">Email: {u.email}</div>
                 <div className="text-sm text-gray-700">Tel: {u.phone || '-'}</div>
-                <div className="text-sm text-gray-700">CÃ©dula: {u.deliveryCedula || '-'}</div>
-                <div className="text-sm text-gray-700">DirecciÃ³n: {u.deliveryAddress || '-'}</div>
+                <div className="text-sm text-gray-700">Cédula: {u.deliveryCedula || '-'}</div>
+                <div className="text-sm text-gray-700">Dirección: {u.deliveryAddress || '-'}</div>
                 <div className="text-sm text-gray-700">Placa moto: {u.deliveryMotoPlate || '-'}</div>
-                <div className="text-sm text-gray-700">Serial carrocerÃ­a: {u.deliveryChassisSerial || '-'}</div>
+                <div className="text-sm text-gray-700">Serial carrocería: {u.deliveryChassisSerial || '-'}</div>
               </div>
               <div className="space-y-4">
                 <div>
@@ -62,5 +62,11 @@ export default async function DeliveryRequestsPage() {
     </div>
   );
 }
+
+
+
+
+
+
 
 
