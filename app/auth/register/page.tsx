@@ -44,7 +44,11 @@ export default function RegisterPage() {
           "Para registrarte como Delivery, completa todos los campos y sube las imÃ¡genes requeridas."
         );
         return;
-      }\r\n      if (!agreeDelivery) { setError('Debes aceptar el Contrato de Servicio de Delivery.'); return; }\r\n    }\r\n\r\n    const response = await fetch("/api/auth/register", {
+      }
+      if (!agreeDelivery) { setError('Debes aceptar el Contrato de Servicio de Delivery.'); return; }
+    }
+
+    const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -59,7 +63,9 @@ export default function RegisterPage() {
         deliveryMotoPlate,
         deliveryChassisSerial,
         deliveryIdImageUrl,
-        deliverySelfieUrl,\r\n        agreeDelivery,\r\n      }),
+        deliverySelfieUrl,
+        agreeDelivery,
+      }),
     });
 
     if (response.ok) {
@@ -327,5 +333,6 @@ function UploadField({
     </div>
   );
 }
+
 
 

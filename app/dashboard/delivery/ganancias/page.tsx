@@ -30,7 +30,15 @@ export default async function DeliveryEarningsPage({ searchParams }: { searchPar
     },
     include: { shipping: true, shippingAddress: true },
     orderBy: { updatedAt: 'desc' },
-  });\n\n  const deliveredAt = (o: any) => new Date((o.shipping as any)?.updatedAt || (o as any).updatedAt);\n  const pendingToPay = orders.filter((o: any) => !o.shipping?.deliveryPaidAt);\n  const sumArr = (arr: any[]) => arr.reduce((acc, o) => acc + parseFloat(String((o.shipping as any)?.deliveryFeeUSD || 0)), 0);\n  const periodNow = (() => { const now2 = new Date(); const y=now2.getFullYear(), m=now2.getMonth(); const from = new Date(y, m, now2.getDate() <= 15 ? 1 : 16); const to = new Date(y, m, now2.getDate() <= 15 ? 15 : new Date(y, m+1, 0).getDate()); return { from, to }; })();\n  const inCurrentPeriod = orders.filter((o: any) => { const d = deliveredAt(o); return d >= startOfDay(periodNow.from) && d <= endOfDay(periodNow.to); });\n  const periodPending = inCurrentPeriod.filter((o: any) => !o.shipping?.deliveryPaidAt);\n  const periodPaid = inCurrentPeriod.filter((o: any) => !!o.shipping?.deliveryPaidAt);
+  });
+
+  const deliveredAt = (o: any) => new Date((o.shipping as any)?.updatedAt || (o as any).updatedAt);
+  const pendingToPay = orders.filter((o: any) => !o.shipping?.deliveryPaidAt);
+  const sumArr = (arr: any[]) => arr.reduce((acc, o) => acc + parseFloat(String((o.shipping as any)?.deliveryFeeUSD || 0)), 0);
+  const periodNow = (() => { const now2 = new Date(); const y=now2.getFullYear(), m=now2.getMonth(); const from = new Date(y, m, now2.getDate() <= 15 ? 1 : 16); const to = new Date(y, m, now2.getDate() <= 15 ? 15 : new Date(y, m+1, 0).getDate()); return { from, to }; })();
+  const inCurrentPeriod = orders.filter((o: any) => { const d = deliveredAt(o); return d >= startOfDay(periodNow.from) && d <= endOfDay(periodNow.to); });
+  const periodPending = inCurrentPeriod.filter((o: any) => !o.shipping?.deliveryPaidAt);
+  const periodPaid = inCurrentPeriod.filter((o: any) => !!o.shipping?.deliveryPaidAt);
 
   const deliveredAt = (o: typeof orders[number]) => new Date((o.shipping as any)?.updatedAt || (o as any).updatedAt);
   const inRange = orders.filter(o => deliveredAt(o) >= startOfDay(fromDate) && deliveredAt(o) <= endOfDay(toDate));
@@ -132,4 +140,5 @@ export default async function DeliveryEarningsPage({ searchParams }: { searchPar
     </div>
   );
 }
+
 
