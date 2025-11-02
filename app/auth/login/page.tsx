@@ -39,7 +39,11 @@ export default function LoginPage() {
         router.replace(next);
         return;
       }
-      if (role === 'DELIVERY') {\n        router.replace('/dashboard/delivery');\n      } else if (role === 'ALIADO') {\n        router.replace('/dashboard/aliado');\n      } else {
+      if (role === 'DELIVERY') {
+        router.replace('/dashboard/delivery');
+      } else if (role === 'ALIADO') {
+        router.replace('/dashboard/aliado');
+      } else {
         router.replace('/dashboard/cliente');
       }
     }
@@ -102,6 +106,7 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
 
 
