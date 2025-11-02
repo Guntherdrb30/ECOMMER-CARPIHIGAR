@@ -25,11 +25,7 @@ export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions as any);
-    const role = String((session?.user as any)?.role || '');
-    if (!session || !['ADMIN','ALIADO','VENDEDOR'].includes(role)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Parse form data first so we can decide auth policy based on file type
     const form = await req.formData();
     const file: any = form.get('file');
     const fileType = (form.get('type') as string) || (String((form.get('file') as any)?.type || '').startsWith('video/') ? 'video' : 'image');
@@ -41,6 +37,22 @@ export async function POST(req: Request) {
     const mime = file.type || 'application/octet-stream';
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const sizeBytes = buffer.byteLength;
+
+    // Session check (authenticated can upload images/videos; unauthenticated only images with small size)
+    const session = await getServerSession(authOptions as any);
+    const role = String((session?.user as any)?.role || '');
+    const isAuthenticated = !!session && ['ADMIN','ALIADO','VENDEDOR'].includes(role);
+    if (!isAuthenticated) {
+      const isImage = fileType === 'image' || (mime || '').startsWith('image/');
+      if (!isImage) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const maxBytes = 5 * 1024 * 1024; // 5MB for public uploads (e.g., registro delivery)
+      if (sizeBytes > maxBytes) {
+        return NextResponse.json({ error: 'El archivo es demasiado grande (máx 5MB)' }, { status: 413 });
+      }
+    }
 
     const now = new Date();
     const year = String(now.getFullYear());
