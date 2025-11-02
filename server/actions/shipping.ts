@@ -90,3 +90,24 @@ export async function completeDelivery(orderId: string) {
 }
 
 
+
+export async function markPaidRange(deliveryUserId: string, from: string, to: string) {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+    const fromDate = new Date(from); fromDate.setHours(0,0,0,0);
+    const toDate = new Date(to); toDate.setHours(23,59,59,999);
+    const orders = await prisma.order.findMany({
+        where: {
+            shipping: { carrier: 'DELIVERY' as any, assignedToId: deliveryUserId, status: 'ENTREGADO' as any },
+            shippingAddress: { city: { equals: 'Barinas', mode: 'insensitive' } as any },
+            updatedAt: { gte: fromDate as any, lte: toDate as any },
+        },
+        select: { id: true },
+    });
+    const orderIds = orders.map(o => o.id);
+    if (orderIds.length === 0) return { updated: 0 };
+    const now = new Date();
+    const result = await prisma.shipping.updateMany({ where: { orderId: { in: orderIds } }, data: { deliveryPaidAt: now as any } });
+    try { revalidatePath('/dashboard/admin/delivery/liquidaciones'); } catch {}
+    return { updated: result.count, paidAt: now.toISOString() } as any;
+}
