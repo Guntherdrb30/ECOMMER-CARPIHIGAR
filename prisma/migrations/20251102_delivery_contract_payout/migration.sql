@@ -1,4 +1,4 @@
-﻿-- Delivery contract acceptance on User, payout tracking on Shipping
+-- Delivery contract acceptance on User, payout tracking on Shipping
 ALTER TABLE "public"."User"
   ADD COLUMN IF NOT EXISTS "deliveryAgreementAcceptedAt" TIMESTAMP(3),
   ADD COLUMN IF NOT EXISTS "deliveryAgreementVersion" INTEGER,
