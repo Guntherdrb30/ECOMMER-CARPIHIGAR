@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState } from "react";
+import React, { useState } from "react";\nimport { normalizeVePhone, prettyVePhone } from "@/lib/phone";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
 
@@ -11,7 +11,7 @@ export default function RegisterPage() {
   const [isAlly, setIsAlly] = useState(false);
   const [isDelivery, setIsDelivery] = useState(false);
   const [deliveryCedula, setDeliveryCedula] = useState("");
-  const [deliveryPhone, setDeliveryPhone] = useState("");
+  const [(normalizeVePhone(deliveryPhone) || deliveryPhone), setDeliveryPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryMotoPlate, setDeliveryMotoPlate] = useState("");
   const [deliveryChassisSerial, setDeliveryChassisSerial] = useState("");
@@ -24,8 +24,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (isDelivery) {
-      if (
+    if (isDelivery) {\n      const normalized = normalizeVePhone(deliveryPhone);\n      if (!normalized) {\n        setError("Teléfono inválido. Usa 0412-1234567 o +58 412 1234567");\n        return;\n      }\n      if (
         !deliveryCedula.trim() ||
         !deliveryPhone.trim() ||
         !deliveryAddress.trim() ||
@@ -51,7 +50,7 @@ export default function RegisterPage() {
         isAlly,
         isDelivery,
         deliveryCedula,
-        deliveryPhone,
+        (normalizeVePhone(deliveryPhone) || deliveryPhone),
         deliveryAddress,
         deliveryMotoPlate,
         deliveryChassisSerial,
@@ -150,7 +149,7 @@ export default function RegisterPage() {
                 type="tel"
                 inputMode="tel"
                 placeholder="0412-1234567"
-                value={deliveryPhone}
+                value={deliveryPhone} onBlur={() => setDeliveryPhone(prettyVePhone(deliveryPhone))}
                 onChange={(e) => setDeliveryPhone(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg"
                 required
@@ -292,3 +291,7 @@ function UploadField({
     </div>
   );
 }
+
+
+
+
