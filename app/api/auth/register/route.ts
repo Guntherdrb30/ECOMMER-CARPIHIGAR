@@ -1,4 +1,4 @@
-
+﻿
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, isAlly, isDelivery, deliveryCedula, deliveryAddress, deliveryMotoPlate, deliveryChassisSerial, deliveryIdImageUrl, deliverySelfieUrl } = await req.json();
+    const { name, email, password, isAlly, isDelivery, deliveryCedula, deliveryPhone, deliveryAddress, deliveryMotoPlate, deliveryChassisSerial, deliveryIdImageUrl, deliverySelfieUrl } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         role: 'CLIENTE',
+        phone: (isDelivery ? (deliveryPhone || null) : null),
         alliedStatus: isAlly ? 'PENDING' : 'NONE',
         deliveryStatus: isDelivery ? 'PENDING' as any : 'NONE' as any,
         deliveryCedula: isDelivery ? (deliveryCedula || null) : null,
@@ -45,3 +46,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 }
+
+

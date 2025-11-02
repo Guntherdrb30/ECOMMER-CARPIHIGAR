@@ -10,7 +10,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [isAlly, setIsAlly] = useState(false);
   const [isDelivery, setIsDelivery] = useState(false);
-  const [deliveryCedula, setDeliveryCedula] = useState("");
+  const [deliveryCedula, setDeliveryCedula] = useState("");`n  const [deliveryPhone, setDeliveryPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryMotoPlate, setDeliveryMotoPlate] = useState("");
   const [deliveryChassisSerial, setDeliveryChassisSerial] = useState("");
@@ -23,9 +23,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (isDelivery) {
-      if (
-        !deliveryCedula.trim() ||
+    if (isDelivery) {      if (!deliveryCedula.trim() || !deliveryPhone.trim() ||
         !deliveryAddress.trim() ||
         !deliveryMotoPlate.trim() ||
         !deliveryChassisSerial.trim() ||
@@ -49,6 +47,7 @@ export default function RegisterPage() {
         isAlly,
         isDelivery,
         deliveryCedula,
+        deliveryPhone,
         deliveryAddress,
         deliveryMotoPlate,
         deliveryChassisSerial,
@@ -134,6 +133,18 @@ export default function RegisterPage() {
             <div>
               <label className="block text-gray-700">Cédula / ID</label>
               <input
+            <div>
+              <label className="block text-gray-700">Teléfono</label>
+              <input
+                type="tel"
+                inputMode="tel"
+                placeholder="0412-1234567"
+                value={deliveryPhone}
+                onChange={(e) => setDeliveryPhone(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
+              />
+            </div>
                 type="text"
                 value={deliveryCedula}
                 onChange={(e) => setDeliveryCedula(e.target.value)}
@@ -272,3 +283,8 @@ function UploadField({
     </div>
   );
 }
+
+
+
+
+
