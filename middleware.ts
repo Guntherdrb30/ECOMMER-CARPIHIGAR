@@ -11,6 +11,13 @@ export default withAuth(
     ) {
       return NextResponse.redirect(new URL("/dashboard/admin", req.url));
     }
+    // Prevent DELIVERY from accessing client dashboard; send to delivery home
+    if (
+      req.nextUrl.pathname.startsWith("/dashboard/cliente") &&
+      req.nextauth.token?.role === "DELIVERY"
+    ) {
+      return NextResponse.redirect(new URL("/dashboard/delivery", req.url));
+    }
     if (
       req.nextUrl.pathname.startsWith("/dashboard/admin") &&
       req.nextauth.token?.role !== "ADMIN"
