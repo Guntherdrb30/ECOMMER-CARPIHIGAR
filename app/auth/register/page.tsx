@@ -229,7 +229,7 @@ function UploadField({
       const base = `uploads/delivery/${yyyy}/${mm}/`;
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const name = `${base}${Math.random().toString(36).slice(2)}.${ext}`;
-      const res = await upload(name, file, { handleUploadUrl: '/api/blob/handle-upload' });
+      // Validate type and size (<= 5MB)\n      const isImage = (file.type || '').startsWith('image/');\n      const maxBytes = 5 * 1024 * 1024;\n      if (!isImage) throw new Error('Solo se permiten imágenes');\n      if (file.size > maxBytes) throw new Error('La imagen debe pesar ≤ 5MB');\n      const res = await upload(name, file, { handleUploadUrl: '/api/blob/handle-upload', access: 'public' });
       if ((res as any)?.url) setValue((res as any).url);
     } catch (err) {
       console.error('Upload error', err);
@@ -273,3 +273,4 @@ function UploadField({
   );
 }
 }
+
