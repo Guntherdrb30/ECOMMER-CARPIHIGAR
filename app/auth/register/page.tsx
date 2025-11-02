@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
-import React, { useState } from "react";\nimport { normalizeVePhone, prettyVePhone } from "@/lib/phone";
+import React, { useState } from "react";
+import { normalizeVePhone, prettyVePhone } from "@/lib/phone";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
 
@@ -11,7 +12,7 @@ export default function RegisterPage() {
   const [isAlly, setIsAlly] = useState(false);
   const [isDelivery, setIsDelivery] = useState(false);
   const [deliveryCedula, setDeliveryCedula] = useState("");
-  const [(normalizeVePhone(deliveryPhone) || deliveryPhone), setDeliveryPhone] = useState("");
+  const [deliveryPhone, setDeliveryPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryMotoPlate, setDeliveryMotoPlate] = useState("");
   const [deliveryChassisSerial, setDeliveryChassisSerial] = useState("");
@@ -24,7 +25,13 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (isDelivery) {\n      const normalized = normalizeVePhone(deliveryPhone);\n      if (!normalized) {\n        setError("Teléfono inválido. Usa 0412-1234567 o +58 412 1234567");\n        return;\n      }\n      if (
+    if (isDelivery) {
+      const normalized = normalizeVePhone(deliveryPhone);
+      if (!normalized) {
+        setError("Teléfono inválido. Usa 0412-1234567 o +58 412 1234567");
+        return;
+      }
+      if (
         !deliveryCedula.trim() ||
         !deliveryPhone.trim() ||
         !deliveryAddress.trim() ||
@@ -50,7 +57,7 @@ export default function RegisterPage() {
         isAlly,
         isDelivery,
         deliveryCedula,
-        (normalizeVePhone(deliveryPhone) || deliveryPhone),
+        deliveryPhone: normalizeVePhone(deliveryPhone) || deliveryPhone,
         deliveryAddress,
         deliveryMotoPlate,
         deliveryChassisSerial,
@@ -62,8 +69,8 @@ export default function RegisterPage() {
     if (response.ok) {
       router.push("/auth/login");
     } else {
-      const data = await response.json();
-      setError(data.message || "Algo salió mal");
+      const data = await response.json().catch(() => ({} as any));
+      setError((data as any)?.message || "Algo salió mal");
     }
   };
 
@@ -149,7 +156,8 @@ export default function RegisterPage() {
                 type="tel"
                 inputMode="tel"
                 placeholder="0412-1234567"
-                value={deliveryPhone} onBlur={() => setDeliveryPhone(prettyVePhone(deliveryPhone))}
+                value={deliveryPhone}
+                onBlur={() => setDeliveryPhone(prettyVePhone(deliveryPhone))}
                 onChange={(e) => setDeliveryPhone(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg"
                 required
@@ -239,22 +247,48 @@ function UploadField({
       setUploading(true);
       const now = new Date();
       const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
       const base = `uploads/delivery/${yyyy}/${mm}/`;
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
       const name = `${base}${Math.random().toString(36).slice(2)}.${ext}`;
       // Validate type and size (<= 5MB)
-      const isImage = (file.type || '').startsWith('image/');
+      const isImage = (file.type || "").startsWith("image/");
       const maxBytes = 5 * 1024 * 1024;
-      if (!isImage) throw new Error('Solo se permiten imágenes');
-      if (file.size > maxBytes) throw new Error('La imagen debe pesar ≤ 5MB');
-      let finalUrl: string | null = null;\n      try {\n        const res = await upload(name, file, { handleUploadUrl: '/api/blob/handle-upload', access: 'public' });\n        finalUrl = (res as any)?.url || null;\n      } catch (err: any) {\n        try {\n          const probe = await fetch('/api/blob/handle-upload', { method: 'GET' });\n          const info = await probe.json().catch(() => ({} as any));\n          const msg = String(err?.message || '').toLowerCase();\n          const tokenMissing = !probe.ok || info?.hasToken === false || msg.includes('client token') || msg.includes('access must be');\n          if (tokenMissing) {\n            const fd = new FormData();\n            fd.append('file', file);\n            fd.append('type', 'image');\n            const resp = await fetch('/api/upload', { method: 'POST', body: fd });\n            const data = await resp.json().catch(() => ({} as any));\n            if (resp.ok && data?.url) finalUrl = String(data.url);\n            else throw new Error(data?.error || 'Upload fallido');\n          } else {\n            throw err;\n          }\n        } catch (e) {\n          throw e;\n        }\n      }\n      if (finalUrl) setValue(finalUrl);
+      if (!isImage) throw new Error("Solo se permiten imágenes");
+      if (file.size > maxBytes) throw new Error("La imagen debe pesar <= 5MB");
+
+      let finalUrl: string | null = null;
+      try {
+        const res = await upload(name, file, { handleUploadUrl: "/api/blob/handle-upload", access: "public" });
+        finalUrl = (res as any)?.url || null;
+      } catch (err: any) {
+        try {
+          const probe = await fetch("/api/blob/handle-upload", { method: "GET" });
+          const info = await probe.json().catch(() => ({} as any));
+          const msg = String(err?.message || "").toLowerCase();
+          const tokenMissing = !probe.ok || info?.hasToken === false || msg.includes("client token") || msg.includes("access must be");
+          if (tokenMissing) {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("type", "image");
+            const resp = await fetch("/api/upload", { method: "POST", body: fd });
+            const data = await resp.json().catch(() => ({} as any));
+            if (resp.ok && data?.url) finalUrl = String(data.url);
+            else throw new Error(data?.error || "Upload fallido");
+          } else {
+            throw err;
+          }
+        } catch (e) {
+          throw e;
+        }
+      }
+      if (finalUrl) setValue(finalUrl);
     } catch (err) {
-      console.error('Upload error', err);
-      alert('No se pudo subir el archivo. Intenta de nuevo.');
+      console.error("Upload error", err);
+      alert("No se pudo subir el archivo. Intenta de nuevo.");
     } finally {
       setUploading(false);
-      if (inputRef.current) inputRef.current.value = '';
+      if (inputRef.current) inputRef.current.value = "";
     }
   };
   return (
@@ -262,6 +296,7 @@ function UploadField({
       <label className="block text-gray-700 mb-1">{label}</label>
       <div className="flex items-center gap-3">
         {value ? (
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value}
             alt="preview"
@@ -272,9 +307,9 @@ function UploadField({
           <div className="h-16 w-16 rounded border bg-gray-50 flex items-center justify-center text-xs text-gray-400">Sin imagen</div>
         )}
         <div className="flex flex-col gap-1">
-          <button type="button" onClick={handlePick} className="px-3 py-1.5 rounded bg-gray-800 text-white text-sm disabled:opacity-50">{value ? 'Cambiar imagen' : 'Subir imagen'}</button>
+          <button type="button" onClick={handlePick} className="px-3 py-1.5 rounded bg-gray-800 text-white text-sm disabled:opacity-50">{value ? "Cambiar imagen" : "Subir imagen"}</button>
           {value && (
-            <button type="button" onClick={() => setValue('')} className="text-xs text-red-600 text-left">Quitar</button>
+            <button type="button" onClick={() => setValue("")} className="text-xs text-red-600 text-left">Quitar</button>
           )}
         </div>
       </div>
@@ -282,6 +317,7 @@ function UploadField({
       {value && open && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center" onClick={() => setOpen(false)}>
           <div className="relative" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={value} alt="preview-full" className="max-h-[85vh] max-w-[90vw] rounded shadow-xl" />
             <button type="button" className="absolute -top-3 -right-3 bg-white rounded-full px-2 py-1 text-sm shadow" onClick={() => setOpen(false)}>Cerrar</button>
           </div>
@@ -290,8 +326,4 @@ function UploadField({
     </div>
   );
 }
-
-
-
-
 
