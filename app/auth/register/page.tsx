@@ -296,7 +296,6 @@ function UploadField({
       <label className="block text-gray-700 mb-1">{label}</label>
       <div className="flex items-center gap-3">
         {value ? (
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value}
             alt="preview"
@@ -326,4 +325,3 @@ function UploadField({
     </div>
   );
 }
-
