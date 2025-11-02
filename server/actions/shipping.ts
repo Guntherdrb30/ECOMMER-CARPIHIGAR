@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
@@ -56,6 +56,10 @@ export async function claimDelivery(orderId: string) {
     const userId = (session?.user as any)?.id;
     const role = (session?.user as any)?.role;
     if (!userId || role !== 'DELIVERY') throw new Error('Not authorized');
+    // City guard: only allow Barinas deliveries
+    const order_check = await prisma.order.findUnique({ where: { id: orderId }, include: { shippingAddress: true } });
+    const city = String(order_check?.shippingAddress?.city || '').toLowerCase();
+    if (city !== 'barinas') throw new Error('Not authorized for this city');
     const updated = await prisma.shipping.updateMany({
         where: { orderId, carrier: 'DELIVERY' as any, assignedToId: null },
         data: { assignedToId: userId, assignedAt: new Date() as any, status: 'EN_TRANSITO' as any },
@@ -73,6 +77,10 @@ export async function completeDelivery(orderId: string) {
     if (!userId || role !== 'DELIVERY') throw new Error('Not authorized');
     const s = await prisma.shipping.findUnique({ where: { orderId } });
     if (!s || s.assignedToId !== userId) throw new Error('Not yours');
+    // City guard: only allow Barinas deliveries
+    const order_check2 = await prisma.order.findUnique({ where: { id: orderId }, include: { shippingAddress: true } });
+    const city2 = String(order_check2?.shippingAddress?.city || '').toLowerCase();
+    if (city2 !== 'barinas') throw new Error('Not authorized for this city');
     await prisma.shipping.update({ where: { orderId }, data: { status: 'ENTREGADO' as any } });
     try { await prisma.order.update({ where: { id: orderId }, data: { status: 'COMPLETADO' as any } }); } catch {}
     try { await prisma.auditLog.create({ data: { userId, action: 'DELIVERY_COMPLETED', details: orderId } }); } catch {}
@@ -80,3 +88,4 @@ export async function completeDelivery(orderId: string) {
     try { revalidatePath('/dashboard/admin/envios'); } catch {}
     try { revalidatePath('/dashboard/cliente/envios'); } catch {}
 }
+

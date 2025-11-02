@@ -8,13 +8,13 @@ export default async function DeliveryDashboard() {
   const meId = (session?.user as any)?.id as string;
 
   const available = await prisma.order.findMany({
-    where: { shipping: { carrier: 'DELIVERY', assignedToId: null, status: { in: ['PENDIENTE','PREPARANDO','DESPACHADO'] } } },
+    where: { shipping: { carrier: 'DELIVERY', assignedToId: null, status: { in: ['PENDIENTE','PREPARANDO','DESPACHADO'] } }, shippingAddress: { city: { equals: 'Barinas', mode: 'insensitive' } } },
     include: { user: { select: { name: true, email: true, phone: true } }, shipping: true, shippingAddress: true },
     orderBy: { createdAt: 'asc' },
   });
 
   const mine = await prisma.order.findMany({
-    where: { shipping: { carrier: 'DELIVERY', assignedToId: meId, status: { in: ['PENDIENTE','DESPACHADO','EN_TRANSITO'] } } },
+    where: { shipping: { carrier: 'DELIVERY', assignedToId: meId, status: { in: ['PENDIENTE','DESPACHADO','EN_TRANSITO'] } }, shippingAddress: { city: { equals: 'Barinas', mode: 'insensitive' } } },
     include: { user: { select: { name: true, email: true, phone: true } }, shipping: true, shippingAddress: true },
     orderBy: { createdAt: 'asc' },
   });
@@ -66,3 +66,4 @@ export default async function DeliveryDashboard() {
     </div>
   );
 }
+
