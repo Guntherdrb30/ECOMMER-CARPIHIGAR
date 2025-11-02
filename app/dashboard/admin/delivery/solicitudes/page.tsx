@@ -1,4 +1,5 @@
 ﻿import { getServerSession } from 'next-auth';
+import ImageLightbox from '@/components/admin/image-lightbox';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getPendingDeliveries, approveDeliveryByForm, rejectDeliveryByForm } from '@/server/actions/users';
@@ -30,10 +31,7 @@ export default async function DeliveryRequestsPage() {
                 <div>
                   <div className="text-xs text-gray-600 mb-1">Foto Cédula</div>
                   {u.deliveryIdImageUrl ? (
-                    <a href={u.deliveryIdImageUrl} target="_blank" rel="noreferrer" className="inline-block">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={u.deliveryIdImageUrl} alt="Foto cédula" className="w-40 h-28 object-cover rounded border shadow-sm" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-default.svg'; }} />
-                    </a>
+                    <ImageLightbox src={u.deliveryIdImageUrl} alt="Foto cédula" />
                   ) : (
                     <div className="text-gray-500 text-sm">No cargada</div>
                   )}
@@ -41,10 +39,7 @@ export default async function DeliveryRequestsPage() {
                 <div>
                   <div className="text-xs text-gray-600 mb-1">Selfie</div>
                   {u.deliverySelfieUrl ? (
-                    <a href={u.deliverySelfieUrl} target="_blank" rel="noreferrer" className="inline-block">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={u.deliverySelfieUrl} alt="Selfie de registro" className="w-40 h-28 object-cover rounded border shadow-sm" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-default.svg'; }} />
-                    </a>
+                    <ImageLightbox src={u.deliverySelfieUrl} alt="Selfie de registro" />
                   ) : (
                     <div className="text-gray-500 text-sm">No cargada</div>
                   )}
@@ -67,4 +62,5 @@ export default async function DeliveryRequestsPage() {
     </div>
   );
 }
+
 
