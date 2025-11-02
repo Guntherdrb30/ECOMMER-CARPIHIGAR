@@ -51,10 +51,12 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
   ];
 
   const role = (session?.user as any)?.role as string | undefined;
-  const authenticatedLinks = [
-    { href: role === 'ALIADO' ? '/dashboard/aliado' : '/dashboard/cliente', label: role === 'ALIADO' ? 'Mi Panel' : 'Mi Perfil', icon: User },
-    { href: '/carrito', label: 'Carrito', icon: ShoppingCart },
-  ];
+  const dashboardHref = role === 'ADMIN' ? '/dashboard/admin' : role === 'ALIADO' ? '/dashboard/aliado' : role === 'DELIVERY' ? '/dashboard/delivery' : '/dashboard/cliente';
+const dashboardLabel = role === 'ADMIN' ? 'Admin' : role === 'ALIADO' ? 'Mi Panel' : role === 'DELIVERY' ? 'Delivery' : 'Mi Perfil';
+const authenticatedLinks = [
+  { href: dashboardHref, label: dashboardLabel, icon: User },
+  { href: '/carrito', label: 'Carrito', icon: ShoppingCart },
+];
 
   const unauthenticatedLinks = [
     { href: '/auth/login', label: 'Ingresar', icon: LogIn },
@@ -316,6 +318,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
     </header>
   );
 }
+
 
 
 

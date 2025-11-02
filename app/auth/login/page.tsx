@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { signIn, getSession } from 'next-auth/react';
@@ -29,15 +29,17 @@ export default function LoginPage() {
       setError(result.error);
     } else {
       const next = (callbackUrl || '').trim();
-      if (next) {
-        router.replace(next);
-        return;
-      }
       const session = await getSession();
       const role = (session?.user as any)?.role as string | undefined;
       if (role === 'ADMIN') {
         router.replace('/dashboard/admin');
-      } else if (role === 'ALIADO') {
+        return;
+      }
+      if (next) {
+        router.replace(next);
+        return;
+      }
+      if (role === 'ALIADO') {
         router.replace('/dashboard/aliado');
       } else {
         router.replace('/dashboard/cliente');
@@ -102,3 +104,6 @@ export default function LoginPage() {
     </div>
   );
 }
+
+
+
