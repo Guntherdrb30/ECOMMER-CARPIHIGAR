@@ -20,6 +20,8 @@ export default async function DeliveryLiquidacionesPage({ searchParams }: { sear
   const isFirstHalf = now.getDate() <= 15;
   const defFrom = isFirstHalf ? new Date(now.getFullYear(), now.getMonth(), 1) : new Date(now.getFullYear(), now.getMonth(), 16);
   const defTo = isFirstHalf ? new Date(now.getFullYear(), now.getMonth(), 15) : new Date(now.getFullYear(), now.getMonth()+1, 0);
+  const defFromStr = toYmd(defFrom);
+  const defToStr = toYmd(defTo);
   const from = (searchParams as any)?.from ? new Date((searchParams as any).from) : defFrom;
   const to = (searchParams as any)?.to ? new Date((searchParams as any).to) : defTo;
 
@@ -62,6 +64,9 @@ export default async function DeliveryLiquidacionesPage({ searchParams }: { sear
         </div>
         <div>
           <button className="px-3 py-2 rounded bg-blue-600 text-white w-full">Filtrar</button>
+        </div>
+        <div>
+          <a className="px-3 py-2 rounded border w-full inline-block text-center" href={`/dashboard/admin/delivery/liquidaciones?${new URLSearchParams({ user: String(selectedUser), from: defFromStr, to: defToStr }).toString()}`}>Periodo actual</a>
         </div>
       </form>
 
