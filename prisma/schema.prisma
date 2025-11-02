@@ -27,8 +27,60 @@ enum DeliveryStatus {
   APPROVED
 }
 
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  password     String
+  name         String?
+  phone        String?
+  role         Role         @default(CLIENTE)
+  alliedStatus AlliedStatus @default(NONE)
+  commissionPercent Decimal?     @db.Decimal(5, 2)
+  // Ally profile fields (optional)
+  profileImageUrl String?
+  bio             String?
+  services        String[]
+  portfolioUrls   String[]
+  portfolioText   String?
+  
+  // Ally content relations
+  news         News[] @relation("UserNews")
+  allyProjects AllyProject[] @relation("UserAllyProjects")
+  createdAt    DateTime     @default(now())
+  addresses    Address[]
+  orders       Order[]      @relation("OrderCustomer")
+  sellerOrders Order[]      @relation("OrderSeller")
+  commissions  Commission[]
+  quotes       Quote[]      @relation("QuoteCustomer")
+  quotesAsSeller Quote[]    @relation("QuoteSeller")
+  createdPOs   PurchaseOrder[] @relation("POCreator")
+  receivedPOs  PurchaseOrder[] @relation("POReceiver")
+  wishlistItems WishlistItem[]
+  createdPurchases Purchase[] @relation("PurchaseCreatedBy")
 
+  // Delivery assignments (for DELIVERY role)
+  deliveriesAssigned Shipping[] @relation("DeliveryAssignee")
 
+  // Messaging relations
+  conversations Conversation[] @relation("ConversationUser")
+  assignedConversations Conversation[] @relation("ConversationAssignedTo")
+
+  passwordResetToken          String?   @unique
+  passwordResetTokenExpiresAt DateTime?
+
+  // Delivery registration fields
+  deliveryStatus        DeliveryStatus @default(NONE)
+  deliveryCedula        String?
+  deliveryAddress       String?
+  deliveryMotoPlate     String?
+  deliveryChassisSerial String?
+  deliveryIdImageUrl    String?
+  deliverySelfieUrl     String?
+  // Delivery contract acceptance
+  deliveryAgreementAcceptedAt DateTime?
+  deliveryAgreementVersion   Int?
+  deliveryAgreementIp         String?
+}
 
 
 
@@ -100,18 +152,18 @@ model Product {
   // Show Instagram/TikTok buttons in PDP
   showSocialButtons Boolean @default(false)
   sku          String?         @unique
-  // Código interno opcional (puede venir de proveedor)
+  // C├│digo interno opcional (puede venir de proveedor)
   code         String?         @unique
   priceUSD     Decimal         @db.Decimal(10, 2)
   priceAllyUSD Decimal?        @db.Decimal(10, 2)
   // Nuevo: Precio mayorista (calculado)
   priceWholesaleUSD Decimal?   @db.Decimal(10, 2)
-  // Nuevo: costos y márgenes de referencia
+  // Nuevo: costos y m├írgenes de referencia
   costUSD      Decimal?        @db.Decimal(10, 2)
   marginClientPct   Decimal?   @db.Decimal(5, 2)
   marginAllyPct     Decimal?   @db.Decimal(5, 2)
   marginWholesalePct Decimal?  @db.Decimal(5, 2)
-  // Nuevo: precios calculados explícitos (el priceUSD existente se usa como Cliente)
+  // Nuevo: precios calculados expl├¡citos (el priceUSD existente se usa como Cliente)
   priceClientUSD    Decimal?   @db.Decimal(10, 2)
   stock        Int             @default(0)
   supplierId   String?
@@ -438,7 +490,23 @@ enum ShippingChannel {
   TIENDA
 }
 
- param($m) ($m.Value -replace '\r?\n\}', "`r`n  deliveryPaidAt DateTime?`r`n}") 
+model Shipping {
+  id           String          @id @default(cuid())
+  orderId      String          @unique
+  order        Order           @relation(fields: [orderId], references: [id])
+  carrier      ShippingCarrier
+  tracking     String?
+  status       ShippingStatus  @default(PENDIENTE)
+  channel      ShippingChannel @default(TIENDA)
+  observations String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  assignedToId String?
+  assignedTo   User?           @relation("DeliveryAssignee", fields: [assignedToId], references: [id])
+  assignedAt   DateTime?
+  deliveryFeeUSD Decimal?      @db.Decimal(10, 2)
+  deliveryPaidAt DateTime?
+}
 // Estado de cuentas por cobrar
 enum ReceivableStatus {
   PENDIENTE
@@ -561,7 +629,7 @@ model News {
   @@index([authorId, createdAt])
 }
 
-// Proyectos de aliados: se guardan solo los 2 más recientes
+// Proyectos de aliados: se guardan solo los 2 m├ís recientes
 model AllyProject {
   id        String   @id @default(cuid())
   userId    String
@@ -573,7 +641,6 @@ model AllyProject {
 
   @@index([userId, createdAt])
 }
-
 
 
 
