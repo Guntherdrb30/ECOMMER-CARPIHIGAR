@@ -10,7 +10,8 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [isAlly, setIsAlly] = useState(false);
   const [isDelivery, setIsDelivery] = useState(false);
-  const [deliveryCedula, setDeliveryCedula] = useState("");`n  const [deliveryPhone, setDeliveryPhone] = useState("");
+  const [deliveryCedula, setDeliveryCedula] = useState("");
+  const [deliveryPhone, setDeliveryPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryMotoPlate, setDeliveryMotoPlate] = useState("");
   const [deliveryChassisSerial, setDeliveryChassisSerial] = useState("");
@@ -23,7 +24,10 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (isDelivery) {      if (!deliveryCedula.trim() || !deliveryPhone.trim() ||
+    if (isDelivery) {
+      if (
+        !deliveryCedula.trim() ||
+        !deliveryPhone.trim() ||
         !deliveryAddress.trim() ||
         !deliveryMotoPlate.trim() ||
         !deliveryChassisSerial.trim() ||
@@ -133,6 +137,13 @@ export default function RegisterPage() {
             <div>
               <label className="block text-gray-700">Cédula / ID</label>
               <input
+                type="text"
+                value={deliveryCedula}
+                onChange={(e) => setDeliveryCedula(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
+              />
+            </div>
             <div>
               <label className="block text-gray-700">Teléfono</label>
               <input
@@ -141,13 +152,6 @@ export default function RegisterPage() {
                 placeholder="0412-1234567"
                 value={deliveryPhone}
                 onChange={(e) => setDeliveryPhone(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg"
-                required
-              />
-            </div>
-                type="text"
-                value={deliveryCedula}
-                onChange={(e) => setDeliveryCedula(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg"
                 required
               />
@@ -240,7 +244,12 @@ function UploadField({
       const base = `uploads/delivery/${yyyy}/${mm}/`;
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const name = `${base}${Math.random().toString(36).slice(2)}.${ext}`;
-      // Validate type and size (<= 5MB)\n      const isImage = (file.type || '').startsWith('image/');\n      const maxBytes = 5 * 1024 * 1024;\n      if (!isImage) throw new Error('Solo se permiten imágenes');\n      if (file.size > maxBytes) throw new Error('La imagen debe pesar ≤ 5MB');\n      const res = await upload(name, file, { handleUploadUrl: '/api/blob/handle-upload', access: 'public' });
+      // Validate type and size (<= 5MB)
+      const isImage = (file.type || '').startsWith('image/');
+      const maxBytes = 5 * 1024 * 1024;
+      if (!isImage) throw new Error('Solo se permiten imágenes');
+      if (file.size > maxBytes) throw new Error('La imagen debe pesar ≤ 5MB');
+      const res = await upload(name, file, { handleUploadUrl: '/api/blob/handle-upload', access: 'public' });
       if ((res as any)?.url) setValue((res as any).url);
     } catch (err) {
       console.error('Upload error', err);
@@ -283,8 +292,3 @@ function UploadField({
     </div>
   );
 }
-
-
-
-
-
