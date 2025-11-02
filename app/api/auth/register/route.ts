@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, isAlly, isDelivery, deliveryCedula, deliveryPhone, deliveryAddress, deliveryMotoPlate, deliveryChassisSerial, deliveryIdImageUrl, deliverySelfieUrl } = await req.json();
+    const { name, email, password, isAlly, isDelivery, deliveryCedula, deliveryPhone, deliveryAddress, deliveryMotoPlate, deliveryChassisSerial, deliveryIdImageUrl, deliverySelfieUrl, agreeDelivery } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
         deliveryMotoPlate: isDelivery ? (deliveryMotoPlate || null) : null,
         deliveryChassisSerial: isDelivery ? (deliveryChassisSerial || null) : null,
         deliveryIdImageUrl: isDelivery ? (deliveryIdImageUrl || null) : null,
-        deliverySelfieUrl: isDelivery ? (deliverySelfieUrl || null) : null,
+        deliverySelfieUrl: isDelivery ? (deliverySelfieUrl || null) : null,\r\n        deliveryAgreementAcceptedAt: (isDelivery && agreeDelivery) ? (new Date() as any) : null,\r\n        deliveryAgreementVersion: (isDelivery && agreeDelivery) ? 1 : null,\r\n        deliveryAgreementIp: (isDelivery && agreeDelivery) ? (req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '') : null,
       },
     });
 
@@ -46,5 +46,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 }
+
 
 

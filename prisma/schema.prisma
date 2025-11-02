@@ -1,4 +1,4 @@
-datasource db {
+﻿datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
@@ -27,56 +27,8 @@ enum DeliveryStatus {
   APPROVED
 }
 
-model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  password     String
-  name         String?
-  phone        String?
-  role         Role         @default(CLIENTE)
-  alliedStatus AlliedStatus @default(NONE)
-  commissionPercent Decimal?     @db.Decimal(5, 2)
-  // Ally profile fields (optional)
-  profileImageUrl String?
-  bio             String?
-  services        String[]
-  portfolioUrls   String[]
-  portfolioText   String?
-  
-  // Ally content relations
-  news         News[] @relation("UserNews")
-  allyProjects AllyProject[] @relation("UserAllyProjects")
-  createdAt    DateTime     @default(now())
-  addresses    Address[]
-  orders       Order[]      @relation("OrderCustomer")
-  sellerOrders Order[]      @relation("OrderSeller")
-  commissions  Commission[]
-  quotes       Quote[]      @relation("QuoteCustomer")
-  quotesAsSeller Quote[]    @relation("QuoteSeller")
-  createdPOs   PurchaseOrder[] @relation("POCreator")
-  receivedPOs  PurchaseOrder[] @relation("POReceiver")
-  wishlistItems WishlistItem[]
-  createdPurchases Purchase[] @relation("PurchaseCreatedBy")
 
-  // Delivery assignments (for DELIVERY role)
-  deliveriesAssigned Shipping[] @relation("DeliveryAssignee")
 
-  // Messaging relations
-  conversations Conversation[] @relation("ConversationUser")
-  assignedConversations Conversation[] @relation("ConversationAssignedTo")
-
-  passwordResetToken          String?   @unique
-  passwordResetTokenExpiresAt DateTime?
-
-  // Delivery registration fields
-  deliveryStatus        DeliveryStatus @default(NONE)
-  deliveryCedula        String?
-  deliveryAddress       String?
-  deliveryMotoPlate     String?
-  deliveryChassisSerial String?
-  deliveryIdImageUrl    String?
-  deliverySelfieUrl     String?
-}
 
 
 
@@ -486,22 +438,7 @@ enum ShippingChannel {
   TIENDA
 }
 
-model Shipping {
-  id           String          @id @default(cuid())
-  orderId      String          @unique
-  order        Order           @relation(fields: [orderId], references: [id])
-  carrier      ShippingCarrier
-  tracking     String?
-  status       ShippingStatus  @default(PENDIENTE)
-  channel      ShippingChannel @default(TIENDA)
-  observations String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  assignedToId String?
-  assignedTo   User?           @relation("DeliveryAssignee", fields: [assignedToId], references: [id])
-  assignedAt   DateTime?
-  deliveryFeeUSD Decimal?      @db.Decimal(10, 2)
-}
+ param($m) ($m.Value -replace '\r?\n\}', "`r`n  deliveryPaidAt DateTime?`r`n}") 
 // Estado de cuentas por cobrar
 enum ReceivableStatus {
   PENDIENTE
@@ -636,6 +573,7 @@ model AllyProject {
 
   @@index([userId, createdAt])
 }
+
 
 
 

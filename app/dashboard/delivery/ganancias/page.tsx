@@ -30,7 +30,7 @@ export default async function DeliveryEarningsPage({ searchParams }: { searchPar
     },
     include: { shipping: true, shippingAddress: true },
     orderBy: { updatedAt: 'desc' },
-  });
+  });\n\n  const deliveredAt = (o: any) => new Date((o.shipping as any)?.updatedAt || (o as any).updatedAt);\n  const pendingToPay = orders.filter((o: any) => !o.shipping?.deliveryPaidAt);\n  const sumArr = (arr: any[]) => arr.reduce((acc, o) => acc + parseFloat(String((o.shipping as any)?.deliveryFeeUSD || 0)), 0);\n  const periodNow = (() => { const now2 = new Date(); const y=now2.getFullYear(), m=now2.getMonth(); const from = new Date(y, m, now2.getDate() <= 15 ? 1 : 16); const to = new Date(y, m, now2.getDate() <= 15 ? 15 : new Date(y, m+1, 0).getDate()); return { from, to }; })();\n  const inCurrentPeriod = orders.filter((o: any) => { const d = deliveredAt(o); return d >= startOfDay(periodNow.from) && d <= endOfDay(periodNow.to); });\n  const periodPending = inCurrentPeriod.filter((o: any) => !o.shipping?.deliveryPaidAt);\n  const periodPaid = inCurrentPeriod.filter((o: any) => !!o.shipping?.deliveryPaidAt);
 
   const deliveredAt = (o: typeof orders[number]) => new Date((o.shipping as any)?.updatedAt || (o as any).updatedAt);
   const inRange = orders.filter(o => deliveredAt(o) >= startOfDay(fromDate) && deliveredAt(o) <= endOfDay(toDate));
@@ -68,12 +68,35 @@ export default async function DeliveryEarningsPage({ searchParams }: { searchPar
         <a className="px-3 py-2 rounded border" href={`/api/delivery/ganancias/resumen?${qs({ from: fromStr, to: toStr })}`}>CSV Resumen</a>
       </form>
 
+
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white rounded shadow p-4">
           <div className="text-xs text-gray-500">Hoy</div>
           <div className="text-2xl font-bold">${sum(today).toFixed(2)}</div>
           <div className="text-xs text-gray-500">{today.length} entregas</div>
         </div>
+        <div className="bg-white rounded shadow p-4">
+          <div className="text-xs text-gray-500">Esta semana</div>
+          <div className="text-2xl font-bold">${sum(week).toFixed(2)}</div>
+          <div className="text-xs text-gray-500">{week.length} entregas</div>
+        </div>
+        <div className="bg-white rounded shadow p-4">
+          <div className="text-xs text-gray-500">Este mes</div>
+          <div className="text-2xl font-bold">${sum(month).toFixed(2)}</div>
+          <div className="text-xs text-gray-500">{month.length} entregas</div>
+        </div>
+        <div className="bg-white rounded shadow p-4">
+          <div className="text-xs text-gray-500">Periodo actual</div>
+          <div className="text-xs text-gray-500">{toYmd(periodNow.from)} → {toYmd(periodNow.to)}</div>
+          <div className="text-sm text-gray-600">Pendiente: <span className="font-semibold">${sumArr(periodPending).toFixed(2)}</span> ({periodPending.length} envíos)</div>
+          <div className="text-sm text-gray-600">Pagado: <span className="font-semibold">${sumArr(periodPaid).toFixed(2)}</span> ({periodPaid.length} envíos)</div>
+        </div>
+        <div className="bg-white rounded shadow p-4">
+          <div className="text-xs text-gray-500">Total a pagar (rango)</div>
+          <div className="text-2xl font-bold">${sum(inRange).toFixed(2)}</div>
+          <div className="text-xs text-gray-500">{fromStr} → {toStr}</div>
+        </div>
+      </div>
         <div className="bg-white rounded shadow p-4">
           <div className="text-xs text-gray-500">Esta semana</div>
           <div className="text-2xl font-bold">${sum(week).toFixed(2)}</div>
@@ -109,3 +132,4 @@ export default async function DeliveryEarningsPage({ searchParams }: { searchPar
     </div>
   );
 }
+

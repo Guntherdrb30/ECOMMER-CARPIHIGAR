@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import { normalizeVePhone, prettyVePhone } from "@/lib/phone";
@@ -28,7 +28,7 @@ export default function RegisterPage() {
     if (isDelivery) {
       const normalized = normalizeVePhone(deliveryPhone);
       if (!normalized) {
-        setError("Teléfono inválido. Usa 0412-1234567 o +58 412 1234567");
+        setError("TelÃ©fono invÃ¡lido. Usa 0412-1234567 o +58 412 1234567");
         return;
       }
       if (
@@ -41,13 +41,10 @@ export default function RegisterPage() {
         !deliverySelfieUrl
       ) {
         setError(
-          "Para registrarte como Delivery, completa todos los campos y sube las imágenes requeridas."
+          "Para registrarte como Delivery, completa todos los campos y sube las imÃ¡genes requeridas."
         );
         return;
-      }
-    }
-
-    const response = await fetch("/api/auth/register", {
+      }\r\n      if (!agreeDelivery) { setError('Debes aceptar el Contrato de Servicio de Delivery.'); return; }\r\n    }\r\n\r\n    const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -62,15 +59,14 @@ export default function RegisterPage() {
         deliveryMotoPlate,
         deliveryChassisSerial,
         deliveryIdImageUrl,
-        deliverySelfieUrl,
-      }),
+        deliverySelfieUrl,\r\n        agreeDelivery,\r\n      }),
     });
 
     if (response.ok) {
       router.push("/auth/login");
     } else {
       const data = await response.json().catch(() => ({} as any));
-      setError((data as any)?.message || "Algo salió mal");
+      setError((data as any)?.message || "Algo saliÃ³ mal");
     }
   };
 
@@ -106,7 +102,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-gray-700">Contraseña</label>
+          <label className="block text-gray-700">ContraseÃ±a</label>
           <input
             type="password"
             value={password}
@@ -123,7 +119,7 @@ export default function RegisterPage() {
               checked={isAlly}
               onChange={(e) => setIsAlly(e.target.checked)}
             />
-            <span className="text-gray-700">Soy arquitecto/diseñador/aliado</span>
+            <span className="text-gray-700">Soy arquitecto/diseÃ±ador/aliado</span>
           </label>
         </div>
 
@@ -141,7 +137,7 @@ export default function RegisterPage() {
         {isDelivery && (
           <div className="space-y-3 border rounded p-3">
             <div>
-              <label className="block text-gray-700">Cédula / ID</label>
+              <label className="block text-gray-700">CÃ©dula / ID</label>
               <input
                 type="text"
                 value={deliveryCedula}
@@ -151,7 +147,7 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-gray-700">Teléfono</label>
+              <label className="block text-gray-700">TelÃ©fono</label>
               <input
                 type="tel"
                 inputMode="tel"
@@ -164,7 +160,7 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-gray-700">Dirección</label>
+              <label className="block text-gray-700">DirecciÃ³n</label>
               <textarea
                 value={deliveryAddress}
                 onChange={(e) => setDeliveryAddress(e.target.value)}
@@ -184,7 +180,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="block text-gray-700">Serial de carrocería</label>
+                <label className="block text-gray-700">Serial de carrocerÃ­a</label>
                 <input
                   type="text"
                   value={deliveryChassisSerial}
@@ -196,7 +192,7 @@ export default function RegisterPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <UploadField
-                label="Foto de la cédula"
+                label="Foto de la cÃ©dula"
                 value={deliveryIdImageUrl}
                 setValue={setDeliveryIdImageUrl}
                 setUploading={setUploading}
@@ -209,7 +205,13 @@ export default function RegisterPage() {
               />
             </div>
             <p className="text-xs text-gray-600">
-              Tu solicitud quedará en revisión. Te avisaremos cuando seas aprobado.
+              Tu solicitud quedarÃ¡ en revisiÃ³n. Te avisaremos cuando seas aprobado.
+          <div className="mt-2">
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={agreeDelivery} onChange={(e) => setAgreeDelivery(e.target.checked)} required={isDelivery} />
+              <span>Acepto el <a className="text-blue-600 underline" href="/delivery/contrato" target="_blank" rel="noreferrer">Contrato de Servicio de Delivery</a>.</span>
+            </label>
+          </div>
             </p>
           </div>
         )}
@@ -254,7 +256,7 @@ function UploadField({
       // Validate type and size (<= 5MB)
       const isImage = (file.type || "").startsWith("image/");
       const maxBytes = 5 * 1024 * 1024;
-      if (!isImage) throw new Error("Solo se permiten imágenes");
+      if (!isImage) throw new Error("Solo se permiten imÃ¡genes");
       if (file.size > maxBytes) throw new Error("La imagen debe pesar <= 5MB");
 
       let finalUrl: string | null = null;
@@ -325,3 +327,5 @@ function UploadField({
     </div>
   );
 }
+
+

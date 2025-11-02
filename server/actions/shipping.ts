@@ -62,7 +62,7 @@ export async function claimDelivery(orderId: string) {
     if (city !== 'barinas') throw new Error('Not authorized for this city');
     const updated = await prisma.shipping.updateMany({
         where: { orderId, carrier: 'DELIVERY' as any, assignedToId: null },
-        data: { assignedToId: userId, assignedAt: new Date() as any, status: 'EN_TRANSITO' as any },
+        data: { assignedToId: userId, assignedAt: new Date() as any, status: 'EN_TRANSITO' as any, deliveryFeeUSD: 3 as any },
     });
     if (updated.count === 0) throw new Error('Already assigned');
     try { await prisma.auditLog.create({ data: { userId, action: 'DELIVERY_ASSIGNED', details: orderId } }); } catch {}
@@ -88,4 +88,5 @@ export async function completeDelivery(orderId: string) {
     try { revalidatePath('/dashboard/admin/envios'); } catch {}
     try { revalidatePath('/dashboard/cliente/envios'); } catch {}
 }
+
 
