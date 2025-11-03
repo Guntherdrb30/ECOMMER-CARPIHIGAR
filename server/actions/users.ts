@@ -108,6 +108,12 @@ export async function createSellerUser(name: string, email: string, password: st
 export async function createDispatcherUser(name: string, email: string, password: string) {
   const session = await getServerSession(authOptions);
   if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  // Basic server-side password validation: >= 8 chars and at least 1 digit
+  const hasNumber = /\d/.test(password || '');
+  if (!password || password.length < 8 || !hasNumber) {
+    try { redirect('/dashboard/admin/usuarios?error=Clave%20inv%C3%A1lida%20(min%208%20y%20un%20n%C3%BAmero)'); } catch {}
+    return;
+  }
   const bcrypt = (await import('bcrypt')).default;
   const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.upsert({
