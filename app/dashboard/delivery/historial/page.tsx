@@ -24,9 +24,20 @@ export default async function DeliveryHistoryPage({ searchParams }: { searchPara
   try {
     const orders = await prisma.order.findMany({
       where: {
-        shipping: { carrier: 'DELIVERY' as any, assignedToId: meId, status: 'ENTREGADO' as any },
-        // Use contains + mode instead of equals + mode to avoid Prisma filter issues
-        shippingAddress: { city: { contains: 'barinas', mode: 'insensitive' } as any },
+        // Filter by 1-1 relation using `is` wrapper
+        shipping: {
+          is: {
+            carrier: 'DELIVERY' as any,
+            assignedToId: meId,
+            status: 'ENTREGADO' as any,
+          },
+        },
+        // Filter by related address city (case-insensitive)
+        shippingAddress: {
+          is: {
+            city: { contains: 'barinas', mode: 'insensitive' } as any,
+          },
+        },
       },
       include: { user: { select: { name: true, email: true, phone: true } }, shipping: true, shippingAddress: true },
       orderBy: { updatedAt: 'desc' },
