@@ -10,7 +10,7 @@ export default function DeliveryPayoutForm({ deliveryUserId, userLabel, from, to
   const [paymentNotes, setPaymentNotes] = useState<string>('');
   const [proof, setProof] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ updated: number; totalUSD: number; csvUrl: string; proofUrl?: string } | null>(null);
+  const [result, setResult] = useState<{ updated: number; totalUSD: number; pdfUrl?: string; csvUrl?: string; proofUrl?: string } | null>(null);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +45,8 @@ export default function DeliveryPayoutForm({ deliveryUserId, userLabel, from, to
           Pago registrado. Entregas marcadas: {result.updated}. Total: ${'{'}result.totalUSD.toFixed(2){'}'}
         </div>
         <div className="space-y-2">
-          <div><a className="text-blue-600 underline" href={result.csvUrl} target="_blank" rel="noreferrer">Descargar archivo de pago (CSV)</a></div>
+          {result.pdfUrl ? (<div><a className="text-blue-600 underline" href={result.pdfUrl} target="_blank" rel="noreferrer">Descargar comprobante de pago (PDF)</a></div>) : null}
+          {result.csvUrl ? (<div><a className="text-blue-600 underline" href={result.csvUrl} target="_blank" rel="noreferrer">Descargar archivo de pago (CSV)</a></div>) : null}
           {result.proofUrl ? (<div>Soporte: <a className="text-blue-600 underline" href={result.proofUrl} target="_blank" rel="noreferrer">Ver archivo</a></div>) : null}
         </div>
         <div>
@@ -111,4 +112,3 @@ export default function DeliveryPayoutForm({ deliveryUserId, userLabel, from, to
     </form>
   );
 }
-
