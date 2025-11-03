@@ -6,7 +6,7 @@
                               const roleStr = String(role || '').toUpperCase();
                               const all = Object.values(ShippingStatus) as ShippingStatus[];
                               let allowed = all;
-                              if (roleStr === 'VENDEDOR') {
+                              if (roleStr === 'DESPACHO') {
                                 if (carrier === 'RETIRO_TIENDA') {
                                   allowed = ['PENDIENTE','PREPARANDO','DESPACHADO','ENTREGADO'] as ShippingStatus[];
                                 } else if (carrier === 'TEALCA' || carrier === 'MRW') {
@@ -209,7 +209,7 @@ export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWit
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.user.name || 'N/A'} {order.shipping?.channel ? `· ${order.shipping.channel}` : ''}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <select
-                      name="carrier" disabled={String(role||'').toUpperCase()==='VENDEDOR'}
+                      name="carrier" disabled={String(role||'').toUpperCase()==='DESPACHO'}
                       value={(selectedCarrierByOrder[order.id] || (order.shipping?.carrier as ShippingCarrier) || 'TEALCA') as ShippingCarrier}
                       onChange={(e) =>
                         setSelectedCarrierByOrder((prev) => ({
@@ -321,4 +321,6 @@ export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWit
     </div>
   );
 }
+
+
 

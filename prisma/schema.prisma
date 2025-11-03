@@ -11,6 +11,7 @@ enum Role {
   CLIENTE
   ALIADO
   VENDEDOR
+  DESPACHO
   ADMIN
   DELIVERY
 }
