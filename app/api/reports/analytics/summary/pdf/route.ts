@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     getSalesBySeller({ from, to }),
   ]);
 
-  const PDFDocument = (await import('pdfkit')).default as any;
+  const PDFDocument = (await import('pdfkit/js/pdfkit.standalone.js')).default as any;
   const doc = new PDFDocument({ size: 'A4', margin: 36 });
   const chunks: Buffer[] = [];
   (doc as any).on('data', (c: Buffer) => chunks.push(Buffer.from(c)));
@@ -93,4 +93,3 @@ export async function GET(req: Request) {
   const filename = `reporte_analitico_${Date.now()}.pdf`;
   return new NextResponse(pdf, { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename=${filename}` } });
 }
-

@@ -19,7 +19,7 @@ async function recalcReceivable(orderId: string) {
 }
 
 async function generateReceivablePdf(order: any): Promise<Buffer> {
-  const PDFDocument = (await import('pdfkit')).default as any;
+  const PDFDocument = (await import('pdfkit/js/pdfkit.standalone.js')).default as any;
   const doc = new PDFDocument({ size: 'A4', margin: 36 });
   const chunks: Buffer[] = [];
   const stream = doc as any;

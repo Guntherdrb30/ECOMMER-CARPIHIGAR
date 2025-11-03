@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import PDFDocument from 'pdfkit';
+import PDFDocument from 'pdfkit/js/pdfkit.standalone.js';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+
+export const runtime = 'nodejs';
 
 async function fetchLogoBuffer(logoUrl?: string): Promise<Buffer | null> {
   try {
