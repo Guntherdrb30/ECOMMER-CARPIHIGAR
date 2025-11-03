@@ -84,6 +84,28 @@ export async function POST(req: Request) {
   const total = pending.reduce((acc, o) => acc + parseFloat(String(o.shipping?.deliveryFeeUSD || 0)), 0);
 
   // Create PDF payout file
+  const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
+  const brandName = String(settings?.brandName || 'Carpihogar.ai');
+  const primary = String((settings as any)?.primaryColor || '#0ea5e9');
+  const logoUrl = (settings as any)?.logoUrl as string | undefined;
+  const logoBuf = await (async () => {
+    try {
+      if (!logoUrl) return null;
+      if (logoUrl.startsWith('http')) {
+        const resp = await fetch(logoUrl);
+        if (!resp.ok) return null;
+        const arr = await resp.arrayBuffer();
+        return Buffer.from(arr);
+      } else {
+        const trimmed = logoUrl.startsWith('/') ? logoUrl.slice(1) : logoUrl;
+        const fs = await import('fs');
+        const path = await import('path');
+        const p = path.join(process.cwd(), 'public', trimmed);
+        if (fs.existsSync(p)) return fs.readFileSync(p);
+      }
+    } catch {}
+    return null;
+  })();
   const user = await prisma.user.findUnique({ where: { id: deliveryUserId }, select: { name: true, email: true } });
   const pdfDoc = new PDFDocument({ size: 'A4', margin: 50 });
   const chunks: Buffer[] = [];
@@ -91,6 +113,18 @@ export async function POST(req: Request) {
   const pdfReady = new Promise<Buffer>((resolve) => pdfDoc.on('end', () => resolve(Buffer.concat(chunks))));
 
   const header = () => {
+    // Banda superior con marca
+    pdfDoc.save();
+    pdfDoc.rect(50, 28, 495, 26).fill(primary);
+    pdfDoc.restore();
+    if (logoBuf) {
+      try { pdfDoc.image(logoBuf, 54, 32, { height: 18 }); } catch {}
+    }
+    pdfDoc.fillColor('#ffffff').fontSize(14).text(brandName, logoBuf ? 80 : 56, 34);
+    pdfDoc.fillColor('#e6f4fb').fontSize(9).text('Comprobante de pago a Delivery', 400, 34, { width: 145, align: 'right' });
+    pdfDoc.moveTo(50, 64).lineTo(545, 64).strokeColor('#eeeeee').stroke();
+    pdfDoc.moveDown(0.5);
+    pdfDoc.fillColor('#111');
     pdfDoc.fontSize(18).text('Pago a Delivery', { align: 'left' });
     pdfDoc.moveDown(0.5);
     pdfDoc.fontSize(11).text(`Delivery: ${user?.name || user?.email || deliveryUserId}`);
@@ -107,13 +141,17 @@ export async function POST(req: Request) {
   const tableHeader = () => {
     pdfDoc.font('Helvetica-Bold').fontSize(11);
     const y = pdfDoc.y;
-    pdfDoc.text('Fecha', 50, y);
-    pdfDoc.text('Orden', 160, y);
-    pdfDoc.text('Cliente', 230, y, { width: 240 });
-    pdfDoc.text('Fee (USD)', 480, y, { width: 80, align: 'right' });
-    pdfDoc.moveDown(0.4);
-    pdfDoc.font('Helvetica').moveTo(50, pdfDoc.y).lineTo(545, pdfDoc.y).strokeColor('#eeeeee').stroke();
-    pdfDoc.moveDown(0.2);
+    // Fondo encabezado
+    pdfDoc.save();
+    pdfDoc.rect(50, y - 2, 495, 16).fill(primary);
+    pdfDoc.restore();
+    pdfDoc.fillColor('#fff');
+    pdfDoc.text('Fecha', 54, y);
+    pdfDoc.text('Orden', 164, y);
+    pdfDoc.text('Cliente', 234, y, { width: 240 });
+    pdfDoc.text('Fee (USD)', 484, y, { width: 60, align: 'right' });
+    pdfDoc.moveDown(1);
+    pdfDoc.fillColor('#111');
   };
 
   header();
