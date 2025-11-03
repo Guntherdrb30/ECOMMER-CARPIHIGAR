@@ -1,26 +1,4 @@
-'use client';
-
-}
-                            {(() => {
-                              const carrier = (selectedCarrierByOrder[order.id] || (order.shipping?.carrier as ShippingCarrier) || 'TEALCA') as ShippingCarrier;
-                              const roleStr = String(role || '').toUpperCase();
-                              const all = Object.values(ShippingStatus) as ShippingStatus[];
-                              let allowed = all;
-                              if (roleStr === 'DESPACHO') {
-                                if (carrier === 'RETIRO_TIENDA') {
-                                  allowed = ['PENDIENTE','PREPARANDO','DESPACHADO','ENTREGADO'] as ShippingStatus[];
-                                } else if (carrier === 'TEALCA' || carrier === 'MRW') {
-                                  allowed = ['PENDIENTE','PREPARANDO','DESPACHADO','EN_TRANSITO','INCIDENCIA'] as ShippingStatus[];
-                                } else {
-                                  allowed = ['PENDIENTE','PREPARANDO','INCIDENCIA'] as ShippingStatus[];
-                                }
-                              }
-                              return allowed.map((opt) => (
-                                <option key={opt} value={opt}>{opt}</option>
-                              ));
-                            })()}
-
-'use client';
+﻿'use client';
 
 import { useState, useTransition, useMemo } from 'react';
 import { saveShippingDetails } from '@/server/actions/shipping';
@@ -28,7 +6,7 @@ import type { Order, User, Shipping } from '@prisma/client';
 import { ShippingStatus, ShippingCarrier, ShippingChannel } from '@prisma/client';
 import { toast } from 'sonner';
 
-// Tipo enriquecido para las órdenes que se pasarán al componente
+// Tipo enriquecido para las Ã³rdenes que se pasarÃ¡n al componente
 type OrderWithDetails = Order & {
   user: { name: string | null; email: string | null; };
   shipping: Shipping | null;
@@ -59,10 +37,10 @@ export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWit
       try {
         const res = await saveShippingDetails(payload);
         if (res?.success) {
-          toast.success('Envío guardado', {
+          toast.success('EnvÃ­o guardado', {
             description: (
               <div className="mt-1 text-sm">
-                Orden {payload.orderId.substring(0,8)}… actualizada ·
+                Orden {payload.orderId.substring(0,8)}â€¦ actualizada Â·
                 <a
                   className="ml-2 underline text-blue-700"
                   href={`/api/shipments/${payload.orderId}/pdf`}
@@ -106,16 +84,16 @@ export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWit
             return copy;
           });
         } else {
-          toast.error('No se pudo guardar el envío');
+          toast.error('No se pudo guardar el envÃ­o');
         }
       } catch (e) {
-        toast.error('Error al guardar el envío');
+        toast.error('Error al guardar el envÃ­o');
       }
     });
   };
 
   const filteredOrders = useMemo(() => initialOrders.filter(order => {
-    // Estado/envío
+    // Estado/envÃ­o
     if (statusFilter !== 'TODOS') {
       const currentStatus = order.shipping?.status ?? 'PENDIENTE';
       if (currentStatus !== statusFilter) return false;
@@ -123,7 +101,7 @@ export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWit
     if (channelFilter !== 'TODOS') {
       if (order.shipping?.channel !== channelFilter) return false;
     }
-    // Búsquedas por texto
+    // BÃºsquedas por texto
     const matchesOrder = qOrder ? order.id.toLowerCase().includes(qOrder.toLowerCase()) : true;
     const cliente = `${order.user?.name || ''} ${order.user?.email || ''}`.trim();
     const matchesCliente = qCliente ? cliente.toLowerCase().includes(qCliente.toLowerCase()) : true;
@@ -179,7 +157,7 @@ export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWit
           <input value={qCliente} onChange={(e) => setQCliente(e.target.value)} placeholder="Nombre o email" className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-2 py-1" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Cédula/RIF</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">CÃ©dula/RIF</label>
           <input value={qRif} onChange={(e) => setQRif(e.target.value)} placeholder="V- / J-" className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-2 py-1" />
         </div>
         <div className="flex justify-end">
@@ -206,7 +184,7 @@ export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWit
                 <form action={handleSave}>
                   <input type="hidden" name="orderId" value={order.id} />
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.id.substring(0, 8)}...</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.user.name || 'N/A'} {order.shipping?.channel ? `· ${order.shipping.channel}` : ''}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.user.name || 'N/A'} {order.shipping?.channel ? `Â· ${order.shipping.channel}` : ''}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <select
                       name="carrier" disabled={String(role||'').toUpperCase()==='DESPACHO'}
@@ -321,6 +299,7 @@ export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWit
     </div>
   );
 }
+
 
 
 
