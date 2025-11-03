@@ -157,32 +157,45 @@ export async function POST(req: Request) {
   header();
   tableHeader();
 
-  const bottom = 780;
+  // Single-page layout: calcula filas máximas para que quede en una sola hoja
+  const pageBottom = (pdfDoc as any).page.height - 50; // margen inferior
+  const startY = (pdfDoc as any).y;
+  const rowH = 12; // altura por fila
+  const maxRows = Math.max(1, Math.floor((pageBottom - startY - 70) / rowH)); // deja espacio para total y footer
   let running = 0;
-  for (const o of pending) {
+  const rows = pending.slice(0, maxRows);
+  for (const o of rows) {
     const fee = parseFloat(String(o.shipping?.deliveryFeeUSD || 0));
     running += fee;
     const fecha = new Date((o as any).updatedAt).toLocaleString('es-VE');
     const cliente = (o.user?.name || o.user?.email || '').toString();
-    const y = pdfDoc.y + 2;
-    if (y > bottom) {
-      pdfDoc.addPage();
-      header();
-      tableHeader();
-    }
-    pdfDoc.font('Helvetica').fontSize(10);
-    pdfDoc.text(fecha, 50, pdfDoc.y, { width: 100 });
-    pdfDoc.text(o.id.slice(0, 8), 160, pdfDoc.y, { width: 60 });
-    pdfDoc.text(cliente, 230, pdfDoc.y, { width: 240 });
-    pdfDoc.text(fee.toFixed(2), 480, pdfDoc.y, { width: 80, align: 'right' });
-    pdfDoc.moveDown(0.3);
+    pdfDoc.font('Helvetica').fontSize(9);
+    pdfDoc.text(fecha, 50, (pdfDoc as any).y, { width: 100 });
+    pdfDoc.text(o.id.slice(0, 8), 160, (pdfDoc as any).y, { width: 60 });
+    pdfDoc.text(cliente, 230, (pdfDoc as any).y, { width: 240 });
+    pdfDoc.text(fee.toFixed(2), 480, (pdfDoc as any).y, { width: 80, align: 'right' });
+    pdfDoc.moveDown(0.2);
   }
 
-  pdfDoc.moveDown(0.6);
+  const omitted = pending.length - rows.length;
+  if (omitted > 0) {
+    pdfDoc.moveDown(0.2);
+    pdfDoc.fontSize(9).fillColor('#555').text(`+${omitted} entregas adicionales en el periodo (resumidas para mantener 1 página).`, 50, (pdfDoc as any).y);
+    pdfDoc.fillColor('#111');
+  }
+
+  pdfDoc.moveDown(0.4);
   pdfDoc.moveTo(50, pdfDoc.y).lineTo(545, pdfDoc.y).strokeColor('#cccccc').stroke();
   pdfDoc.moveDown(0.4);
   pdfDoc.font('Helvetica-Bold').fontSize(12).text('Total a pagar (USD):', 300, pdfDoc.y, { width: 170, align: 'right' });
   pdfDoc.font('Helvetica-Bold').fontSize(12).text(running.toFixed(2), 480, pdfDoc.y, { width: 80, align: 'right' });
+  // Footer de contacto
+  pdfDoc.moveDown(0.8);
+  const contact = `${(settings as any)?.contactEmail || ''}  ${(settings as any)?.contactPhone || ''}`.trim();
+  if (contact) {
+    pdfDoc.fontSize(8).fillColor('#666').text(contact, 50, Math.min((pdfDoc as any).y + 6, pageBottom - 10), { width: 495, align: 'center' });
+    pdfDoc.fillColor('#111');
+  }
 
   pdfDoc.end();
   const pdfBuffer = await pdfReady;
