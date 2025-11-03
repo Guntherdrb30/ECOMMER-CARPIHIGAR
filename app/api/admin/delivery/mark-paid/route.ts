@@ -9,7 +9,24 @@ function endOfDay(d: Date) { const x=new Date(d); x.setHours(23,59,59,999); retu
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions as any);
   if (!session || (session.user as any)?.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { deliveryUserId, from, to } = await req.json().catch(() => ({}));
+  // Accept both JSON and form submissions
+  let deliveryUserId = '' as string;
+  let from = '' as string;
+  let to = '' as string;
+  const ct = (req.headers.get('content-type') || '').toLowerCase();
+  if (ct.includes('application/json')) {
+    const body = await req.json().catch(() => ({} as any));
+    deliveryUserId = String(body?.deliveryUserId || '');
+    from = String(body?.from || '');
+    to = String(body?.to || '');
+  } else {
+    const fd = await req.formData().catch(() => null);
+    if (fd) {
+      deliveryUserId = String(fd.get('deliveryUserId') || '');
+      from = String(fd.get('from') || '');
+      to = String(fd.get('to') || '');
+    }
+  }
   if (!deliveryUserId || !from || !to) return NextResponse.json({ error: 'Missing params' }, { status: 400 });
   const fromDate = startOfDay(new Date(from));
   const toDate = endOfDay(new Date(to));
@@ -17,7 +34,7 @@ export async function POST(req: Request) {
   const orders = await prisma.order.findMany({
     where: {
       shipping: { carrier: 'DELIVERY' as any, assignedToId: deliveryUserId, status: 'ENTREGADO' as any },
-      shippingAddress: { city: { equals: 'Barinas', mode: 'insensitive' } },
+      shippingAddress: { is: { city: { equals: 'Barinas', mode: 'insensitive' } } as any },
       updatedAt: { gte: fromDate, lte: toDate },
     },
     include: { shipping: true },

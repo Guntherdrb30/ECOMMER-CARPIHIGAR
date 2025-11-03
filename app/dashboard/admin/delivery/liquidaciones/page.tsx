@@ -14,7 +14,12 @@ export default async function DeliveryLiquidacionesPage({ searchParams }: { sear
   const session = await getServerSession(authOptions);
   if (!session || (session.user as any)?.role !== 'ADMIN') redirect('/auth/login');
 
-  const deliveries = await prisma.user.findMany({ where: { role: 'DELIVERY' as any }, select: { id:true, name:true, email:true } });
+  let deliveries: { id: string; name: string | null; email: string }[] = [];
+  try {
+    deliveries = await prisma.user.findMany({ where: { role: 'DELIVERY' as any }, select: { id:true, name:true, email:true } });
+  } catch (err) {
+    console.error('[admin/liquidaciones] deliveries query failed', err);
+  }
   const defaultUser = deliveries[0]?.id || '';
 
   const now = new Date();
@@ -33,15 +38,22 @@ export default async function DeliveryLiquidacionesPage({ searchParams }: { sear
   const from = parseDateParam((searchParams as any)?.from, defFrom);
   const to = parseDateParam((searchParams as any)?.to, defTo);
 
-  const orders = selectedUser ? await prisma.order.findMany({
-    where: {
-      shipping: { carrier: 'DELIVERY' as any, assignedToId: selectedUser, status: 'ENTREGADO' as any },
-      shippingAddress: { is: { city: { equals: 'Barinas', mode: 'insensitive' } } as any },
-      updatedAt: { gte: startOfDay(from) as any, lte: endOfDay(to) as any },
-    },
-    include: { shipping: true },
-    orderBy: { updatedAt: 'desc' },
-  }) : [];
+  const orders = selectedUser ? await (async () => {
+    try {
+      return await prisma.order.findMany({
+        where: {
+          shipping: { carrier: 'DELIVERY' as any, assignedToId: selectedUser, status: 'ENTREGADO' as any },
+          shippingAddress: { is: { city: { equals: 'Barinas', mode: 'insensitive' } } as any },
+          updatedAt: { gte: startOfDay(from) as any, lte: endOfDay(to) as any },
+        },
+        include: { shipping: true },
+        orderBy: { updatedAt: 'desc' },
+      });
+    } catch (err) {
+      console.error('[admin/liquidaciones] orders query failed', { selectedUser, from, to, err });
+      return [] as any[];
+    }
+  })() : [];
 
   const sum = (arr: typeof orders) => arr.reduce((acc, o) => acc + parseFloat(String(o.shipping?.deliveryFeeUSD || 0)), 0);
   const pending = orders.filter(o => !o.shipping?.deliveryPaidAt);
@@ -102,7 +114,10 @@ export default async function DeliveryLiquidacionesPage({ searchParams }: { sear
             <>
               <a className="px-3 py-2 rounded border" href={`/api/admin/delivery/ganancias/detalle?${qs({ deliveryUserId: selectedUser, from: fromStr, to: toStr })}`}>CSV Detalle</a>
               <a className="px-3 py-2 rounded border" href={`/api/admin/delivery/ganancias/resumen?${qs({ deliveryUserId: selectedUser, from: fromStr, to: toStr })}`}>CSV Resumen</a>
-              <form action={async (formData) => { 'use server'; formData.set('deliveryUserId', String(selectedUser)); formData.set('from', fromStr); formData.set('to', toStr); try { await markPaidRange(String(selectedUser), fromStr, toStr); } catch {}; }}>
+              <form method="post" action="/api/admin/delivery/mark-paid">
+                <input type="hidden" name="deliveryUserId" value={String(selectedUser)} />
+                <input type="hidden" name="from" value={fromStr} />
+                <input type="hidden" name="to" value={toStr} />
                 <button className="px-3 py-2 rounded bg-green-600 text-white">Marcar pagado</button>
               </form>
             </>
