@@ -1,7 +1,7 @@
-import prisma from "@/lib/prisma";
-import { EnviosClient } from "../EnviosClient";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+ï»¿import prisma from '@/lib/prisma';
+import { EnviosClient } from '../EnviosClient';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export default async function EnviosTiendaPage() {
   const session = await getServerSession(authOptions);
@@ -15,7 +15,7 @@ export default async function EnviosTiendaPage() {
     },
   });
 
-  const typedOrders = orders.map(order => ({
+  const typedOrders = orders.map((order) => ({
     ...order,
     user: order.user ? order.user : { name: 'N/A', email: 'N/A' },
     shipping: order.shipping,
@@ -23,7 +23,7 @@ export default async function EnviosTiendaPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Envíos en Tienda</h1>
+      <h1 className="text-2xl font-bold mb-6">Envios en Tienda</h1>
       <EnviosClient orders={typedOrders} role={role} />
     </div>
   );
