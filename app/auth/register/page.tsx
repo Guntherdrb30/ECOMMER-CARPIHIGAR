@@ -21,6 +21,9 @@ export default function RegisterPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [agreeDelivery, setAgreeDelivery] = useState(false);
+  const [done, setDone] = useState(false);
+  const [resendMsg, setResendMsg] = useState(\"\");
+  const [resendOk, setResendOk] = useState(null as null | boolean);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,15 +72,40 @@ export default function RegisterPage() {
       }),
     });
 
-    if (response.ok) {
-      router.push("/auth/login");
-    } else {
+        if (response.ok) {
+      setDone(true);
+    } else {} else {
       const data = await response.json().catch(() => ({} as any));
       setError((data as any)?.message || "Algo saliÃ³ mal");
     }
   };
 
-  return (
+    if (done) {
+    return (
+      <div className="flex justify-center items-center min-h-screen p-4">
+        <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg space-y-4 text-center">
+          <h1 className="text-2xl font-bold">Revisa tu correo</h1>
+          <p className="text-gray-700">Enviamos un enlace de verificación a <span className="font-semibold">{email}</span>. Debes verificar tu correo para activar tu cuenta.</p>
+          <button
+            type="button"
+            onClick={async () => {
+              setResendMsg(""); setResendOk(null);
+              try {
+                const res = await fetch('/api/auth/resend-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+                if (res.ok) { setResendOk(true); setResendMsg('Te reenviamos el enlace si el email existe y no estaba verificado.'); }
+                else { setResendOk(false); setResendMsg('No se pudo reenviar. Intenta más tarde.'); }
+              } catch { setResendOk(false); setResendMsg('Error reenviando verificación'); }
+            }}
+            className="w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
+          >
+            Reenviar verificación
+          </button>
+          {resendMsg ? (<p className="text-xs" style={{ color: resendOk ? '#16a34a' : '#dc2626' }}>{resendMsg}</p>) : null}
+          <a href="/auth/login" className="inline-block mt-2 text-blue-600 underline">Ir a iniciar sesión</a>
+        </div>
+      </div>
+    );
+  }return (
     <div className="flex justify-center items-center min-h-screen p-4">
       <form
         onSubmit={handleSubmit}
@@ -334,6 +362,9 @@ function UploadField({
     </div>
   );
 }
+
+
+
 
 
 
