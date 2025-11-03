@@ -16,7 +16,7 @@ function toHm(d: Date) {
   return `${hh}:${mm}`;
 }
 
-export default async function DeliveryHistoryPage() {
+export default async function DeliveryHistoryPage({ searchParams }: { searchParams?: { debug?: string } }) {
   const session = await getServerSession(authOptions);
   if (!session || (session.user as any)?.role !== 'DELIVERY') redirect('/auth/login?callbackUrl=/dashboard/delivery/historial');
   const meId = (session.user as any).id as string;
@@ -25,7 +25,8 @@ export default async function DeliveryHistoryPage() {
     const orders = await prisma.order.findMany({
       where: {
         shipping: { carrier: 'DELIVERY' as any, assignedToId: meId, status: 'ENTREGADO' as any },
-        shippingAddress: { city: { equals: 'Barinas', mode: 'insensitive' } },
+        // Use contains + mode instead of equals + mode to avoid Prisma filter issues
+        shippingAddress: { city: { contains: 'barinas', mode: 'insensitive' } as any },
       },
       include: { user: { select: { name: true, email: true, phone: true } }, shipping: true, shippingAddress: true },
       orderBy: { updatedAt: 'desc' },
@@ -82,8 +83,12 @@ export default async function DeliveryHistoryPage() {
       <div className="container mx-auto p-4 space-y-6">
         <h1 className="text-2xl font-bold">Historial de entregas</h1>
         <div className="text-red-600">Ocurrió un error al cargar tu historial. Intenta de nuevo más tarde.</div>
+        {(searchParams as any)?.debug === '1' ? (
+          <pre className="mt-2 text-xs text-gray-600 whitespace-pre-wrap">
+            {(err as any)?.name || 'Error'}: {(err as any)?.message || String(err)}
+          </pre>
+        ) : null}
       </div>
     );
   }
 }
-
