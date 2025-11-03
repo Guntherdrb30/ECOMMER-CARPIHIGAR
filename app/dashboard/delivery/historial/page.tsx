@@ -3,6 +3,8 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 function toYmd(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
