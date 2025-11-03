@@ -1,5 +1,27 @@
 'use client';
 
+}
+                            {(() => {
+                              const carrier = (selectedCarrierByOrder[order.id] || (order.shipping?.carrier as ShippingCarrier) || 'TEALCA') as ShippingCarrier;
+                              const roleStr = String(role || '').toUpperCase();
+                              const all = Object.values(ShippingStatus) as ShippingStatus[];
+                              let allowed = all;
+                              if (roleStr === 'VENDEDOR') {
+                                if (carrier === 'RETIRO_TIENDA') {
+                                  allowed = ['PENDIENTE','PREPARANDO','DESPACHADO','ENTREGADO'] as ShippingStatus[];
+                                } else if (carrier === 'TEALCA' || carrier === 'MRW') {
+                                  allowed = ['PENDIENTE','PREPARANDO','DESPACHADO','EN_TRANSITO','INCIDENCIA'] as ShippingStatus[];
+                                } else {
+                                  allowed = ['PENDIENTE','PREPARANDO','INCIDENCIA'] as ShippingStatus[];
+                                }
+                              }
+                              return allowed.map((opt) => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ));
+                            })()}
+
+'use client';
+
 import { useState, useTransition, useMemo } from 'react';
 import { saveShippingDetails } from '@/server/actions/shipping';
 import type { Order, User, Shipping } from '@prisma/client';
@@ -12,7 +34,7 @@ type OrderWithDetails = Order & {
   shipping: Shipping | null;
 };
 
-export function EnviosClient({ orders: initialOrders }: { orders: OrderWithDetails[] }) {
+export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWithDetails[]; role?: string }) {
   const [statusFilter, setStatusFilter] = useState<ShippingStatus | 'TODOS'>('TODOS');
   const [channelFilter, setChannelFilter] = useState<ShippingChannel | 'TODOS'>('TODOS');
   const [qOrder, setQOrder] = useState('');
@@ -187,7 +209,7 @@ export function EnviosClient({ orders: initialOrders }: { orders: OrderWithDetai
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.user.name || 'N/A'} {order.shipping?.channel ? `· ${order.shipping.channel}` : ''}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <select
-                      name="carrier"
+                      name="carrier" disabled={String(role||'').toUpperCase()==='VENDEDOR'}
                       value={(selectedCarrierByOrder[order.id] || (order.shipping?.carrier as ShippingCarrier) || 'TEALCA') as ShippingCarrier}
                       onChange={(e) =>
                         setSelectedCarrierByOrder((prev) => ({
@@ -299,3 +321,4 @@ export function EnviosClient({ orders: initialOrders }: { orders: OrderWithDetai
     </div>
   );
 }
+

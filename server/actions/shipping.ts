@@ -17,6 +17,36 @@ type ShippingUpdatePayload = {
 export async function saveShippingDetails(payload: ShippingUpdatePayload) {
     const { orderId, ...data } = payload;
 
+    // AuthZ: ADMIN full control. VENDEDOR (despacho) con restricciones por carrier/estado
+    const session = await getServerSession(authOptions);
+    const role = (session?.user as any)?.role as string | undefined;
+    if (!role) throw new Error('Not authenticated');
+
+    // Carga estado actual para evaluar reglas
+    const current = await prisma.shipping.findUnique({ where: { orderId } });
+    const targetCarrier = data.carrier || (current?.carrier as any);
+    const targetStatus = data.status;
+
+    if (role !== 'ADMIN') {
+        if (role === 'VENDEDOR') {
+            // Reglas de despacho:
+            // - RETIRO_TIENDA: se puede marcar ENTREGADO (entregado al cliente en tienda)
+            // - TEALCA/MRW: se puede marcar DESPACHADO o EN_TRANSITO (entregado al transportista)
+            const allowedForPickup = ['ENTREGADO', 'PREPARANDO', 'DESPACHADO'] as const;
+            const allowedForCouriers = ['DESPACHADO', 'EN_TRANSITO'] as const;
+            const carrierStr = String(targetCarrier || '').toUpperCase();
+            const statusStr = String(targetStatus || '').toUpperCase();
+            let ok = false;
+            if (carrierStr === 'RETIRO_TIENDA') ok = allowedForPickup.includes(statusStr as any);
+            else if (carrierStr === 'TEALCA' || carrierStr === 'MRW') ok = allowedForCouriers.includes(statusStr as any);
+            if (!ok) {
+                throw new Error('Not authorized for this status/carrier update');
+            }
+        } else {
+            throw new Error('Not authorized');
+        }
+    }
+
     const result = await prisma.shipping.upsert({
         where: {
             orderId: orderId,

@@ -18,7 +18,15 @@ export default withAuth(
     ) {
       return NextResponse.redirect(new URL("/dashboard/delivery", req.url));
     }
-    if (
+    // Allow VENDEDOR (despacho) to acceder solo a /dashboard/admin/envios
+    if (req.nextUrl.pathname.startsWith("/dashboard/admin/envios")) {
+      const role = req.nextauth.token?.role as string | undefined;
+      if (role === 'ADMIN' || role === 'VENDEDOR') {
+        // permitido
+      } else {
+        return NextResponse.rewrite(new URL("/auth/login?message=You Are Not Authorized!", req.url));
+      }
+    } else if (
       req.nextUrl.pathname.startsWith("/dashboard/admin") &&
       req.nextauth.token?.role !== "ADMIN"
     ) {
