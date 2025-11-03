@@ -8,7 +8,7 @@ import Link from 'next/link';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState('');\n  const [resendMsg, setResendMsg] = useState('');\n  const [resendOk, setResendOk] = useState(null as null | boolean);
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = useMemo(() => {
@@ -77,6 +77,9 @@ export default function LoginPage() {
         <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
           Login
         </button>
+          {resendMsg ? (
+            <p className="text-xs mt-2" style={{ color: resendOk ? '#16a34a' : '#dc2626' }}>{resendMsg}</p>
+          ) : null}
         <button
           type="button"
           onClick={() => signIn('google', { callbackUrl: '/' })}
@@ -101,11 +104,32 @@ export default function LoginPage() {
               ¿Olvidaste tu usuario?
             </Link>
           </p>
+          <p className="text-sm text-gray-600 mt-3">
+            ¿No recibiste el correo de verificación?
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/auth/resend-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+                const ok = res.ok;
+                if (ok) { setResendOk(true); setResendMsg('Te enviamos el enlace si el email existe y no estaba verificado.'); } else { setResendOk(false); setResendMsg('No se pudo reenviar. Intenta mas tarde.'); }
+              } catch {
+                setResendOk(false); setResendMsg('Error reenviando verificacion');
+              }
+            }}
+            className="mt-2 w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
+          >
+            Reenviar verificación
+          </button>
         </div>
       </form>
     </div>
   );
 }
+
+
+
 
 
 
