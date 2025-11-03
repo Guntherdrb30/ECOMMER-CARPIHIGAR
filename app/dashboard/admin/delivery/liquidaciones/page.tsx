@@ -10,13 +10,25 @@ function startOfDay(d: Date) { const x=new Date(d); x.setHours(0,0,0,0); return 
 function endOfDay(d: Date) { const x=new Date(d); x.setHours(23,59,59,999); return x; }
 function toYmd(d: Date) { const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
 
-export default async function DeliveryLiquidacionesPage({ searchParams }: { searchParams?: { user?: string; from?: string; to?: string } }) {
+export default async function DeliveryLiquidacionesPage({ searchParams }: { searchParams?: { user?: string; from?: string; to?: string; q?: string } }) {
   const session = await getServerSession(authOptions);
   if (!session || (session.user as any)?.role !== 'ADMIN') redirect('/auth/login');
 
+  const q = String((searchParams as any)?.q || '').trim();
   let deliveries: { id: string; name: string | null; email: string }[] = [];
   try {
-    deliveries = await prisma.user.findMany({ where: { role: 'DELIVERY' as any }, select: { id:true, name:true, email:true } });
+    deliveries = await prisma.user.findMany({
+      where: {
+        role: 'DELIVERY' as any,
+        ...(q ? { OR: [
+          { name: { contains: q, mode: 'insensitive' } as any },
+          { email: { contains: q, mode: 'insensitive' } as any },
+        ] } : {}),
+      },
+      select: { id:true, name:true, email:true },
+      orderBy: [{ name: 'asc' }, { email: 'asc' }],
+      take: 200,
+    });
   } catch (err) {
     console.error('[admin/liquidaciones] deliveries query failed', err);
   }
@@ -67,7 +79,11 @@ export default async function DeliveryLiquidacionesPage({ searchParams }: { sear
     <div className="container mx-auto p-4 space-y-6">
       <h1 className="text-2xl font-bold">Liquidaciones Delivery</h1>
 
-      <form method="get" className="bg-white p-4 rounded shadow grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+      <form method="get" className="bg-white p-4 rounded shadow grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Buscar (nombre o email)</label>
+          <input name="q" defaultValue={q} placeholder="Ej: Juan o @correo" className="border rounded px-2 py-1 w-full" />
+        </div>
         <div>
           <label className="block text-xs text-gray-600 mb-1">Delivery</label>
           <select name="user" defaultValue={selectedUser} className="border rounded px-2 py-1 w-full">
@@ -114,18 +130,13 @@ export default async function DeliveryLiquidacionesPage({ searchParams }: { sear
             <>
               <a className="px-3 py-2 rounded border" href={`/api/admin/delivery/ganancias/detalle?${qs({ deliveryUserId: selectedUser, from: fromStr, to: toStr })}`}>CSV Detalle</a>
               <a className="px-3 py-2 rounded border" href={`/api/admin/delivery/ganancias/resumen?${qs({ deliveryUserId: selectedUser, from: fromStr, to: toStr })}`}>CSV Resumen</a>
-              <form method="post" action="/api/admin/delivery/mark-paid">
-                <input type="hidden" name="deliveryUserId" value={String(selectedUser)} />
-                <input type="hidden" name="from" value={fromStr} />
-                <input type="hidden" name="to" value={toStr} />
-                <button className="px-3 py-2 rounded bg-green-600 text-white">Marcar pagado</button>
-              </form>
+              <a className="px-3 py-2 rounded bg-green-600 text-white" href={`/dashboard/admin/delivery/liquidaciones/pagar?${qs({ user: String(selectedUser), from: fromStr, to: toStr })}`}>Continuar a pago</a>
             </>
           ) : (
             <>
               <button className="px-3 py-2 rounded border opacity-50 cursor-not-allowed" disabled>CSV Detalle</button>
               <button className="px-3 py-2 rounded border opacity-50 cursor-not-allowed" disabled>CSV Resumen</button>
-              <button className="px-3 py-2 rounded bg-green-600 text-white opacity-50 cursor-not-allowed" disabled>Marcar pagado</button>
+              <button className="px-3 py-2 rounded bg-green-600 text-white opacity-50 cursor-not-allowed" disabled>Continuar a pago</button>
             </>
           )}
         </div>
