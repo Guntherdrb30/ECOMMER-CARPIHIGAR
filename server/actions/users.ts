@@ -105,6 +105,20 @@ export async function createSellerUser(name: string, email: string, password: st
   return user;
 }
 
+export async function createDispatcherUser(name: string, email: string, password: string) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const bcrypt = (await import('bcrypt')).default;
+  const hashed = await bcrypt.hash(password, 10);
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: { name, password: hashed, role: 'DESPACHO', alliedStatus: 'NONE' },
+    create: { name, email, password: hashed, role: 'DESPACHO', alliedStatus: 'NONE' },
+  });
+  revalidatePath('/dashboard/admin/usuarios');
+  return user;
+}
+
 export async function updateUser(formData: FormData) {
   const session = await getServerSession(authOptions);
   if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
