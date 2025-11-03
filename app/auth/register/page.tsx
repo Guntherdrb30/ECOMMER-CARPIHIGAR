@@ -20,6 +20,7 @@ export default function RegisterPage() {
   const [deliverySelfieUrl, setDeliverySelfieUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [agreeDelivery, setAgreeDelivery] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
