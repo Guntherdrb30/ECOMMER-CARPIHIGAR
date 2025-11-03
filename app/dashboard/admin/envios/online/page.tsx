@@ -1,7 +1,9 @@
 import prisma from "@/lib/prisma";
-import { EnviosClient } from "../EnviosClient";\nimport { getServerSession } from \"next-auth\";\nimport { authOptions } from \"@/lib/auth\";
+import { EnviosClient } from "../EnviosClient";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-export default async function EnviosOnlinePage() {\n  const session = await getServerSession(authOptions);\n  const role = (session?.user as any)?.role as string |export default async function EnviosOnlinePage() {
+export default async function EnviosOnlinePage() {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;
   const orders = await prisma.order.findMany({
@@ -21,11 +23,8 @@ export default async function EnviosOnlinePage() {\n  const session = await getS
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">EnvÃ­os Online</h1>
+      <h1 className="text-2xl font-bold mb-6">Envíos Online</h1>
       <EnviosClient orders={typedOrders} role={role} />
     </div>
   );
 }
-
-
-
