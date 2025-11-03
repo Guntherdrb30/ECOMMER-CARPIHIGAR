@@ -112,6 +112,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                         <option value="CLIENTE">CLIENTE</option>
                         <option value="ALIADO">ALIADO</option>
                         <option value="VENDEDOR">VENDEDOR</option>
+                        <option value="DESPACHO">DESPACHO</option>
                         <option value="ADMIN">ADMIN</option>
                       </select>
                       {user.role === 'VENDEDOR' && (

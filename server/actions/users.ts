@@ -116,7 +116,10 @@ export async function updateUser(formData: FormData) {
   if (!current) { try { redirect('/dashboard/admin/usuarios?error=Usuario%20no%20encontrado'); } catch {} ; return { ok:false } as any; }
   const data: any = {};
   if (name !== null) data.name = String(name);
-  if (role !== null) { const r = String(role); if (['CLIENTE','ALIADO','VENDEDOR','ADMIN'].includes(r)) data.role = r as any; }
+  if (role !== null) {
+    const r = String(role);
+    if (['CLIENTE','ALIADO','VENDEDOR','DESPACHO','ADMIN'].includes(r)) data.role = r as any;
+  }
   let commissionLogNeeded = false; let oldCommission = current.commissionPercent as any; let newCommission: number | null | undefined = undefined; const effectiveRole = (data.role ?? current.role) as string;
   if (commission !== null && effectiveRole === 'VENDEDOR') { const num = String(commission).length ? parseFloat(String(commission)) : null; data.commissionPercent = (num === null ? null : (num as any)); newCommission = num; commissionLogNeeded = true; }
   try { await prisma.user.update({ where: { id }, data }); } catch { try { redirect('/dashboard/admin/usuarios?error=No%20se%20pudo%20actualizar'); } catch {} ; return { ok:false } as any; }
