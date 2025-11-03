@@ -72,6 +72,10 @@ export const authOptions: AuthOptions = {
         }
 
         const isValid = user.password ? await bcrypt.compare(credentials.password, user.password) : false;
+        // Enforce email verification
+        if (isValid && !(user as any).emailVerifiedAt) {
+          return null;
+        }
 
         if (isValid) {
           return {
@@ -129,6 +133,20 @@ export const authOptions: AuthOptions = {
                   // role and alliedStatus use schema defaults
                 },
               });
+              // Optionally send verification link for Google sign-ins
+              try {
+                const crypto = await import('crypto');
+                const token = crypto.randomBytes(32).toString('hex');
+                const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
+                await prisma.user.update({ where: { id: dbUser.id }, data: { emailVerificationToken: token, emailVerificationTokenExpiresAt: expires as any } });
+                if (process.env.EMAIL_ENABLED === 'true') {
+                  const { sendMail, basicTemplate } = await import('@/lib/mailer');
+                  const base = process.env.NEXT_PUBLIC_URL || '';
+                  const verifyUrl = `${base}/api/auth/verify-email?token=${token}`;
+                  const html = basicTemplate('Verifica tu correo', `<p>Confirma tu correo para activar tu cuenta:</p><p><a href="${verifyUrl}">Verificar correo</a></p>`);
+                  await sendMail({ to: email, subject: 'Verifica tu correo', html });
+                }
+              } catch {}
             }
             token.id = dbUser.id;
             token.role = dbUser.role;
@@ -148,6 +166,9 @@ export const authOptions: AuthOptions = {
         const dbUser = await prisma.user.findUnique({ where: { id: token.id } });
         if (!dbUser) {
           return {}; // Invalidate token by returning an empty object
+        }
+        if (!(dbUser as any).emailVerifiedAt) {
+          return {};
         }
       }
 

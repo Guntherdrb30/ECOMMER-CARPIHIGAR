@@ -44,6 +44,21 @@ export async function POST(req: Request) {
       },
     });
 
+    // Send verification email (best-effort)
+    try {
+      const crypto = await import('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
+      await prisma.user.update({ where: { id: user.id }, data: { emailVerificationToken: token, emailVerificationTokenExpiresAt: expires as any, emailVerifiedAt: null } });
+      if (process.env.EMAIL_ENABLED === 'true') {
+        const { sendMail, basicTemplate } = await import('@/lib/mailer');
+        const base = process.env.NEXT_PUBLIC_URL || new URL(req.url).origin;
+        const verifyUrl = `${base}/api/auth/verify-email?token=${token}`;
+        const html = basicTemplate('Verifica tu correo', `<p>Hola ${name || ''},</p><p>Confirma tu correo para activar tu cuenta:</p><p><a href="${verifyUrl}">Verificar correo</a></p><p>O copia este enlace:<br>${verifyUrl}</p>`);
+        await sendMail({ to: email, subject: 'Verifica tu correo', html });
+      }
+    } catch {}
+
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

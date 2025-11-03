@@ -69,6 +69,11 @@ model User {
   passwordResetToken          String?   @unique
   passwordResetTokenExpiresAt DateTime?
 
+  // Email verification
+  emailVerifiedAt                 DateTime?
+  emailVerificationToken          String?   @unique
+  emailVerificationTokenExpiresAt DateTime?
+
   // Delivery registration fields
   deliveryStatus        DeliveryStatus @default(NONE)
   deliveryCedula        String?
