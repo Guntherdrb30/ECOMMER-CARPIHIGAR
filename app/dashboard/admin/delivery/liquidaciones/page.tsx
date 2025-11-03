@@ -4,6 +4,8 @@ import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { markPaidRange } from '@/server/actions/shipping';
 
+export const dynamic = 'force-dynamic';
+
 function startOfDay(d: Date) { const x=new Date(d); x.setHours(0,0,0,0); return x; }
 function endOfDay(d: Date) { const x=new Date(d); x.setHours(23,59,59,999); return x; }
 function toYmd(d: Date) { const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
@@ -15,21 +17,27 @@ export default async function DeliveryLiquidacionesPage({ searchParams }: { sear
   const deliveries = await prisma.user.findMany({ where: { role: 'DELIVERY' as any }, select: { id:true, name:true, email:true } });
   const defaultUser = deliveries[0]?.id || '';
 
-  const selectedUser = (searchParams as any)?.user || defaultUser;
   const now = new Date();
   const isFirstHalf = now.getDate() <= 15;
   const defFrom = isFirstHalf ? new Date(now.getFullYear(), now.getMonth(), 1) : new Date(now.getFullYear(), now.getMonth(), 16);
   const defTo = isFirstHalf ? new Date(now.getFullYear(), now.getMonth(), 15) : new Date(now.getFullYear(), now.getMonth()+1, 0);
   const defFromStr = toYmd(defFrom);
   const defToStr = toYmd(defTo);
-  const from = (searchParams as any)?.from ? new Date((searchParams as any).from) : defFrom;
-  const to = (searchParams as any)?.to ? new Date((searchParams as any).to) : defTo;
+  const parseDateParam = (v: unknown, fallback: Date) => {
+    if (!v || typeof v !== 'string') return fallback;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? fallback : d;
+  };
+  const requestedUser = (searchParams as any)?.user as string | undefined;
+  const selectedUser = deliveries.some(d => d.id === requestedUser) ? (requestedUser as string) : defaultUser;
+  const from = parseDateParam((searchParams as any)?.from, defFrom);
+  const to = parseDateParam((searchParams as any)?.to, defTo);
 
   const orders = selectedUser ? await prisma.order.findMany({
     where: {
       shipping: { carrier: 'DELIVERY' as any, assignedToId: selectedUser, status: 'ENTREGADO' as any },
-      shippingAddress: { city: { equals: 'Barinas', mode: 'insensitive' } },
-      updatedAt: { gte: startOfDay(from), lte: endOfDay(to) },
+      shippingAddress: { is: { city: { equals: 'Barinas', mode: 'insensitive' } } as any },
+      updatedAt: { gte: startOfDay(from) as any, lte: endOfDay(to) as any },
     },
     include: { shipping: true },
     orderBy: { updatedAt: 'desc' },
@@ -89,13 +97,23 @@ export default async function DeliveryLiquidacionesPage({ searchParams }: { sear
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <a className="px-3 py-2 rounded border" href={`/api/admin/delivery/ganancias/detalle?${qs({ deliveryUserId: selectedUser, from: fromStr, to: toStr })}`}>CSV Detalle</a>
-        <a className="px-3 py-2 rounded border" href={`/api/admin/delivery/ganancias/resumen?${qs({ deliveryUserId: selectedUser, from: fromStr, to: toStr })}`}>CSV Resumen</a>
-        <form action={async (formData) => { 'use server'; formData.set('deliveryUserId', String(selectedUser)); formData.set('from', fromStr); formData.set('to', toStr); try { await markPaidRange(String(selectedUser), fromStr, toStr); } catch {}; }}>
-          <button className="px-3 py-2 rounded bg-green-600 text-white">Marcar pagado</button>
-        </form>
-      </div>
+        <div className="flex items-center gap-3">
+          {selectedUser ? (
+            <>
+              <a className="px-3 py-2 rounded border" href={`/api/admin/delivery/ganancias/detalle?${qs({ deliveryUserId: selectedUser, from: fromStr, to: toStr })}`}>CSV Detalle</a>
+              <a className="px-3 py-2 rounded border" href={`/api/admin/delivery/ganancias/resumen?${qs({ deliveryUserId: selectedUser, from: fromStr, to: toStr })}`}>CSV Resumen</a>
+              <form action={async (formData) => { 'use server'; formData.set('deliveryUserId', String(selectedUser)); formData.set('from', fromStr); formData.set('to', toStr); try { await markPaidRange(String(selectedUser), fromStr, toStr); } catch {}; }}>
+                <button className="px-3 py-2 rounded bg-green-600 text-white">Marcar pagado</button>
+              </form>
+            </>
+          ) : (
+            <>
+              <button className="px-3 py-2 rounded border opacity-50 cursor-not-allowed" disabled>CSV Detalle</button>
+              <button className="px-3 py-2 rounded border opacity-50 cursor-not-allowed" disabled>CSV Resumen</button>
+              <button className="px-3 py-2 rounded bg-green-600 text-white opacity-50 cursor-not-allowed" disabled>Marcar pagado</button>
+            </>
+          )}
+        </div>
 
       <div className="bg-white rounded shadow overflow-x-auto">
         <table className="min-w-full text-sm">
