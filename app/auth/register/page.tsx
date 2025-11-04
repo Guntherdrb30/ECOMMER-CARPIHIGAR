@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { signIn } from "next-auth/react";
 import { normalizeVePhone } from "@/lib/phone";
 
 export default function RegisterPage() {
@@ -268,8 +269,14 @@ export default function RegisterPage() {
         <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
           Registrarme
         </button>
+        <button
+          type="button"
+          onClick={() => signIn("google", { callbackUrl: "/" })}
+          className="w-full mt-2 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
+        >
+          Continuar con Google
+        </button>
       </form>
     </div>
   );
 }
-
