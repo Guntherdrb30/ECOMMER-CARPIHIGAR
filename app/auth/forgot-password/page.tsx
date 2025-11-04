@@ -1,22 +1,34 @@
 'use client';
 
 import { useState } from 'react';
-import { requestPasswordReset } from '@/server/actions/auth';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
     setError('');
+    setPending(true);
     try {
-      const result = await requestPasswordReset(email);
-      setMessage(result.message);
-    } catch (err) {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMessage(json?.message || 'Si el correo está registrado, recibirás un enlace para recuperar tu contraseña.');
+      } else {
+        setError('No se pudo procesar la solicitud. Intenta más tarde.');
+      }
+    } catch {
       setError('Ocurrió un error al solicitar el restablecimiento de la contraseña.');
+    } finally {
+      setPending(false);
     }
   };
 
@@ -36,8 +48,8 @@ export default function ForgotPasswordPage() {
             required
           />
         </div>
-        <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
-          Enviar enlace de recuperación
+        <button disabled={pending} type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg disabled:opacity-60">
+          {pending ? 'Enviando…' : 'Enviar enlace de recuperación'}
         </button>
       </form>
     </div>

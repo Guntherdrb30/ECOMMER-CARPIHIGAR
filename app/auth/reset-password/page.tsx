@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { resetPassword } from '@/server/actions/auth';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -30,10 +29,19 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const result = await resetPassword(token, password);
-      setMessage(result.message);
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMessage(json?.message || 'Contraseña actualizada correctamente.');
+      } else {
+        setError(json?.error || 'Ocurrió un error al restablecer la contraseña.');
+      }
     } catch (err: any) {
-      setError(err.message || 'Ocurrió un error al restablecer la contraseña.');
+      setError(err?.message || 'Ocurrió un error al restablecer la contraseña.');
     }
   };
 

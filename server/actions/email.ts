@@ -1,6 +1,21 @@
 import prisma from '@/lib/prisma';
 import { sendMail, basicTemplate } from '@/lib/mailer';
 
+export async function sendPasswordResetEmail(to: string, token: string) {
+  if (!to || !token) return;
+  const base = process.env.NEXT_PUBLIC_URL || process.env.NEXTAUTH_URL || '';
+  const url = `${String(base).replace(/\/$/, '')}/auth/reset-password?token=${encodeURIComponent(token)}`;
+  const html = basicTemplate(
+    'Restablecer contraseña',
+    `<p>Solicitaste restablecer tu contraseña.</p>
+     <p>Puedes crear una nueva contraseña usando este enlace:</p>
+     <p><a href="${url}">Restablecer contraseña</a></p>
+     <p>Si no funciona, copia y pega esta URL en tu navegador:<br>${url}</p>
+     <p>El enlace expira en 1 hora.</p>`
+  );
+  await sendMail({ to, subject: 'Recupera tu contraseña', html });
+}
+
 export async function sendWelcomeEmail(to: string, name?: string | null) {
   if (!to) return;
   const body = basicTemplate('Bienvenido', `<p>Hola ${name || ''},</p><p>¡Gracias por registrarte en Carpihogar.ai!</p><p>Ya puedes iniciar sesión y completar tu perfil.</p>`);
@@ -33,4 +48,3 @@ export async function sendReceiptEmail(orderId: string, to: string, tipo: 'recib
     await sendMail({ to, subject: `${titulo} de tu compra ${order.id.slice(0,8)}`, html: body });
   } catch {}
 }
-
