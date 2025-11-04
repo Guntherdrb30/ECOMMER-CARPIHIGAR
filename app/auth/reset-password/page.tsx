@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [token, setToken] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -37,6 +38,8 @@ export default function ResetPasswordPage() {
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
         setMessage(json?.message || 'Contraseña actualizada correctamente.');
+        // Redirigir al login inmediatamente tras actualizar la contraseña
+        try { router.replace('/auth/login'); } catch {}
       } else {
         setError(json?.error || 'Ocurrió un error al restablecer la contraseña.');
       }
