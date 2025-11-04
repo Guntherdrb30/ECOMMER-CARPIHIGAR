@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 
@@ -21,12 +21,12 @@ export default function ForgotPasswordPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
-        setMessage(json?.message || 'Si el correo está registrado, recibirás un enlace para recuperar tu contraseña.');
+        setMessage(json?.message || 'Si el correo esta registrado, recibiras un enlace para recuperar tu contrasena.');
       } else {
-        setError('No se pudo procesar la solicitud. Intenta más tarde.');
+        setError('No se pudo procesar la solicitud. Intenta mas tarde.');
       }
     } catch {
-      setError('Ocurrió un error al solicitar el restablecimiento de la contraseña.');
+      setError('Ocurrio un error al solicitar el restablecimiento de la contrasena.');
     } finally {
       setPending(false);
     }
@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex justify-center items-center h-screen">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-4">Recuperar Contraseña</h1>
+        <h1 className="text-2xl font-bold mb-4">Recuperar contrasena</h1>
         {message && <p className="text-green-500 mb-4">{message}</p>}
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <div className="mb-4">
@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
           />
         </div>
         <button disabled={pending} type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg disabled:opacity-60">
-          {pending ? 'Enviando…' : 'Enviar enlace de recuperación'}
+          {pending ? 'Enviandoa€¦' : 'Enviar enlace de recuperacion'}
         </button>
       </form>
     </div>

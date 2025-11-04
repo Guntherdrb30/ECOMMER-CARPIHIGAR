@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -25,7 +25,7 @@ export default function ResetPasswordPage() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError('Las contrasenas no coinciden');
       return;
     }
 
@@ -37,25 +37,25 @@ export default function ResetPasswordPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
-        setMessage(json?.message || 'Contraseña actualizada correctamente.');
-        // Redirigir al login inmediatamente tras actualizar la contraseña
+        setMessage(json?.message || 'contrasena actualizada correctamente.');
+        // Redirigir al login inmediatamente tras actualizar la contrasena
         try { router.replace('/auth/login'); } catch {}
       } else {
-        setError(json?.error || 'Ocurrió un error al restablecer la contraseña.');
+        setError(json?.error || 'Ocurrio un error al restablecer la contrasena.');
       }
     } catch (err: any) {
-      setError(err?.message || 'Ocurrió un error al restablecer la contraseña.');
+      setError(err?.message || 'Ocurrio un error al restablecer la contrasena.');
     }
   };
 
   return (
     <div className="flex justify-center items-center h-screen">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-4">Restablecer Contraseña</h1>
+        <h1 className="text-2xl font-bold mb-4">Restablecer contrasena</h1>
         {message && <p className="text-green-500 mb-4">{message}</p>}
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <div className="mb-4">
-          <label className="block text-gray-700">Nueva Contraseña</label>
+          <label className="block text-gray-700">Nueva contrasena</label>
           <input
             type="password"
             value={password}
@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700">Confirmar Contraseña</label>
+          <label className="block text-gray-700">Confirmar contrasena</label>
           <input
             type="password"
             value={confirmPassword}
@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
           />
         </div>
         <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
-          Restablecer Contraseña
+          Restablecer contrasena
         </button>
       </form>
     </div>

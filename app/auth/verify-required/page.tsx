@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
@@ -23,7 +23,7 @@ export default function VerifyRequiredPage() {
     try {
       if (!email) {
         setOk(false);
-        setMsg("No se encontró un email en tu sesión.");
+        setMsg("No se encontro un email en tu sesion.");
         return;
       }
       setSending(true);
@@ -38,11 +38,11 @@ export default function VerifyRequiredPage() {
         setMsg("Si el correo existe y no estaba verificado, te enviamos el enlace.");
       } else {
         setOk(false);
-        setMsg("No se pudo reenviar. Intenta más tarde.");
+        setMsg("No se pudo reenviar. Intenta mas tarde.");
       }
     } catch {
       setOk(false);
-      setMsg("Error reenviando verificación.");
+      setMsg("Error reenviando verificacion.");
     } finally {
       setSending(false);
     }
@@ -57,8 +57,8 @@ export default function VerifyRequiredPage() {
         </p>
 
         <div className="mb-4 text-sm">
-          <div className="text-gray-700">Correo de tu sesión:</div>
-          <div className="font-medium break-all">{status === "loading" ? "Cargando…" : (email || "(sin correo)")}</div>
+          <div className="text-gray-700">Correo de tu sesion:</div>
+          <div className="font-medium break-all">{status === "loading" ? "Cargandoa€¦" : (email || "(sin correo)")}</div>
         </div>
 
         {msg ? (
@@ -79,13 +79,13 @@ export default function VerifyRequiredPage() {
           disabled={sending || !email}
           className="w-full py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
         >
-          {sending ? "Enviando…" : "Reenviar verificación"}
+          {sending ? "Enviandoa€¦" : "Reenviar verificacion"}
         </button>
 
         <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
           <Link href="/" className="hover:underline">Volver al inicio</Link>
           <button onClick={() => signOut({ callbackUrl: "/auth/login" })} className="hover:underline">
-            Cerrar sesión
+            Cerrar sesion
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 
@@ -9,9 +9,9 @@ export default function ForgotUsernamePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
-    // Aquí va la lógica para enviar el correo con el nombre de usuario
+    // Aqui va la logica para enviar el correo con el nombre de usuario
     console.log('Solicitud de usuario para:', email);
-    setMessage('Si el correo está registrado, recibirás tu nombre de usuario.');
+    setMessage('Si el correo esta registrado, recibiras tu nombre de usuario.');
   };
 
   return (
