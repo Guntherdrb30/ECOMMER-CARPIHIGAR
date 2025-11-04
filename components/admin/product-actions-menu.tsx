@@ -1,5 +1,12 @@
-'use client';
+﻿'use client';
 
+          <SecretDeleteButton
+            action={anonymizeProductByForm as any}
+            hidden={{ id: product.id }}
+            label="Anonimizar"
+            title="Anonimizar producto"
+            description="Oculta los datos del producto y conserva historicos. Requiere clave secreta."
+          />
 import { PendingButton } from '@/components/pending-button';
 import SecretDeleteButton from '@/components/admin/secret-delete-button';
 import { updateProductInline, createStockMovement, updateProductBarcodeByForm, deleteProductByForm } from '@/server/actions/products';
@@ -7,9 +14,9 @@ import { updateProductInline, createStockMovement, updateProductBarcodeByForm, d
 export default function ProductActionsMenu({ product, lowStock = 5 }: { product: any; lowStock?: number }) {
   return (
     <details className="relative">
-      <summary className="cursor-pointer inline-flex items-center px-2 py-1 border rounded text-sm bg-white hover:bg-gray-50">Acciones ▾</summary>
+      <summary className="cursor-pointer inline-flex items-center px-2 py-1 border rounded text-sm bg-white hover:bg-gray-50">Acciones â–¾</summary>
       <div className="mt-2 p-3 border rounded bg-gray-50 space-y-3">
-        <div className="text-xs text-gray-600">Edición rápida</div>
+        <div className="text-xs text-gray-600">EdiciÃ³n rÃ¡pida</div>
         <form action={updateProductInline} className="flex flex-wrap gap-2 items-center text-sm">
           <input type="hidden" name="id" value={product.id} />
           <input name="priceUSD" type="number" step="0.01" defaultValue={Number(product.priceUSD)} className="w-24 border rounded px-1 py-0.5" />
@@ -33,11 +40,11 @@ export default function ProductActionsMenu({ product, lowStock = 5 }: { product:
           <PendingButton className="px-2 py-1 border rounded" pendingText="Moviendo...">Mover</PendingButton>
         </form>
 
-        <div className="text-xs text-gray-600">Código de barras</div>
+        <div className="text-xs text-gray-600">CÃ³digo de barras</div>
         <form action={updateProductBarcodeByForm} className="flex flex-wrap gap-2 items-center text-sm">
           <input type="hidden" name="id" value={product.id} />
           <input name="barcode" defaultValue={(product as any).barcode || ''} placeholder="EAN-13" className="w-40 border rounded px-1 py-0.5" />
-          <PendingButton className="px-2 py-1 bg-gray-800 text-white rounded" pendingText="Guardando...">Guardar código</PendingButton>
+          <PendingButton className="px-2 py-1 bg-gray-800 text-white rounded" pendingText="Guardando...">Guardar cÃ³digo</PendingButton>
           {!(product as any).barcode && (
             <button name="generate" value="1" className="px-2 py-1 border rounded" title="Generar EAN-13">Generar</button>
           )}
@@ -51,7 +58,7 @@ export default function ProductActionsMenu({ product, lowStock = 5 }: { product:
             hidden={{ id: product.id }}
             label="Eliminar"
             title="Eliminar producto"
-            description="Esta acción eliminará el producto y no se puede deshacer."
+            description="Esta acciÃ³n eliminarÃ¡ el producto y no se puede deshacer."
           />
         </div>
       </div>
