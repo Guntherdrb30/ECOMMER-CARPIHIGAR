@@ -13,11 +13,12 @@ export async function GET(req: Request) {
       return NextResponse.redirect(url.origin + '/auth/login?error=token_expired');
     }
     await prisma.user.update({ where: { id: user.id }, data: { emailVerifiedAt: now as any, emailVerificationToken: null, emailVerificationTokenExpiresAt: null } });
-    return NextResponse.redirect(url.origin + '/');
+    return NextResponse.redirect(url.origin + '/?message=' + encodeURIComponent('Correo verificado')); 
   } catch (e) {
-    return NextResponse.redirect(new URL('/', req.url));
+    return NextResponse.redirect(new URL('/?error=' + encodeURIComponent('Error verificando correo'), req.url));
   }
 }
+
 
 
 
