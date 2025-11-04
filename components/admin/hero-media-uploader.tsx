@@ -94,7 +94,7 @@ export default function HeroMediaUploader({ targetInputName, defaultUrl }: { tar
       )}
       <div className="flex flex-wrap items-center gap-2">
         <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleChange} className="hidden" />
-        <button type="button" onClick={() => fileRef.current?.click()} className="px-3 py-1 rounded bg-gray-800 text-white flex-none" disabled={loading}>
+        <button type="button" onClick={() => fileRef.current?.click()} className="px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 flex-none" disabled={loading}>
           {loading ? 'Subiendo...' : 'Subir archivo'}
         </button>
       </div>

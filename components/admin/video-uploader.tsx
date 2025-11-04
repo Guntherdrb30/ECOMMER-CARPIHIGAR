@@ -130,7 +130,7 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
       )}
       <div className="flex items-center gap-2">
         <input ref={fileRef} type="file" accept="video/*" onChange={handleChange} />
-        <button type="button" onClick={handleUpload} className="px-3 py-1 rounded bg-gray-800 text-white" disabled={loading}>
+        <button type="button" onClick={handleUpload} className="px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700" disabled={loading}>
           {loading ? 'Subiendo...' : 'Subir archivo'}
         </button>
       </div>

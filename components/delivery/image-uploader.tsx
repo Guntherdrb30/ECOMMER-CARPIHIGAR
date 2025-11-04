@@ -102,7 +102,7 @@ export default function DeliveryImageUploader({
       />
       <div className="flex items-center gap-2">
         <input ref={fileRef} type="file" accept="image/*" onChange={onInput} className="hidden" />
-        <button type="button" onClick={() => fileRef.current?.click()} className="px-3 py-1 rounded border">Subir archivo</button>
+        <button type="button" onClick={() => fileRef.current?.click()} className="px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700">Subir archivo</button>
       </div>
       <p className="text-xs text-gray-500">{hint || 'Sube una imagen o pega un enlace (PNG/JPG/WEBP/SVG).'}</p>
       {busy && <p className="text-xs text-gray-500">Subiendo...</p>}

@@ -110,7 +110,7 @@ export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: strin
           </div>
           <div className="flex items-center gap-2">
             <input ref={fileRefs[i]} type="file" accept="image/*,video/*" className="hidden" onChange={() => onUpload(i)} />
-            <button type="button" onClick={() => fileRefs[i].current?.click()} className="px-3 py-1 rounded bg-gray-800 text-white flex-none" disabled={busyIndex === i}>
+            <button type="button" onClick={() => fileRefs[i].current?.click()} className="px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 flex-none" disabled={busyIndex === i}>
               {busyIndex === i ? 'Subiendo...' : 'Subir archivo'}
             </button>
             <button type="button" onClick={() => clearSlot(i)} className="px-3 py-1 rounded border flex-none">Limpiar</button>

@@ -122,7 +122,7 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={busy || reached}
-          className="px-3 py-1 rounded border"
+          className="px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700"
         >
           {busy ? 'Subiendo...' : 'Subir archivo'}
         </button>

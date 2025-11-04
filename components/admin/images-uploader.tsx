@@ -54,7 +54,7 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
       </div>
       <div className="flex items-center gap-2">
         <input ref={fileRef} type="file" accept="image/*" multiple onChange={(e) => onFiles(e.target.files)} className="hidden" />
-        <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="px-3 py-1 rounded border">
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700">
           {busy ? 'Subiendo...' : 'Subir archivo'}
         </button>
       </div>
