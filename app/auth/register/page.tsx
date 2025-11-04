@@ -37,20 +37,27 @@ export default function RegisterPage() {
         setError("Telefono invalido. Usa 0412-1234567 o +58 412 1234567");
         return;
       }
+      const normalizePlate = (v: string) => v.replace(/\s+/g, '').toUpperCase();
+      const plate = normalizePlate(deliveryMotoPlate);
+      const vin = deliveryChassisSerial.replace(/\s+/g, '').toUpperCase();
+      const isMoto = deliveryVehicleType === 'MOTO';
+      const plateOk = /^[A-Z0-9-]{5,8}$/.test(plate);
+      const vinOk = isMoto ? vin.length >= 6 : /^[A-HJ-NPR-Z0-9]{17}$/.test(vin);
       if (
         !deliveryCedula.trim() ||
         !deliveryPhone.trim() ||
         !deliveryAddress.trim() ||
         !deliveryVehicleBrand.trim() ||
         !deliveryVehicleModel.trim() ||
-        !deliveryMotoPlate.trim() ||
-        !deliveryChassisSerial.trim() ||
+        !plateOk ||
+        !vinOk ||
         !deliveryIdImageUrl.trim() ||
         !deliverySelfieUrl.trim()
       ) {
-        setError(
-          "Para registrarte como Delivery, completa todos los campos y sube las imagenes requeridas."
-        );
+        const msgs: string[] = [];
+        if (!plateOk) msgs.push('Placa invalida (5-8 caracteres, letras/numeros)');
+        if (!vinOk) msgs.push(isMoto ? 'Serial de chasis invalido' : 'VIN invalido (17 caracteres, sin I/O/Q)');
+        setError(msgs.join(' | ') || "Para registrarte como Delivery, completa todos los campos y sube las imagenes requeridas.");
         return;
       }
       if (!agreeDelivery) {
@@ -245,9 +252,11 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   value={deliveryMotoPlate}
-                  onChange={(e) => setDeliveryMotoPlate(e.target.value)}
+                  onChange={(e) => setDeliveryMotoPlate(e.target.value.replace(/\s+/g,'').toUpperCase())}
                   className="w-full px-3 py-2 border rounded-lg"
                   required
+                  placeholder={deliveryVehicleType === 'MOTO' ? 'Ej: AB1C2D' : 'Ej: AB123CD'}
+                  title="5-8 caracteres, letras y numeros"
                 />
               </div>
               <div>
@@ -255,9 +264,11 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   value={deliveryChassisSerial}
-                  onChange={(e) => setDeliveryChassisSerial(e.target.value)}
+                  onChange={(e) => setDeliveryChassisSerial(e.target.value.toUpperCase())}
                   className="w-full px-3 py-2 border rounded-lg"
                   required
+                  placeholder={deliveryVehicleType === 'MOTO' ? 'Serial de chasis' : 'VIN (17 caracteres)'}
+                  title={deliveryVehicleType === 'MOTO' ? 'Ingrese el serial de chasis' : 'VIN de 17 caracteres (sin I, O, Q)'}
                 />
               </div>
             </div>

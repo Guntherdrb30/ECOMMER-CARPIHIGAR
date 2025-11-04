@@ -29,6 +29,13 @@ export async function POST(req: Request) {
       if (!deliveryVehicleBrand || !deliveryVehicleModel) {
         return NextResponse.json({ message: 'Faltan marca y modelo del vehiculo' }, { status: 400 });
       }
+      const vtype = String(deliveryVehicleType || '').toUpperCase();
+      const plate = String(deliveryMotoPlate || '').replace(/\s+/g,'').toUpperCase();
+      const vin = String(deliveryChassisSerial || '').replace(/\s+/g,'').toUpperCase();
+      const plateOk = /^[A-Z0-9-]{5,8}$/.test(plate);
+      const vinOk = (vtype === 'MOTO') ? vin.length >= 6 : /^[A-HJ-NPR-Z0-9]{17}$/.test(vin);
+      if (!plateOk) return NextResponse.json({ message: 'Placa invalida' }, { status: 400 });
+      if (!vinOk) return NextResponse.json({ message: vtype === 'MOTO' ? 'Serial de chasis invalido' : 'VIN invalido (17 caracteres, sin I/O/Q)' }, { status: 400 });
     }
 
     const user = await prisma.user.create({
