@@ -3,8 +3,15 @@ import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({} as any));
-    const email = String(body?.email || '').trim().toLowerCase();
+    const ct = (req.headers.get('content-type') || '').toLowerCase();
+    let email = '';
+    if (ct.includes('application/json')) {
+      const body = await req.json().catch(() => ({} as any));
+      email = String(body?.email || '').trim().toLowerCase();
+    } else {
+      const form = await req.formData().catch(() => null);
+      email = String(form?.get('email') || '').trim().toLowerCase();
+    }
     if (!email) return NextResponse.json({ ok: false, error: 'email_required' }, { status: 400 });
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return NextResponse.json({ ok: true }); // don't leak
@@ -16,7 +23,7 @@ export async function POST(req: Request) {
     if (process.env.EMAIL_ENABLED === 'true') {
       try {
         const { sendMail, basicTemplate } = await import('@/lib/mailer');
-        const base = process.env.NEXT_PUBLIC_URL || '';
+        const base = process.env.NEXT_PUBLIC_URL || new URL(req.url).origin;
         const verifyUrl = `${base}/api/auth/verify-email?token=${token}`;
         const html = basicTemplate('Verifica tu correo', `<p>Confirma tu correo para activar tu cuenta:</p><p><a href=\"${verifyUrl}\">Verificar correo</a></p>`);
         await sendMail({ to: email, subject: 'Verifica tu correo', html });
@@ -27,4 +34,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }
-

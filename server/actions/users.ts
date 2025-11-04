@@ -93,6 +93,26 @@ export async function createAdminUser(name: string, email: string, password: str
   const bcrypt = (await import('bcrypt')).default; const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.upsert({ where: { email }, update: { name, password: hashed, role: 'ADMIN', alliedStatus: 'NONE' }, create: { name, email, password: hashed, role: 'ADMIN', alliedStatus: 'NONE' } });
   revalidatePath('/dashboard/admin/usuarios');
+  try {
+    if (process.env.EMAIL_ENABLED === 'true') {
+      const { sendAdminUserCreatedEmail } = await import('@/server/actions/email');
+      await sendAdminUserCreatedEmail(email, 'ADMIN');
+    }
+  } catch {}
+  // Issue verification token and email
+  try {
+    const crypto = await import('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 1000*60*60*24);
+    await prisma.user.update({ where: { id: user.id }, data: { emailVerificationToken: token, emailVerificationTokenExpiresAt: expires as any, emailVerifiedAt: null } });
+    if (process.env.EMAIL_ENABLED === 'true') {
+      const { sendMail, basicTemplate } = await import('@/lib/mailer');
+      const base = process.env.NEXT_PUBLIC_URL || '';
+      const verifyUrl = `${base}/api/auth/verify-email?token=${token}`;
+      const html = basicTemplate('Verifica tu correo', `<p>Se ha creado tu usuario ADMIN. Verifica tu correo para activarlo:</p><p>${verifyUrl}</p>`);
+      await sendMail({ to: email, subject: 'Verifica tu correo', html });
+    }
+  } catch {}
   return user;
 }
 
@@ -102,6 +122,25 @@ export async function createSellerUser(name: string, email: string, password: st
   const bcrypt = (await import('bcrypt')).default; const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.upsert({ where: { email }, update: { name, password: hashed, role: 'VENDEDOR', alliedStatus: 'NONE', commissionPercent: (commissionPercent ?? null) as any }, create: { name, email, password: hashed, role: 'VENDEDOR', alliedStatus: 'NONE', commissionPercent: (commissionPercent ?? null) as any } });
   revalidatePath('/dashboard/admin/usuarios');
+  try {
+    if (process.env.EMAIL_ENABLED === 'true') {
+      const { sendAdminUserCreatedEmail } = await import('@/server/actions/email');
+      await sendAdminUserCreatedEmail(email, 'VENDEDOR');
+    }
+  } catch {}
+  try {
+    const crypto = await import('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 1000*60*60*24);
+    await prisma.user.update({ where: { id: user.id }, data: { emailVerificationToken: token, emailVerificationTokenExpiresAt: expires as any, emailVerifiedAt: null } });
+    if (process.env.EMAIL_ENABLED === 'true') {
+      const { sendMail, basicTemplate } = await import('@/lib/mailer');
+      const base = process.env.NEXT_PUBLIC_URL || '';
+      const verifyUrl = `${base}/api/auth/verify-email?token=${token}`;
+      const html = basicTemplate('Verifica tu correo', `<p>Se ha creado tu usuario VENDEDOR. Verifica tu correo para activarlo:</p><p>${verifyUrl}</p>`);
+      await sendMail({ to: email, subject: 'Verifica tu correo', html });
+    }
+  } catch {}
   return user;
 }
 
@@ -122,6 +161,24 @@ export async function createDispatcherUser(name: string, email: string, password
     create: { name, email, password: hashed, role: 'DESPACHO', alliedStatus: 'NONE' },
   });
   revalidatePath('/dashboard/admin/usuarios');
+  try {
+    if (process.env.EMAIL_ENABLED === 'true') {
+      const { sendAdminUserCreatedEmail } = await import('@/server/actions/email');
+      await sendAdminUserCreatedEmail(email, 'DESPACHO');
+      // Issue email verification token and send verify link
+      const crypto = await import('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
+      await prisma.user.update({ where: { id: user.id }, data: { emailVerificationToken: token, emailVerificationTokenExpiresAt: expires as any, emailVerifiedAt: null } });
+      try {
+        const { sendMail, basicTemplate } = await import('@/lib/mailer');
+        const base = process.env.NEXT_PUBLIC_URL || '';
+        const verifyUrl = `${base}/api/auth/verify-email?token=${token}`;
+        const html = basicTemplate('Verifica tu correo', `<p>Se creó tu usuario de despacho.</p><p>Confirma tu correo para activar tu cuenta:</p><p><a href=\"${verifyUrl}\">Verificar correo</a></p>`);
+        await sendMail({ to: email, subject: 'Verifica tu correo', html });
+      } catch {}
+    }
+  } catch {}
   return user;
 }
 
