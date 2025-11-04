@@ -136,7 +136,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                       )}
                       <PendingButton className="px-3 py-1 bg-gray-800 text-white rounded" pendingText="Guardando…">Guardar</PendingButton>
                     </form>
-                    <form method="post" action="/api/auth/resend-verification" className="flex gap-2 items-center">
+                    <form method="post" action="/dashboard/admin/usuarios/resend-verification" className="flex gap-2 items-center">
                       <input type="hidden" name="email" value={user.email} />
                       <button className="px-3 py-1 border rounded" title="Reenviar verificación" type="submit">Reenviar verificación</button>
                     </form>
