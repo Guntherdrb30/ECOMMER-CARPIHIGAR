@@ -697,3 +697,65 @@ export async function getTrendingProducts(limit = 9, daysBack = 60) {
     return [] as any[];
   }
 }
+
+export async function anonymizeProductByForm(formData: FormData) {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role !== 'ADMIN') {
+        throw new Error('Not authorized');
+    }
+    const email = String((session?.user as any)?.email || '').toLowerCase();
+    const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+    const isRoot = email === rootEmail;
+    if (!isRoot) {
+        redirect('/dashboard/admin/productos?error=Solo%20root%20puede%20anonimizar%20productos');
+    }
+    const id = String(formData.get('id') || '');
+    const secret = String(formData.get('secret') || '');
+    const { getDeleteSecret } = await import('@/server/actions/settings');
+    const configured = await getDeleteSecret();
+    if (!configured) {
+        redirect('/dashboard/admin/productos?error=Falta%20configurar%20la%20clave');
+    }
+    if (secret !== configured) {
+        redirect('/dashboard/admin/productos?error=Clave%20secreta%20invalida');
+    }
+
+    try {
+        await prisma.$transaction([
+            prisma.relatedProduct.deleteMany({ where: { OR: [{ fromId: id }, { toId: id }] } }) as any,
+            prisma.product.update({
+                where: { id },
+                data: {
+                    name: 'Eliminado',
+                    brand: 'Eliminado',
+                    description: 'Producto anonimizado',
+                    images: [],
+                    videoUrl: null as any,
+                    showSocialButtons: false,
+                    sku: null,
+                    code: null,
+                    barcode: null,
+                    priceUSD: 0 as any,
+                    priceAllyUSD: null as any,
+                    priceWholesaleUSD: null as any,
+                    costUSD: null as any,
+                    marginClientPct: null as any,
+                    marginAllyPct: null as any,
+                    marginWholesalePct: null as any,
+                    priceClientUSD: null as any,
+                    stock: 0,
+                    supplierId: null,
+                    categoryId: null,
+                    isNew: false,
+                    slug: (`deleted-${id}`) as any,
+                },
+            }) as any,
+        ]);
+        try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'PRODUCT_ANONYMIZED', details: id } }); } catch {}
+        revalidatePath('/dashboard/admin/productos');
+        redirect('/dashboard/admin/productos?message=Producto%20anonimizado');
+    } catch (e) {
+        revalidatePath('/dashboard/admin/productos');
+        redirect('/dashboard/admin/productos?error=No%20se%20pudo%20anonimizar');
+    }
+}
