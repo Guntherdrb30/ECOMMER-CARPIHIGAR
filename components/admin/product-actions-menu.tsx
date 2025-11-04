@@ -50,16 +50,24 @@ export default function ProductActionsMenu({ product, lowStock = 5 }: { product:
           )}
         </form>
 
-        <div className="flex items-center justify-between pt-2">
-          <a className="text-blue-600 hover:underline text-sm" href={`/dashboard/admin/productos/${product.id}`}>Editar detalle</a>
-          <SecretDeleteButton
-            action={deleteProductByForm as any}
-            // Using component directly here is awkward; reuse existing on the list where available
-            hidden={{ id: product.id }}
-            label="Eliminar"
-            title="Eliminar producto"
-            description="Esta acciÃ³n eliminarÃ¡ el producto y no se puede deshacer."
-          />
+          <div className="flex items-center gap-3">
+            {isRoot ? (
+              <SecretDeleteButton
+                action={anonymizeProductByForm as any}
+                hidden={{ id: product.id }}
+                label="Anonimizar"
+                title="Anonimizar producto"
+                description="Oculta los datos del producto y conserva historicos. Requiere clave secreta."
+              />
+            ) : null}
+            <SecretDeleteButton
+              action={deleteProductByForm as any}
+              hidden={{ id: product.id }}
+              label="Eliminar"
+              title="Eliminar producto"
+              description="Esta accion eliminara el producto y no se puede deshacer."
+            />
+          </div>
         </div>
       </div>
     </details>
