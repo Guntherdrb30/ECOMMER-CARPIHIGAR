@@ -72,15 +72,15 @@ export default function LoginPage() {
   return (
     <div className="flex justify-center items-center h-screen">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
-        <div className="flex flex-col items-center mb-4"><img src="/logo-default.svg" alt="Carpihogar" className="h-10 mb-2" /><h1 className="text-2xl font-bold">Iniciar sesión</h1></div>
+        <div className="flex flex-col items-center mb-4"><img src="/logo-default.svg" alt="Carpihogar" className="h-10 mb-2" /><h1 className="text-2xl font-bold">Iniciar sesion</h1></div>
         {verifiedMsg ? (
           <div className="mb-4 rounded border border-green-300 bg-green-50 text-green-800 px-3 py-2 text-sm">
-            Tu correo fue verificado. Ya puedes iniciar sesión.
+            Tu correo fue verificado. Ya puedes Iniciar sesion.
           </div>
         ) : null}
         {verifyRequired ? (
           <div className="mb-4 rounded border border-amber-300 bg-amber-50 text-amber-800 px-3 py-2 text-sm">
-            Debes verificar tu correo para comprar o usar el panel. Si no recibiste el email, reenvÃ­alo abajo.
+            Debes verificar tu correo para comprar o usar el panel. Si no recibiste el email, reenviarlo abajo.
           </div>
         ) : null}
         {error && <p className="text-red-500 mb-4">{error}</p>}
@@ -95,7 +95,7 @@ export default function LoginPage() {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700">ContraseÃ±a</label>
+          <label className="block text-gray-700">Contrasena</label>
           <input
             type="password"
             value={password}
@@ -105,36 +105,36 @@ export default function LoginPage() {
           />
         </div>
         <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
-          Iniciar sesión
+          Iniciar sesion
         </button>
         {resendMsg ? (
           <p className="text-xs mt-2" style={{ color: resendOk ? "#16a34a" : "#dc2626" }}>{resendMsg}</p>
         ) : null}
         <button
           type="button"
-          onClick={() => signIn("google", { callbackUrl: "/auth/after-Iniciar sesión" })}
+          onClick={() => signIn("google", { callbackUrl: "/auth/after-Iniciar sesion" })}
           className="w-full mt-3 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
         >
           Continuar con Google
         </button>
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
-            Â¿No tienes cuenta?{" "}
+            Â?No tienes cuenta?{" "}
             <Link href="/auth/register" className="font-medium text-blue-600 hover:underline">
-              RegÃ­strate
+              Registrate
             </Link>
           </p>
           <p className="text-sm text-gray-600 mt-2">
             <Link href="/auth/forgot-password" className="font-medium text-blue-600 hover:underline">
-              Â¿Olvidaste tu contraseÃ±a?
+              Â?Olvidaste tu Contrasena?
             </Link>
           </p>
           <p className="text-sm text-gray-600 mt-2">
             <Link href="/auth/forgot-username" className="font-medium text-blue-600 hover:underline">
-              Â¿Olvidaste tu usuario?
+              Â?Olvidaste tu usuario?
             </Link>
           </p>
-          <p className="text-sm text-gray-600 mt-3">Â¿No recibiste el correo de verificaciÃ³n?</p>
+          <p className="text-sm text-gray-600 mt-3">Â?No recibiste el correo de verificacion?</p>
           <button
             type="button"
             onClick={async () => {
@@ -150,16 +150,16 @@ export default function LoginPage() {
                   setResendMsg("Te enviamos el enlace si el email existe y no estaba verificado.");
                 } else {
                   setResendOk(false);
-                  setResendMsg("No se pudo reenviar. Intenta mÃ¡s tarde.");
+                  setResendMsg("No se pudo reenviar. Intenta mÃ!s tarde.");
                 }
               } catch {
                 setResendOk(false);
-                setResendMsg("Error reenviando verificaciÃ³n");
+                setResendMsg("Error reenviando verificacion");
               }
             }}
             className="mt-2 w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
           >
-            Reenviar verificaciÃ³n
+            Reenviar verificacion
           </button>
         </div>
       </form>
