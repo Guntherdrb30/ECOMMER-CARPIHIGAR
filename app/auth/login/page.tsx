@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { signIn, getSession } from "next-auth/react";
@@ -75,12 +75,12 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold mb-4">Login</h1>
         {verifiedMsg ? (
           <div className="mb-4 rounded border border-green-300 bg-green-50 text-green-800 px-3 py-2 text-sm">
-            Tu correo fue verificado. Ya puedes iniciar sesión.
+            Tu correo fue verificado. Ya puedes iniciar sesiÃ³n.
           </div>
         ) : null}
         {verifyRequired ? (
           <div className="mb-4 rounded border border-amber-300 bg-amber-50 text-amber-800 px-3 py-2 text-sm">
-            Debes verificar tu correo para comprar o usar el panel. Si no recibiste el email, reenvíalo abajo.
+            Debes verificar tu correo para comprar o usar el panel. Si no recibiste el email, reenvÃ­alo abajo.
           </div>
         ) : null}
         {error && <p className="text-red-500 mb-4">{error}</p>}
@@ -95,7 +95,7 @@ export default function LoginPage() {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700">Contraseña</label>
+          <label className="block text-gray-700">ContraseÃ±a</label>
           <input
             type="password"
             value={password}
@@ -112,29 +112,29 @@ export default function LoginPage() {
         ) : null}
         <button
           type="button"
-          onClick={() => signIn("google", { callbackUrl: "/" })}
+          onClick={() => signIn("google", { callbackUrl: "/auth/after-login" })}
           className="w-full mt-3 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
         >
           Continuar con Google
         </button>
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
-            ¿No tienes cuenta?{" "}
+            Â¿No tienes cuenta?{" "}
             <Link href="/auth/register" className="font-medium text-blue-600 hover:underline">
-              Regístrate
+              RegÃ­strate
             </Link>
           </p>
           <p className="text-sm text-gray-600 mt-2">
             <Link href="/auth/forgot-password" className="font-medium text-blue-600 hover:underline">
-              ¿Olvidaste tu contraseña?
+              Â¿Olvidaste tu contraseÃ±a?
             </Link>
           </p>
           <p className="text-sm text-gray-600 mt-2">
             <Link href="/auth/forgot-username" className="font-medium text-blue-600 hover:underline">
-              ¿Olvidaste tu usuario?
+              Â¿Olvidaste tu usuario?
             </Link>
           </p>
-          <p className="text-sm text-gray-600 mt-3">¿No recibiste el correo de verificación?</p>
+          <p className="text-sm text-gray-600 mt-3">Â¿No recibiste el correo de verificaciÃ³n?</p>
           <button
             type="button"
             onClick={async () => {
@@ -150,19 +150,20 @@ export default function LoginPage() {
                   setResendMsg("Te enviamos el enlace si el email existe y no estaba verificado.");
                 } else {
                   setResendOk(false);
-                  setResendMsg("No se pudo reenviar. Intenta más tarde.");
+                  setResendMsg("No se pudo reenviar. Intenta mÃ¡s tarde.");
                 }
               } catch {
                 setResendOk(false);
-                setResendMsg("Error reenviando verificación");
+                setResendMsg("Error reenviando verificaciÃ³n");
               }
             }}
             className="mt-2 w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
           >
-            Reenviar verificación
+            Reenviar verificaciÃ³n
           </button>
         </div>
       </form>
     </div>
   );
 }
+
