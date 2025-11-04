@@ -57,13 +57,15 @@ export default function ProductActionsMenu({ product, lowStock = 5, isRoot = fal
                 description="Oculta los datos del producto y conserva historicos. Requiere clave secreta."
               />
             ) : null}
-            <SecretDeleteButton
-              action={deleteProductByForm as any}
-              hidden={{ id: product.id }}
-              label="Eliminar"
-              title="Eliminar producto"
-              description="Esta accion eliminara el producto y no se puede deshacer."
-            />
+            {isRoot ? (
+              <SecretDeleteButton
+                action={deleteProductByForm as any}
+                hidden={{ id: product.id }}
+                label="Eliminar"
+                title="Eliminar producto"
+                description="Esta accion eliminara el producto y no se puede deshacer."
+              />
+            ) : null}
           </div>
         </div>
       </div>
