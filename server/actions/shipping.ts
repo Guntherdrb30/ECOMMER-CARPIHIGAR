@@ -33,7 +33,7 @@ export async function saveShippingDetails(payload: ShippingUpdatePayload) {
             // - RETIRO_TIENDA: se puede marcar ENTREGADO (entregado al cliente en tienda)
             // - TEALCA/MRW: se puede marcar DESPACHADO o EN_TRANSITO (entregado al transportista)
             const allowedForPickup = ['ENTREGADO', 'PREPARANDO', 'DESPACHADO'] as const;
-            const allowedForCouriers = ['DESPACHADO'] as const;
+            const allowedForCouriers = ['DESPACHADO', 'EN_TRANSITO'] as const;
             const carrierStr = String(targetCarrier || '').toUpperCase();
             const statusStr = String(targetStatus || '').toUpperCase();
             let ok = false;

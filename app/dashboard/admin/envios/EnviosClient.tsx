@@ -263,7 +263,7 @@ export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWit
                                 if (c === 'RETIRO_TIENDA') {
                                   opts = ['ENTREGADO','PREPARANDO','DESPACHADO'] as any;
                                 } else if (c === 'TEALCA' || c === 'MRW') {
-                                  opts = ['DESPACHADO'] as any;
+                                  opts = ['DESPACHADO','EN_TRANSITO'] as any;
                                 }
                               }
                               return (opts as any[]).map((opt) => (
