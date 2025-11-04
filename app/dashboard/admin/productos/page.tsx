@@ -15,7 +15,7 @@ import { PendingButton } from '@/components/pending-button';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import RelatedProductsPicker from "@/components/admin/related-products-picker";
 
-export default async function AdminProductsPage({ searchParams }: { searchParams?: Promise<{ q?: string; categoria?: string; proveedor?: string; message?: string }> }) {
+export default async function AdminProductsPage() {\n  const session = await getServerSession(authOptions as any);\n  const email = String((session?.user as any)?.email || '').toLowerCase();\n  const role = String((session?.user as any)?.role || '');\n  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();\n  const isRoot = role === 'ADMIN' && email === rootEmail;
   const sp = (await searchParams) || {} as any;
   const q = sp.q || '';
   const categoria = sp.categoria || '';
