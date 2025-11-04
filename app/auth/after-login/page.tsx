@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation';
 
 export default async function AfterLogin() {
   const session = await getServerSession(authOptions);
-  const role = (session?.user as any)?.role as string | undefined;\n  const emailVerified = (session?.user as any)?.emailVerified === true;
+  const role = (session?.user as any)?.role as string | undefined;
+  const emailVerified = (session?.user as any)?.emailVerified === true;
   if (!session?.user) {
     redirect('/auth/login');
   }
@@ -13,4 +14,5 @@ export default async function AfterLogin() {
   if (role === 'ALIADO') redirect('/dashboard/aliado');
   redirect('/dashboard/cliente');
 }
+
 
