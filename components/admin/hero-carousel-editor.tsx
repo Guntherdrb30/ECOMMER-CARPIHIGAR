@@ -36,7 +36,29 @@ export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: strin
         return next;
       });
     } catch (e: any) {
-      setError(e?.message || 'Error al subir');
+      try {
+        const probe = await fetch('/api/blob/handle-upload', { method: 'GET' });
+        const info = await probe.json().catch(() => ({} as any));
+        const msg = String(e?.message || '').toLowerCase();
+        const noToken = !probe.ok || info?.hasToken === false || msg.includes('client token');
+        if (noToken) {
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('type', 'image');
+          const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+          const data = await resp.json().catch(() => ({} as any));
+          if (!resp.ok || !data?.url) throw new Error(data?.error || 'Upload fallido');
+          setItems((prev) => {
+            const next = prev.slice();
+            next[i] = String(data.url);
+            return next;
+          });
+        } else {
+          throw e;
+        }
+      } catch (e2: any) {
+        setError(e2?.message || 'Error al subir');
+      }
     } finally {
       setBusyIndex(null);
     }
@@ -87,9 +109,9 @@ export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: strin
             )}
           </div>
           <div className="flex items-center gap-2">
-            <input ref={fileRefs[i]} type="file" accept="image/*,video/*" className="flex-1 min-w-0 max-w-full" />
-            <button type="button" onClick={() => onUpload(i)} className="px-3 py-1 rounded bg-gray-800 text-white flex-none" disabled={busyIndex === i}>
-              {busyIndex === i ? 'Subiendo...' : (url ? 'Reemplazar' : 'Subir')}
+            <input ref={fileRefs[i]} type="file" accept="image/*,video/*" className="hidden" onChange={() => onUpload(i)} />
+            <button type="button" onClick={() => fileRefs[i].current?.click()} className="px-3 py-1 rounded bg-gray-800 text-white flex-none" disabled={busyIndex === i}>
+              {busyIndex === i ? 'Subiendo...' : (url ? 'Reemplazar' : 'Subir archivo')}
             </button>
             <button type="button" onClick={() => clearSlot(i)} className="px-3 py-1 rounded border flex-none">Limpiar</button>
           </div>

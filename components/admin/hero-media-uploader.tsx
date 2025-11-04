@@ -47,6 +47,31 @@ export default function HeroMediaUploader({ targetInputName, defaultUrl }: { tar
       const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
       if (input) input.value = res.url;
       setOk(true);
+    } catch (e: any) {
+      try {
+        const probe = await fetch('/api/blob/handle-upload', { method: 'GET' });
+        const info = await probe.json().catch(() => ({} as any));
+        const msg = String(e?.message || '').toLowerCase();
+        const noToken = !probe.ok || info?.hasToken === false || msg.includes('client token');
+        if (noToken) {
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('type', 'image');
+          const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+          const data = await resp.json().catch(() => ({} as any));
+          if (!resp.ok || !data?.url) throw new Error(data?.error || 'Upload fallido');
+          setPreview(String(data.url));
+          const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
+          if (input) input.value = String(data.url);
+          setOk(true);
+          setError(undefined);
+        } else {
+          throw e;
+        }
+      } catch (e2: any) {
+        setError(e2?.message || 'Error al subir archivo');
+        setOk(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -68,9 +93,9 @@ export default function HeroMediaUploader({ targetInputName, defaultUrl }: { tar
         )
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleChange} className="flex-1 min-w-0 max-w-full" />
-        <button type="button" onClick={handleUpload} className="px-3 py-1 rounded bg-gray-800 text-white flex-none" disabled={loading}>
-          {loading ? 'Subiendo...' : 'Subir'}
+        <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleChange} className="hidden" />
+        <button type="button" onClick={() => fileRef.current?.click()} className="px-3 py-1 rounded bg-gray-800 text-white flex-none" disabled={loading}>
+          {loading ? 'Subiendo...' : 'Subir archivo'}
         </button>
       </div>
       <p className="text-xs text-gray-500">Formatos: PNG, JPG, WEBP, SVG, MP4, WEBM, OGG.</p>
