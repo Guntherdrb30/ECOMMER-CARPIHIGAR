@@ -19,6 +19,8 @@ export default function RegisterPage() {
   const [deliveryVehicleModel, setDeliveryVehicleModel] = useState("");
   const [deliveryMotoPlate, setDeliveryMotoPlate] = useState("");
   const [deliveryChassisSerial, setDeliveryChassisSerial] = useState("");
+  const [plateError, setPlateError] = useState<string>("");
+  const [vinError, setVinError] = useState<string>("");
   const [deliveryIdImageUrl, setDeliveryIdImageUrl] = useState("");
   const [deliverySelfieUrl, setDeliverySelfieUrl] = useState("");
   const [agreeDelivery, setAgreeDelivery] = useState(false);
@@ -43,6 +45,8 @@ export default function RegisterPage() {
       const isMoto = deliveryVehicleType === 'MOTO';
       const plateOk = /^[A-Z0-9-]{5,8}$/.test(plate);
       const vinOk = isMoto ? vin.length >= 6 : /^[A-HJ-NPR-Z0-9]{17}$/.test(vin);
+      setPlateError(plateOk ? "" : "Placa invalida (5-8 caracteres, letras/numeros)");
+      setVinError(vinOk ? "" : (isMoto ? 'Serial de chasis invalido' : 'VIN invalido (17 caracteres, sin I/O/Q)'));
       if (
         !deliveryCedula.trim() ||
         !deliveryPhone.trim() ||
@@ -252,24 +256,26 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   value={deliveryMotoPlate}
-                  onChange={(e) => setDeliveryMotoPlate(e.target.value.replace(/\s+/g,'').toUpperCase())}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  onChange={(e) => { setPlateError(""); setDeliveryMotoPlate(e.target.value.replace(/\s+/g,'').toUpperCase()); }}
+                  className={`w-full px-3 py-2 rounded-lg border ${plateError ? 'border-red-500' : 'border-gray-300'}`}
                   required
                   placeholder={deliveryVehicleType === 'MOTO' ? 'Ej: AB1C2D' : 'Ej: AB123CD'}
                   title="5-8 caracteres, letras y numeros"
                 />
+                <p className={`text-xs mt-1 ${plateError ? 'text-red-600' : 'text-gray-500'}`}>{plateError || (deliveryVehicleType === 'MOTO' ? 'Ejemplos: AB1C2D, A1B2C3' : 'Ejemplos: AB123CD, ABC12D')}</p>
               </div>
               <div>
                 <label className="block text-gray-700">Serial del chasis / VIN</label>
                 <input
                   type="text"
                   value={deliveryChassisSerial}
-                  onChange={(e) => setDeliveryChassisSerial(e.target.value.toUpperCase())}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  onChange={(e) => { setVinError(""); setDeliveryChassisSerial(e.target.value.toUpperCase()); }}
+                  className={`w-full px-3 py-2 rounded-lg border ${vinError ? 'border-red-500' : 'border-gray-300'}`}
                   required
                   placeholder={deliveryVehicleType === 'MOTO' ? 'Serial de chasis' : 'VIN (17 caracteres)'}
                   title={deliveryVehicleType === 'MOTO' ? 'Ingrese el serial de chasis' : 'VIN de 17 caracteres (sin I, O, Q)'}
                 />
+                <p className={`text-xs mt-1 ${vinError ? 'text-red-600' : 'text-gray-500'}`}>{vinError || (deliveryVehicleType === 'MOTO' ? 'Ingresa el serial del chasis (moto)' : 'Ingresa el VIN de 17 caracteres (carro/camioneta)')}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
