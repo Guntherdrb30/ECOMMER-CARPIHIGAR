@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, isAlly, isDelivery, deliveryCedula, deliveryPhone, deliveryAddress, deliveryVehicleType, deliveryMotoPlate, deliveryChassisSerial, deliveryIdImageUrl, deliverySelfieUrl, agreeDelivery } = await req.json();
+    const { name, email, password, isAlly, isDelivery, deliveryCedula, deliveryPhone, deliveryAddress, deliveryVehicleType, deliveryVehicleBrand, deliveryVehicleModel, deliveryMotoPlate, deliveryChassisSerial, deliveryIdImageUrl, deliverySelfieUrl, agreeDelivery } = await req.json();
     const emailLc = String(email || '').trim().toLowerCase();
 
     if (!name || !emailLc || !password) {
@@ -36,6 +36,8 @@ export async function POST(req: Request) {
         deliveryCedula: isDelivery ? (deliveryCedula || null) : null,
         deliveryAddress: isDelivery ? (deliveryAddress || null) : null,
         deliveryVehicleType: isDelivery ? (deliveryVehicleType || null) : null,
+        deliveryVehicleBrand: isDelivery ? (deliveryVehicleBrand || null) : null,
+        deliveryVehicleModel: isDelivery ? (deliveryVehicleModel || null) : null,
         deliveryMotoPlate: isDelivery ? (deliveryMotoPlate || null) : null,
         deliveryChassisSerial: isDelivery ? (deliveryChassisSerial || null) : null,
         deliveryIdImageUrl: isDelivery ? (deliveryIdImageUrl || null) : null,

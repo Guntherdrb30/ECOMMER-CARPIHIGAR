@@ -79,6 +79,8 @@ model User {
   deliveryCedula        String?
   deliveryAddress       String?
   deliveryVehicleType   String?
+  deliveryVehicleBrand  String?
+  deliveryVehicleModel  String?
   deliveryMotoPlate     String?
   deliveryChassisSerial String?
   deliveryIdImageUrl    String?

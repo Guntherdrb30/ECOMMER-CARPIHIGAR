@@ -8,11 +8,13 @@ export default function DeliveryImageUploader({
   value,
   onChange,
   required,
+  hint,
 }: {
   label: string;
   value: string;
   onChange: (url: string) => void;
   required?: boolean;
+  hint?: string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -77,7 +79,7 @@ export default function DeliveryImageUploader({
         <input ref={fileRef} type="file" accept="image/*" onChange={onInput} className="max-w-full" />
         <button type="button" onClick={() => fileRef.current?.click()} className="px-3 py-1 rounded border">Elegir archivo</button>
       </div>
-      <p className="text-xs text-gray-500">Sube una imagen o pega un enlace (PNG/JPG/WEBP/SVG).</p>
+      <p className="text-xs text-gray-500">{hint || 'Sube una imagen o pega un enlace (PNG/JPG/WEBP/SVG).'}</p>
       {busy && <p className="text-xs text-gray-500">Subiendo...</p>}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>

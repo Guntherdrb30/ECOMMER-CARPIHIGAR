@@ -15,6 +15,8 @@ export default function RegisterPage() {
   const [deliveryPhone, setDeliveryPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryVehicleType, setDeliveryVehicleType] = useState("MOTO");
+  const [deliveryVehicleBrand, setDeliveryVehicleBrand] = useState("");
+  const [deliveryVehicleModel, setDeliveryVehicleModel] = useState("");
   const [deliveryMotoPlate, setDeliveryMotoPlate] = useState("");
   const [deliveryChassisSerial, setDeliveryChassisSerial] = useState("");
   const [deliveryIdImageUrl, setDeliveryIdImageUrl] = useState("");
@@ -68,6 +70,8 @@ export default function RegisterPage() {
         deliveryPhone: normalizeVePhone(deliveryPhone) || deliveryPhone,
         deliveryAddress,
         deliveryVehicleType,
+        deliveryVehicleBrand,
+        deliveryVehicleModel,
         deliveryMotoPlate,
         deliveryChassisSerial,
         deliveryIdImageUrl,
@@ -256,17 +260,41 @@ export default function RegisterPage() {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-gray-700">Marca (opcional)</label>
+                <input
+                  type="text"
+                  value={deliveryVehicleBrand}
+                  onChange={(e) => setDeliveryVehicleBrand(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="Ej: Honda, Ford, Toyota"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700">Modelo (opcional)</label>
+                <input
+                  type="text"
+                  value={deliveryVehicleModel}
+                  onChange={(e) => setDeliveryVehicleModel(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="Ej: CG 150, Fiesta, Hilux"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <DeliveryImageUploader
                 label="Foto cedula/ID"
                 value={deliveryIdImageUrl}
                 onChange={setDeliveryIdImageUrl}
                 required
+                hint="Foto frontal legible, sin reflejos. Formatos: PNG/JPG/WEBP."
               />
               <DeliveryImageUploader
                 label="Selfie"
                 value={deliverySelfieUrl}
                 onChange={setDeliverySelfieUrl}
                 required
+                hint="Selfie sosteniendo tu cedula/ID, rostro visible."
               />
             </div>
             <label className="flex items-start gap-2">
