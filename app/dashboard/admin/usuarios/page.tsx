@@ -1,5 +1,5 @@
 
-import { getUsers, approveAlly, createAdminUser, updateUser, deleteUserByForm, updateUserPasswordByForm } from "@/server/actions/users";
+import { getUsers, approveAlly, createAdminUser, updateUser, deleteUserByForm, updateUserPasswordByForm, anonymizeUserByForm } from "@/server/actions/users";
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -139,6 +139,11 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                     <form method="post" action="/dashboard/admin/usuarios/resend-verification" className="flex gap-2 items-center">
                       <input type="hidden" name="email" value={user.email} />
                       <button className="px-3 py-1 border rounded" title="Reenviar verificación" type="submit">Reenviar verificación</button>
+                    </form>
+                    <form action={anonymizeUserByForm} className="flex flex-wrap gap-2 items-center">
+                      <input type="hidden" name="id" value={user.id} />
+                      <input name="secret" type="password" placeholder="Clave secreta" className="border rounded px-2 py-1 w-40" required />
+                      <PendingButton className="px-3 py-1 bg-yellow-600 text-white rounded" pendingText="Anonimizando�" title="Anononimizar usuario">Anonimizar</PendingButton>
                     </form>
                     <form action={deleteUserByForm} className="flex flex-wrap gap-2 items-center">
                       <input type="hidden" name="id" value={user.id} />

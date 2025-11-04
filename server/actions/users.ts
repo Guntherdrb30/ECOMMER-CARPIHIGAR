@@ -232,6 +232,49 @@ export async function deleteUserByForm(formData: FormData) {
   return { ok:true } as any;
 }
 
+export async function anonymizeUserByForm(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  const email = String((session?.user as any)?.email || '').toLowerCase();
+  const role = String((session?.user as any)?.role || '');
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  if (!(role === 'ADMIN' && email === rootEmail)) throw new Error('Not authorized');
+  const id = String(formData.get('id') || '');
+  const secret = String(formData.get('secret') || '').trim();
+  const configured = await getDeleteSecret();
+  if (!configured) { try { redirect('/dashboard/admin/usuarios?error=Falta%20configurar%20la%20clave'); } catch {} ; return { ok:false } as any; }
+  if (secret !== configured) { try { redirect('/dashboard/admin/usuarios?error=Clave%20secreta%20inv%C3%A1lida'); } catch {} ; return { ok:false } as any; }
+  const target = await prisma.user.findUnique({ where: { id }, select: { id:true, email:true } });
+  if (!target) { try { redirect('/dashboard/admin/usuarios?error=Usuario%20no%20encontrado'); } catch {} ; return { ok:false } as any; }
+  const lower = (s: string) => String(s || '').trim().toLowerCase();
+  const emailLc = lower(target.email || '');
+  if (emailLc === rootEmail) { try { redirect('/dashboard/admin/usuarios?error=No%20se%20puede%20anonimizar%20el%20usuario%20root'); } catch {} ; return { ok:false } as any; }
+  try {
+    const crypto = await import('crypto');
+    const newEmail = `deleted+${target.id}@carpihogar.ai`;
+    const randomPass = crypto.randomBytes(16).toString('hex');
+    const bcrypt = (await import('bcrypt')).default; const hashed = await bcrypt.hash(randomPass, 10);
+    await prisma.user.update({ where: { id }, data: {
+      email: newEmail,
+      name: 'Eliminado',
+      phone: null,
+      password: hashed,
+      alliedStatus: 'NONE' as any,
+      role: 'CLIENTE' as any,
+      emailVerificationToken: null,
+      emailVerificationTokenExpiresAt: null,
+      emailVerifiedAt: null,
+      passwordResetToken: null,
+      passwordResetTokenExpiresAt: null,
+    }});
+    try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'USER_ANONYMIZED', details: `id:${id};from:${target.email}` } }); } catch {}
+  } catch {
+    try { redirect('/dashboard/admin/usuarios?error=No%20se%20pudo%20anonimizar'); } catch {} ; return { ok:false } as any;
+  }
+  revalidatePath('/dashboard/admin/usuarios');
+  try { redirect('/dashboard/admin/usuarios?message=Usuario%20anonimizado'); } catch {}
+  return { ok:true } as any;
+}
+
 export async function updateUserPasswordByForm(formData: FormData) {
   const session = await getServerSession(authOptions);
   const email = String((session?.user as any)?.email || '').toLowerCase();
