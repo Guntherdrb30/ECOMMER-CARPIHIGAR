@@ -44,7 +44,7 @@ export default function MainImageUploader({ targetName = 'mainImage' }: { target
       <div className="flex items-center gap-2">
         <input ref={fileRef} type="file" accept="image/*" onChange={(e) => onFile(e.target.files?.[0] || null)} className="hidden" />
         <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="px-3 py-1 rounded border">
-          {busy ? 'Subiendo...' : (url ? 'Reemplazar' : 'Subir archivo')}
+          {busy ? 'Subiendo...' : 'Subir archivo'}
         </button>
       </div>
     </div>

@@ -124,7 +124,7 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
           disabled={busy || reached}
           className="px-3 py-1 rounded border"
         >
-          {busy ? 'Subiendo...' : 'Subir imagenes'}
+          {busy ? 'Subiendo...' : 'Subir archivo'}
         </button>
         {reached && (
           <span className="text-xs text-gray-500">LÃ­mite alcanzado</span>

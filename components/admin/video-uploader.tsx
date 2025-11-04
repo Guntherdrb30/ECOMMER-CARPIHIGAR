@@ -131,7 +131,7 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
       <div className="flex items-center gap-2">
         <input ref={fileRef} type="file" accept="video/*" onChange={handleChange} />
         <button type="button" onClick={handleUpload} className="px-3 py-1 rounded bg-gray-800 text-white" disabled={loading}>
-          {loading ? 'Subiendo...' : 'Subir'}
+          {loading ? 'Subiendo...' : 'Subir archivo'}
         </button>
       </div>
       <p className="text-xs text-gray-500">Formatos permitidos: MP4, WEBM, OGG. Máximo 20 segundos, 50MB.</p>
