@@ -183,7 +183,7 @@ export default async function AdminProductsPage() {\n  const session = await get
                   <td className="border px-4 py-2">{product.supplier?.name || '-'}</td>
                   <td className="border px-4 py-2">{product.isNew ? 'Si' : 'No'}</td>
                   <td className="border px-4 py-2 space-y-2">
-                    <ProductActionsMenu product={product} lowStock={lowStock} />
+                    <ProductActionsMenu product={product} lowStock={lowStock} isRoot={isRoot} />
                     <StockHistory productId={product.id} />
                   </td>
                 </tr>
