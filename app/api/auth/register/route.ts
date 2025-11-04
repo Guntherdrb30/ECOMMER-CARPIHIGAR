@@ -24,6 +24,13 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Basic delivery validation (backend) to match UI
+    if (isDelivery) {
+      if (!deliveryVehicleBrand || !deliveryVehicleModel) {
+        return NextResponse.json({ message: 'Faltan marca y modelo del vehiculo' }, { status: 400 });
+      }
+    }
+
     const user = await prisma.user.create({
       data: {
         name,

@@ -41,6 +41,8 @@ export default function RegisterPage() {
         !deliveryCedula.trim() ||
         !deliveryPhone.trim() ||
         !deliveryAddress.trim() ||
+        !deliveryVehicleBrand.trim() ||
+        !deliveryVehicleModel.trim() ||
         !deliveryMotoPlate.trim() ||
         !deliveryChassisSerial.trim() ||
         !deliveryIdImageUrl.trim() ||
@@ -249,7 +251,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="block text-gray-700">Serial del chasis</label>
+                <label className="block text-gray-700">Serial del chasis / VIN</label>
                 <input
                   type="text"
                   value={deliveryChassisSerial}
@@ -261,23 +263,33 @@ export default function RegisterPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-gray-700">Marca (opcional)</label>
+                <label className="block text-gray-700">Marca</label>
                 <input
                   type="text"
                   value={deliveryVehicleBrand}
                   onChange={(e) => setDeliveryVehicleBrand(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="Ej: Honda, Ford, Toyota"
+                  placeholder={
+                    deliveryVehicleType === 'MOTO' ? 'Ej: Honda, Yamaha, Suzuki' :
+                    deliveryVehicleType === 'CARRO' ? 'Ej: Ford, Toyota, Chevrolet' :
+                    'Ej: Toyota, Chevrolet, Ford'
+                  }
+                  required
                 />
               </div>
               <div>
-                <label className="block text-gray-700">Modelo (opcional)</label>
+                <label className="block text-gray-700">Modelo</label>
                 <input
                   type="text"
                   value={deliveryVehicleModel}
                   onChange={(e) => setDeliveryVehicleModel(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="Ej: CG 150, Fiesta, Hilux"
+                  placeholder={
+                    deliveryVehicleType === 'MOTO' ? 'Ej: CG150, AX100, DT125' :
+                    deliveryVehicleType === 'CARRO' ? 'Ej: Fiesta, Corolla, Aveo' :
+                    'Ej: Hilux, Silverado, Explorer'
+                  }
+                  required
                 />
               </div>
             </div>
