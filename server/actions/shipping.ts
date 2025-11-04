@@ -66,6 +66,15 @@ export async function saveShippingDetails(payload: ShippingUpdatePayload) {
         },
     });
 
+    // Audit log
+    try {
+        const userId = (session?.user as any)?.id as string | undefined;
+        const before = { status: current?.status, carrier: current?.carrier, tracking: current?.tracking } as any;
+        const after = { status: result.status, carrier: result.carrier, tracking: result.tracking } as any;
+        const details = JSON.stringify({ orderId, before, after });
+        await prisma.auditLog.create({ data: { userId, action: 'SHIPPING_UPDATE', details } });
+    } catch {}
+
     // If marked delivered in admin, also close the order
     try {
         if (result.status === 'ENTREGADO') {
@@ -77,6 +86,7 @@ export async function saveShippingDetails(payload: ShippingUpdatePayload) {
     try { revalidatePath('/dashboard/admin/envios/online'); } catch {}
     try { revalidatePath('/dashboard/admin/envios/tienda'); } catch {}
     try { revalidatePath('/dashboard/cliente/envios'); } catch {}
+    try { revalidatePath('/dashboard/admin/envios/logs'); } catch {}
     
     return { success: true, data: result };
 }

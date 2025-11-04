@@ -254,9 +254,22 @@ export function EnviosClient({ orders: initialOrders, role }: { orders: OrderWit
                             }
                             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                           >
-                            {Object.values(ShippingStatus).map((opt) => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
+                            {(() => {
+                              const roleUp = String(role || '').toUpperCase();
+                              const carrier = (selectedCarrierByOrder[order.id] || (order.shipping?.carrier as ShippingCarrier) || 'TEALCA') as ShippingCarrier;
+                              let opts = Object.values(ShippingStatus);
+                              if (roleUp === 'DESPACHO') {
+                                const c = String(carrier).toUpperCase();
+                                if (c === 'RETIRO_TIENDA') {
+                                  opts = ['ENTREGADO','PREPARANDO','DESPACHADO'] as any;
+                                } else if (c === 'TEALCA' || c === 'MRW') {
+                                  opts = ['DESPACHADO'] as any;
+                                }
+                              }
+                              return (opts as any[]).map((opt) => (
+                                <option key={String(opt)} value={opt as any}>{String(opt)}</option>
+                              ));
+                            })()}
                           </select>
                         </div>
                       );
