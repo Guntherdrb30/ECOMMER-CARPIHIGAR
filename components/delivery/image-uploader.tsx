@@ -41,7 +41,26 @@ export default function DeliveryImageUploader({
       });
       onChange(res.url);
     } catch (e: any) {
-      setError(e?.message || "Error al subir la imagen");
+      try {
+        const probe = await fetch('/api/blob/handle-upload?scope=registration', { method: 'GET' });
+        const info = await probe.json().catch(() => ({} as any));
+        const msg = String(e?.message || '').toLowerCase();
+        const noToken = !probe.ok || info?.hasToken === false || msg.includes('client token');
+        if (noToken) {
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('type', 'image');
+          const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+          const data = await resp.json().catch(() => ({} as any));
+          if (!resp.ok || !data?.url) throw new Error(data?.error || 'Upload fallido');
+          onChange(String(data.url));
+          setError(null);
+          return;
+        }
+        throw e;
+      } catch (err2: any) {
+        setError(err2?.message || "Error al subir la imagen");
+      }
     } finally {
       setBusy(false);
       try { onBusyChange?.(false); } catch {}

@@ -72,15 +72,28 @@ export default function VideoUploader({ targetInputName, defaultUrl }: { targetI
       try {
         const probe = await fetch('/api/blob/handle-upload', { method: 'GET' });
         const info = await probe.json().catch(() => ({} as any));
-        if (!probe.ok || info?.hasToken === false) {
-          setError('Falta configurar BLOB_READ_WRITE_TOKEN en Vercel para subir archivos.');
+        const msg = String(e?.message || '').toLowerCase();
+        const noToken = !probe.ok || info?.hasToken === false || msg.includes('client token');
+        if (noToken) {
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('type', 'video');
+          const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+          const data = await resp.json().catch(() => ({} as any));
+          if (!resp.ok || !data?.url) throw new Error(data?.error || 'Upload fallido');
+          setPreview(String(data.url));
+          const input = document.querySelector<HTMLInputElement>(`input[name="${targetInputName}"]`);
+          if (input) input.value = String(data.url);
+          setOk(true);
+          setError(undefined);
         } else {
           setError(e?.message || 'Error al subir el video');
+          setOk(false);
         }
-      } catch {
-        setError(e?.message || 'Error al subir el video');
+      } catch (e2: any) {
+        setError(e2?.message || 'Error al subir el video');
+        setOk(false);
       }
-      setOk(false);
     } finally {
       setLoading(false);
     }
