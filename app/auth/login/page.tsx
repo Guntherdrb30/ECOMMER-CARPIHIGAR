@@ -5,7 +5,7 @@ import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function Iniciar sesiónPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -72,7 +72,7 @@ export default function LoginPage() {
   return (
     <div className="flex justify-center items-center h-screen">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-4">Login</h1>
+        <h1 className="text-2xl font-bold mb-4">Iniciar sesión</h1>
         {verifiedMsg ? (
           <div className="mb-4 rounded border border-green-300 bg-green-50 text-green-800 px-3 py-2 text-sm">
             Tu correo fue verificado. Ya puedes iniciar sesiÃ³n.
@@ -105,14 +105,14 @@ export default function LoginPage() {
           />
         </div>
         <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
-          Login
+          Iniciar sesión
         </button>
         {resendMsg ? (
           <p className="text-xs mt-2" style={{ color: resendOk ? "#16a34a" : "#dc2626" }}>{resendMsg}</p>
         ) : null}
         <button
           type="button"
-          onClick={() => signIn("google", { callbackUrl: "/auth/after-login" })}
+          onClick={() => signIn("google", { callbackUrl: "/auth/after-Iniciar sesión" })}
           className="w-full mt-3 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
         >
           Continuar con Google
@@ -166,4 +166,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
