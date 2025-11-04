@@ -64,7 +64,9 @@ export default function DeliveryImageUploader({
       <label className="block text-gray-700">{label}</label>
       {value ? (
         <div className="flex items-center gap-3">
-          <img src={value} alt={label} className="w-20 h-20 rounded-md border object-cover" />
+          <div className="w-24 h-24 rounded-md border bg-gray-50 overflow-hidden flex items-center justify-center">
+            <img src={value} alt={label} className="w-full h-full object-cover" />
+          </div>
           <a href={value} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm">Abrir</a>
           <button type="button" className="text-sm text-red-600" onClick={() => onChange("")}>
             Quitar

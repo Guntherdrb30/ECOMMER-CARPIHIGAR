@@ -346,10 +346,18 @@ export default function RegisterPage() {
           const vinOk = isMoto ? (vinVal.length >= 6) : /^[A-HJ-NPR-Z0-9]{17}$/.test(vinVal);
           const disableForValidation = isDelivery && (!plateOk || !vinOk);
           const disabled = submitting || uploadBusyCount > 0 || disableForValidation;
+          const missingImages = isDelivery && (!deliveryIdImageUrl || !deliverySelfieUrl);
           return (
-            <button type="submit" disabled={disabled} className={`w-full py-2 rounded-lg ${disabled ? 'bg-blue-300 cursor-not-allowed text-white' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>
-              {submitting ? 'Enviando...' : (uploadBusyCount > 0 ? 'Esperando imagenes...' : 'Registrarme')}
-            </button>
+            <div className="space-y-2">
+              {missingImages && (
+                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                  Debes subir las dos imagenes requeridas (cedula/ID y selfie).
+                </div>
+              )}
+              <button type="submit" disabled={disabled || missingImages} className={`w-full py-2 rounded-lg ${disabled || missingImages ? 'bg-blue-300 cursor-not-allowed text-white' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>
+                {submitting ? 'Enviando...' : (uploadBusyCount > 0 ? 'Esperando imagenes...' : 'Registrarme')}
+              </button>
+            </div>
           );
         })()}
         <button
