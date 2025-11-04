@@ -74,7 +74,8 @@ export const authOptions: AuthOptions = {
         const isValid = user.password ? await bcrypt.compare(credentials.password, user.password) : false;
         // Optional email verification enforcement (disabled by default)
         const enforceVerification = /^(1|true|yes)$/i.test(String(process.env.ENFORCE_EMAIL_VERIFICATION || '').trim());
-        if (enforceVerification && isValid && !(user as any).emailVerifiedAt) {
+        const roleNeedsVerification = user.role === 'CLIENTE' || user.role === 'ALIADO' || user.role === 'DELIVERY';
+        if (enforceVerification && roleNeedsVerification && isValid && !(user as any).emailVerifiedAt) {
           return null;
         }
 
@@ -172,7 +173,8 @@ export const authOptions: AuthOptions = {
         }
         // Optional email verification enforcement (disabled by default)
         const enforceVerification = /^(1|true|yes)$/i.test(String(process.env.ENFORCE_EMAIL_VERIFICATION || '').trim());
-        if (enforceVerification && !(dbUser as any).emailVerifiedAt) {
+        const roleNeedsVerification = (dbUser as any).role === 'CLIENTE' || (dbUser as any).role === 'ALIADO' || (dbUser as any).role === 'DELIVERY';
+        if (enforceVerification && roleNeedsVerification && !(dbUser as any).emailVerifiedAt) {
           return {};
         }
         // Always propagate latest verification status to token
