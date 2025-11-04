@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { handleUpload } from '@vercel/blob/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -9,13 +11,25 @@ export async function POST(request: Request) {
     if (!token) {
       return NextResponse.json({ error: 'BLOB_READ_WRITE_TOKEN faltante en el entorno' }, { status: 400 });
     }
+    const url = new URL(request.url);
+    const scope = (url.searchParams.get('scope') || 'admin').toLowerCase();
+
+    // Auth: para admin exigir sesión; para registro público permitir pero restringido
+    if (scope !== 'registration') {
+      const session = await getServerSession(authOptions as any);
+      if (!session?.user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
+    const isRegistration = scope === 'registration';
     const res = await handleUpload({
       request,
       token,
       onBeforeGenerateToken: async () => {
         return {
-          allowedContentTypes: ['image/*', 'video/*', 'application/pdf', 'text/csv'],
-          maximumSizeInBytes: 100 * 1024 * 1024, // 100MB
+          allowedContentTypes: isRegistration ? ['image/*'] : ['image/*', 'video/*', 'application/pdf', 'text/csv'],
+          maximumSizeInBytes: isRegistration ? 8 * 1024 * 1024 : 100 * 1024 * 1024,
           addRandomSuffix: true,
           cacheControlMaxAge: 60 * 60 * 24 * 365, // 1 year
         };

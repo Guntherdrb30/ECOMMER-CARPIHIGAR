@@ -36,7 +36,7 @@ export default function DeliveryImageUploader({
       const base = (nameGuess || "delivery").replace(/[^a-z0-9._-]+/g, "-");
       const pathname = `uploads/${year}/${month}/${base}.${ext}`;
       const res = await upload(pathname, file, {
-        handleUploadUrl: "/api/blob/handle-upload",
+        handleUploadUrl: "/api/blob/handle-upload?scope=registration",
         access: "public",
       });
       onChange(res.url);
