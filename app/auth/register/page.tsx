@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import React, { useState } from "react";
+import DeliveryImageUploader from "@/components/delivery/image-uploader";
 import { signIn } from "next-auth/react";
 import { normalizeVePhone } from "@/lib/phone";
 
@@ -236,28 +237,18 @@ export default function RegisterPage() {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-gray-700">URL foto cedula/ID</label>
-                <input
-                  type="url"
-                  value={deliveryIdImageUrl}
-                  onChange={(e) => setDeliveryIdImageUrl(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="https://..."
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700">URL selfie</label>
-                <input
-                  type="url"
-                  value={deliverySelfieUrl}
-                  onChange={(e) => setDeliverySelfieUrl(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="https://..."
-                  required
-                />
-              </div>
+              <DeliveryImageUploader
+                label="Foto cedula/ID"
+                value={deliveryIdImageUrl}
+                onChange={setDeliveryIdImageUrl}
+                required
+              />
+              <DeliveryImageUploader
+                label="Selfie"
+                value={deliverySelfieUrl}
+                onChange={setDeliverySelfieUrl}
+                required
+              />
             </div>
             <label className="flex items-start gap-2">
               <input type="checkbox" checked={agreeDelivery} onChange={(e) => setAgreeDelivery(e.target.checked)} />
