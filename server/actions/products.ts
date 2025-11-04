@@ -1,4 +1,4 @@
-'use server';
+﻿'use server';
 
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
@@ -70,7 +70,7 @@ export async function importProductsCsv(formData: FormData) {
 
     const text = await (file as any).text();
     const rows = parseCsvSimple(text, delimiter);
-    if (!rows.length) throw new Error('CSV vacío');
+    if (!rows.length) throw new Error('CSV vacÃ­o');
 
     const settings = await getSettings();
     const defClient = Number((settings as any).defaultMarginClientPct ?? 40);
@@ -80,17 +80,17 @@ export async function importProductsCsv(formData: FormData) {
     for (const r of rows) {
         const name = (pick(r, ['name','producto','product']) || '').trim();
         if (!name) continue;
-        const code = pick(r, ['code','sku','codigo','código']) || null;
+        const code = pick(r, ['code','sku','codigo','cÃ³digo']) || null;
         const barcodeIn = pick(r, ['barcode','ean','ean13']) || '';
         const barcode = normalizeBarcode(barcodeIn || '') || null;
         const brand = pick(r, ['brand','marca']) || 'Sin marca';
-        const description = pick(r, ['description','descripcion','descripción']) || '';
-        const categorySlug = pick(r, ['category','categoria','categoría','categorySlug']) || '';
+        const description = pick(r, ['description','descripcion','descripciÃ³n']) || '';
+        const categorySlug = pick(r, ['category','categoria','categorÃ­a','categorySlug']) || '';
         const supplierId = (pick(r, ['supplierId','proveedorId']) || defaultSupplierId || '') || undefined;
         const stockStr = pick(r, ['stock','existencia','cantidad']) || '0';
         const costStr = pick(r, ['costUSD','costo','costoUSD']) || '';
         const priceStr = pick(r, ['priceUSD','precio','precioUSD']) || '';
-        const imagesStr = pick(r, ['images','imagenes','imágenes']) || '';
+        const imagesStr = pick(r, ['images','imagenes','imÃ¡genes']) || '';
         const images = imagesStr ? imagesStr.split(/[|;,\s]+/g).map(s => s.trim()).filter(Boolean).slice(0,4) : [];
         const stock = Number(String(stockStr).replace(',','.')) || 0;
         const costUSD = costStr ? Number(String(costStr).replace(',','.')) : undefined;
@@ -318,8 +318,33 @@ export async function deleteProductByForm(formData: FormData) {
     if (secret !== configured) {
         redirect('/dashboard/admin/productos?message=&error=Clave%20secreta%20inv%C3%A1lida');
     }
-    await deleteProduct(id);
-    redirect('/dashboard/admin/productos?message=Producto%20eliminado');
+    try {
+        await deleteProduct(id);
+        redirect('/dashboard/admin/productos?message=Producto%20eliminado');
+    } catch (e) {
+        const email = String((session?.user as any)?.email || '').toLowerCase();
+        const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+        const isRoot = email === rootEmail;
+        if (!isRoot) {
+            redirect('/dashboard/admin/productos?error=No%20se%20puede%20eliminar:%20tiene%20registros%20relacionados');
+        }
+        try {
+            await prisma.$transaction([
+                prisma.relatedProduct.deleteMany({ where: { OR: [{ fromId: id }, { toId: id }] } }) as any,
+                prisma.wishlistItem.deleteMany({ where: { productId: id } }) as any,
+                prisma.quoteItem.deleteMany({ where: { productId: id } }) as any,
+                prisma.orderItem.deleteMany({ where: { productId: id } }) as any,
+                prisma.purchaseOrderItem.deleteMany({ where: { productId: id } }) as any,
+                (prisma as any).purchaseItem.deleteMany({ where: { productId: id } }) as any,
+                prisma.stockMovement.deleteMany({ where: { productId: id } }) as any,
+            ]);
+            await deleteProduct(id);
+            try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'PRODUCT_DELETE_FORCED', details: id } }); } catch {}
+            redirect('/dashboard/admin/productos?message=Producto%20eliminado');
+        } catch {
+            redirect('/dashboard/admin/productos?error=No%20se%20pudo%20eliminar:%20dependencias%20no%20removidas');
+        }
+    }
 }
 
 export async function updateProductInline(formData: FormData) {
@@ -415,7 +440,7 @@ export const getFeaturedCategoryBanners = unstableCache(async () => {
             const cat = await prisma.category.findUnique({ where: { slug }, select: { id: true, name: true, slug: true } });
             if (!cat) {
                 // Fallback static
-                out.push({ name: slug === 'hogar' ? 'Hogar' : 'Carpintería', slug, href: `/productos?categoria=${slug}`, image: slug === 'hogar' ? '/images/hero-carpinteria-2.svg' : '/images/hero-carpinteria-1.svg' });
+                out.push({ name: slug === 'hogar' ? 'Hogar' : 'CarpinterÃ­a', slug, href: `/productos?categoria=${slug}`, image: slug === 'hogar' ? '/images/hero-carpinteria-2.svg' : '/images/hero-carpinteria-1.svg' });
                 continue;
             }
             const prods = await prisma.product.findMany({
@@ -431,9 +456,9 @@ export const getFeaturedCategoryBanners = unstableCache(async () => {
                 image = prods[idx].images[0] || '';
             }
             if (!image) image = slug === 'hogar' ? '/images/hero-carpinteria-2.svg' : '/images/hero-carpinteria-1.svg';
-            out.push({ name: cat.name || (slug === 'hogar' ? 'Hogar' : 'Carpintería'), slug, href: `/productos?categoria=${slug}`, image });
+            out.push({ name: cat.name || (slug === 'hogar' ? 'Hogar' : 'CarpinterÃ­a'), slug, href: `/productos?categoria=${slug}`, image });
         } catch {
-            out.push({ name: slug === 'hogar' ? 'Hogar' : 'Carpintería', slug, href: `/productos?categoria=${slug}`, image: slug === 'hogar' ? '/images/hero-carpinteria-2.svg' : '/images/hero-carpinteria-1.svg' });
+            out.push({ name: slug === 'hogar' ? 'Hogar' : 'CarpinterÃ­a', slug, href: `/productos?categoria=${slug}`, image: slug === 'hogar' ? '/images/hero-carpinteria-2.svg' : '/images/hero-carpinteria-1.svg' });
         }
     }
     return out;
@@ -639,7 +664,7 @@ export async function getTrendingProducts(limit = 9, daysBack = 60) {
       curr.revenueUSD += rev;
       agg.set(key, curr);
     }
-    // Sort by quantity sold primarily ("más se venden"), fallback by revenue
+    // Sort by quantity sold primarily ("mÃ¡s se venden"), fallback by revenue
     const sorted = Array.from(agg.entries())
       .sort((a, b) => (b[1].qty - a[1].qty) || (b[1].revenueUSD - a[1].revenueUSD))
       .slice(0, limit);
