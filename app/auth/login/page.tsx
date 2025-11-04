@@ -27,6 +27,13 @@ export default function LoginPage() {
       return false;
     }
   }, [searchParams]);
+  const verifyRequired = useMemo(() => {
+    try {
+      return (searchParams?.get("message") || "").toLowerCase() === "verify-required";
+    } catch {
+      return false;
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +76,11 @@ export default function LoginPage() {
         {verifiedMsg ? (
           <div className="mb-4 rounded border border-green-300 bg-green-50 text-green-800 px-3 py-2 text-sm">
             Tu correo fue verificado. Ya puedes iniciar sesión.
+          </div>
+        ) : null}
+        {verifyRequired ? (
+          <div className="mb-4 rounded border border-amber-300 bg-amber-50 text-amber-800 px-3 py-2 text-sm">
+            Debes verificar tu correo para comprar o usar el panel. Si no recibiste el email, reenvíalo abajo.
           </div>
         ) : null}
         {error && <p className="text-red-500 mb-4">{error}</p>}
@@ -154,4 +166,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

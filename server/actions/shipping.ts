@@ -86,6 +86,7 @@ export async function claimDelivery(orderId: string) {
     const userId = (session?.user as any)?.id;
     const role = (session?.user as any)?.role;
     if (!userId || role !== 'DELIVERY') throw new Error('Not authorized');
+    if (!((session?.user as any)?.emailVerified === true)) throw new Error('Email not verified');
     // City guard: only allow Barinas deliveries
     const order_check = await prisma.order.findUnique({ where: { id: orderId }, include: { shippingAddress: true } });
     const city = String(order_check?.shippingAddress?.city || '').toLowerCase();
@@ -105,6 +106,7 @@ export async function completeDelivery(orderId: string) {
     const userId = (session?.user as any)?.id;
     const role = (session?.user as any)?.role;
     if (!userId || role !== 'DELIVERY') throw new Error('Not authorized');
+    if (!((session?.user as any)?.emailVerified === true)) throw new Error('Email not verified');
     const s = await prisma.shipping.findUnique({ where: { orderId } });
     if (!s || s.assignedToId !== userId) throw new Error('Not yours');
     // City guard: only allow Barinas deliveries

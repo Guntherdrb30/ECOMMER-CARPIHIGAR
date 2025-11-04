@@ -11,6 +11,10 @@ export async function createAllyProject(formData: FormData) {
   if (!user?.id || user?.role !== 'ALIADO') {
     return { ok: false, error: 'No autorizado' };
   }
+  // Require verified email for ally actions
+  if (!(user as any)?.emailVerified) {
+    return { ok: false, error: 'Debes verificar tu correo para usar funciones de aliado' };
+  }
 
   try {
     const images = Array.from(formData.getAll('projectImages[]') || [])

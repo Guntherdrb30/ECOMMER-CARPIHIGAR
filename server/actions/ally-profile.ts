@@ -11,6 +11,9 @@ export async function updateAllyProfile(formData: FormData) {
   if (!user?.id || user?.role !== 'ALIADO') {
     return { ok: false, error: 'No autorizado' };
   }
+  if (!(user as any)?.emailVerified) {
+    return { ok: false, error: 'Debes verificar tu correo para actualizar tu perfil de aliado' };
+  }
 
   const profileImageUrl = String(formData.get('profileImageUrl') || '').trim() || null;
   const bio = String(formData.get('bio') || '').trim() || null;

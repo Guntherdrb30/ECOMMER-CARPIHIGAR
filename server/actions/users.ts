@@ -12,7 +12,11 @@ const prisma = new PrismaClient();
 export async function requestAlly() {
   const session = await getServerSession(authOptions);
   const userId = (session?.user as any)?.id as string | undefined;
+  const emailVerified = (session?.user as any)?.emailVerified === true;
+  const role = (session?.user as any)?.role as string | undefined;
   if (!userId) throw new Error('Not authenticated');
+  // Require verification only for CLIENTE/ALIADO/DELIVERY requesting ally status
+  if (!emailVerified && (role === 'CLIENTE' || role === 'ALIADO' || role === 'DELIVERY')) throw new Error('Email not verified');
   await prisma.user.update({ where: { id: userId }, data: { alliedStatus: 'PENDING' } });
   revalidatePath('/');
 }

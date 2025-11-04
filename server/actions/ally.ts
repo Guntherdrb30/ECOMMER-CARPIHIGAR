@@ -8,6 +8,7 @@ export async function getMySalesAsAlly() {
   const session = await getServerSession(authOptions);
   const myId = String((session?.user as any)?.id || '');
   if (!myId || (session?.user as any)?.role !== 'ALIADO') throw new Error('Not authorized');
+  if (!((session?.user as any)?.emailVerified === true)) throw new Error('Email not verified');
   const orders = await prisma.order.findMany({
     where: { sellerId: myId },
     include: { user: true, items: { include: { product: true } }, payment: true },
@@ -20,6 +21,7 @@ export async function getAllyKpis() {
   const session = await getServerSession(authOptions);
   const myId = String((session?.user as any)?.id || '');
   if (!myId || (session?.user as any)?.role !== 'ALIADO') throw new Error('Not authorized');
+  if (!((session?.user as any)?.emailVerified === true)) throw new Error('Email not verified');
   const orders = await prisma.order.findMany({ where: { sellerId: myId }, include: { items: { include: { product: true } } } });
   const withOrigin = orders.filter(o => !!(o as any).originQuoteId);
   let totalRevenueUSD = 0;
@@ -65,6 +67,7 @@ export async function getAllySalesSeries(range?: { from?: string; to?: string })
   const session = await getServerSession(authOptions);
   const myId = String((session?.user as any)?.id || '');
   if (!myId || (session?.user as any)?.role !== 'ALIADO') throw new Error('Not authorized');
+  if (!((session?.user as any)?.emailVerified === true)) throw new Error('Email not verified');
   const now = new Date();
   const to = range?.to ? new Date(range.to) : now;
   const from = range?.from ? new Date(range.from) : new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
@@ -97,6 +100,7 @@ export async function getAllyTopProducts(range?: { from?: string; to?: string },
   const session = await getServerSession(authOptions);
   const myId = String((session?.user as any)?.id || '');
   if (!myId || (session?.user as any)?.role !== 'ALIADO') throw new Error('Not authorized');
+  if (!((session?.user as any)?.emailVerified === true)) throw new Error('Email not verified');
   const now = new Date();
   const to = range?.to ? new Date(range.to) : now;
   const from = range?.from ? new Date(range.from) : new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);

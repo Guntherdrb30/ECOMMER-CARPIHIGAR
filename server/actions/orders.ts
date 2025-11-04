@@ -58,9 +58,15 @@ export async function getAllOrders() {
 export async function confirmOrderAction(_prevState: any, formData: FormData) {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id;
+    const emailVerified = (session?.user as any)?.emailVerified === true;
+    const role = (session?.user as any)?.role as string | undefined;
     if (!userId) {
         try { await prisma.auditLog.create({ data: { userId: undefined, action: 'CHECKOUT_PAYMENT_VALIDATION_FAILED', details: 'Not authenticated' } }); } catch {}
         return { ok: false, error: 'Not authenticated' };
+    }
+    if (!emailVerified && (role === 'CLIENTE' || role === 'ALIADO' || role === 'DELIVERY')) {
+        try { await prisma.auditLog.create({ data: { userId, action: 'CHECKOUT_PAYMENT_VALIDATION_FAILED', details: 'Email not verified' } }); } catch {}
+        return { ok: false, error: 'Debes verificar tu correo antes de comprar' };
     }
 
     try {

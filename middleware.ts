@@ -4,6 +4,19 @@ import { NextResponse } from "next/server";
 
 export default withAuth(
   function middleware(req) {
+    // Require verified email only for CLIENTE, ALIADO, DELIVERY accessing dashboards or checkout
+    const path = req.nextUrl.pathname;
+    const role = req.nextauth.token?.role as string | undefined;
+    const emailVerified = (req.nextauth.token as any)?.emailVerified === true;
+    const needsVerified = (
+      path.startsWith('/checkout') ||
+      path.startsWith('/dashboard/') ||
+      path === '/dashboard'
+    );
+    const requiresVerification = role === 'CLIENTE' || role === 'ALIADO' || role === 'DELIVERY';
+    if (needsVerified && requiresVerification && !emailVerified) {
+      return NextResponse.rewrite(new URL('/auth/verify-required', req.url));
+    }
     // Prevent ADMIN (root) from accessing client dashboard; send to admin home
     if (
       req.nextUrl.pathname.startsWith("/dashboard/cliente") &&
@@ -20,7 +33,6 @@ export default withAuth(
     }
     // Allow DESPACHO to acceder solo a /dashboard/admin/envios
     if (req.nextUrl.pathname.startsWith("/dashboard/admin/envios")) {
-      const role = req.nextauth.token?.role as string | undefined;
       if (role === 'ADMIN' || role === 'DESPACHO') {
         // permitido
       } else {
@@ -28,21 +40,21 @@ export default withAuth(
       }
     } else if (
       req.nextUrl.pathname.startsWith("/dashboard/admin") &&
-      req.nextauth.token?.role !== "ADMIN"
+      role !== "ADMIN"
     ) {
       return NextResponse.rewrite(new URL("/auth/login?message=You Are Not Authorized!", req.url));
     }
     // Protect aliado dashboard for ALIADO role
     if (
       req.nextUrl.pathname.startsWith("/dashboard/aliado") &&
-      req.nextauth.token?.role !== "ALIADO"
+      role !== "ALIADO"
     ) {
       return NextResponse.rewrite(new URL("/auth/login?message=You Are Not Authorized!", req.url));
     }
     // Protect delivery dashboard for DELIVERY role
     if (
       req.nextUrl.pathname.startsWith("/dashboard/delivery") &&
-      req.nextauth.token?.role !== "DELIVERY"
+      role !== "DELIVERY"
     ) {
       return NextResponse.rewrite(new URL("/auth/login?message=You Are Not Authorized!", req.url));
     }

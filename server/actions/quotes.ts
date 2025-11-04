@@ -59,6 +59,10 @@ export async function createQuote(formData: FormData) {
     throw new Error('Not authorized');
   }
   const role = String((session?.user as any)?.role || '');
+  const emailVerified = (session?.user as any)?.emailVerified === true;
+  if (role === 'ALIADO' && !emailVerified) {
+    redirect('/auth/verify-required');
+  }
   const userEmail = String(formData.get('customerEmail') || '');
   const userName = String(formData.get('customerName') || '');
   const userPhone = String(formData.get('customerPhone') || '');
@@ -167,6 +171,7 @@ export async function getMyAllyQuotes(filters?: { q?: string; status?: 'BORRADOR
   const session = await getServerSession(authOptions);
   const myId = String((session?.user as any)?.id || '');
   if (!myId || (session?.user as any)?.role !== 'ALIADO') throw new Error('Not authorized');
+  if (!((session?.user as any)?.emailVerified === true)) throw new Error('Email not verified');
   await autoExpireQuotes();
   const where: any = { sellerId: myId };
   if (filters?.status) {
@@ -195,6 +200,7 @@ export async function getAllyQuoteById(id: string) {
   const session = await getServerSession(authOptions);
   const myId = String((session?.user as any)?.id || '');
   if (!myId || (session?.user as any)?.role !== 'ALIADO') throw new Error('Not authorized');
+  if (!((session?.user as any)?.emailVerified === true)) throw new Error('Email not verified');
   await autoExpireQuotes();
   const quote = await prisma.quote.findUnique({ where: { id }, include: { user: true, seller: true, items: { include: { product: true } } } });
   if (!quote || String(quote.sellerId || '') !== myId) throw new Error('Not authorized');
@@ -205,6 +211,9 @@ export async function updateQuoteStatusByForm(formData: FormData) {
   const session = await getServerSession(authOptions);
   if ((session?.user as any)?.role !== 'ADMIN' && (session?.user as any)?.role !== 'VENDEDOR' && (session?.user as any)?.role !== 'ALIADO') {
     throw new Error('Not authorized');
+  }
+  if ((session?.user as any)?.role === 'ALIADO' && !((session?.user as any)?.emailVerified === true)) {
+    throw new Error('Email not verified');
   }
   const id = String(formData.get('quoteId') || '');
   const statusRaw = String(formData.get('status') || '').toUpperCase();

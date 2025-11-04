@@ -72,8 +72,9 @@ export const authOptions: AuthOptions = {
         }
 
         const isValid = user.password ? await bcrypt.compare(credentials.password, user.password) : false;
-        // Enforce email verification
-        if (isValid && !(user as any).emailVerifiedAt) {
+        // Optional email verification enforcement (disabled by default)
+        const enforceVerification = /^(1|true|yes)$/i.test(String(process.env.ENFORCE_EMAIL_VERIFICATION || '').trim());
+        if (enforceVerification && isValid && !(user as any).emailVerifiedAt) {
           return null;
         }
 
@@ -151,12 +152,14 @@ export const authOptions: AuthOptions = {
             token.id = dbUser.id;
             token.role = dbUser.role;
             token.alliedStatus = dbUser.alliedStatus;
+            (token as any).emailVerified = Boolean((dbUser as any).emailVerifiedAt);
           }
         } else {
           // Credentials provider path
           token.id = (user as any).id;
           token.role = (user as any).role;
           token.alliedStatus = (user as any).alliedStatus;
+          (token as any).emailVerified = Boolean((user as any).emailVerifiedAt);
         }
       }
 
@@ -167,9 +170,13 @@ export const authOptions: AuthOptions = {
         if (!dbUser) {
           return {}; // Invalidate token by returning an empty object
         }
-        if (!(dbUser as any).emailVerifiedAt) {
+        // Optional email verification enforcement (disabled by default)
+        const enforceVerification = /^(1|true|yes)$/i.test(String(process.env.ENFORCE_EMAIL_VERIFICATION || '').trim());
+        if (enforceVerification && !(dbUser as any).emailVerifiedAt) {
           return {};
         }
+        // Always propagate latest verification status to token
+        (token as any).emailVerified = Boolean((dbUser as any).emailVerifiedAt);
       }
 
       return token;
@@ -180,6 +187,7 @@ export const authOptions: AuthOptions = {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
         (session.user as any).alliedStatus = token.alliedStatus;
+        (session.user as any).emailVerified = (token as any).emailVerified === true;
       }
       return session;
     },
