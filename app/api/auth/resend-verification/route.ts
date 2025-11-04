@@ -27,7 +27,8 @@ export async function POST(req: Request) {
         const base = process.env.NEXT_PUBLIC_URL || new URL(req.url).origin;
         const verifyUrl = `${base}/api/auth/verify-email?token=${token}`;
         const html = basicTemplate('Verifica tu correo', `<p>Confirma tu correo para activar tu cuenta:</p><p><a href="${verifyUrl}">Verificar correo</a></p>`);
-        const r: any = await sendMail({ to: email, subject: 'Verifica tu correo', html });\n        emailed = !!r?.ok;
+        const r: any = await sendMail({ to: email, subject: 'Verifica tu correo', html });
+        emailed = !!r?.ok;
       } catch {}
     }
     return NextResponse.json({ ok: true });
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }
+
 
 
 
