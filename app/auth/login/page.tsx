@@ -72,10 +72,13 @@ export default function LoginPage() {
   return (
     <div className="flex justify-center items-center h-screen">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
-        <div className="flex flex-col items-center mb-4"><img src="/logo-default.svg" alt="Carpihogar" className="h-10 mb-2" /><h1 className="text-2xl font-bold">Iniciar sesion</h1></div>
+        <div className="flex flex-col items-center mb-4">
+          <img src="/logo-default.svg" alt="Carpihogar" className="h-10 mb-2" />
+          <h1 className="text-2xl font-bold">Iniciar sesion</h1>
+        </div>
         {verifiedMsg ? (
           <div className="mb-4 rounded border border-green-300 bg-green-50 text-green-800 px-3 py-2 text-sm">
-            Tu correo fue verificado. Ya puedes Iniciar sesion.
+            Tu correo fue verificado. Ya puedes iniciar sesion.
           </div>
         ) : null}
         {verifyRequired ? (
@@ -105,36 +108,36 @@ export default function LoginPage() {
           />
         </div>
         <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
-          Iniciar sesion
+          Ingresar
         </button>
         {resendMsg ? (
           <p className="text-xs mt-2" style={{ color: resendOk ? "#16a34a" : "#dc2626" }}>{resendMsg}</p>
         ) : null}
         <button
           type="button"
-          onClick={() => signIn("google", { callbackUrl: "/auth/after-Iniciar sesion" })}
+          onClick={() => signIn("google", { callbackUrl: "/auth/after-login" })}
           className="w-full mt-3 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
         >
           Continuar con Google
         </button>
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
-            Â?No tienes cuenta?{" "}
+            ?No tienes cuenta?{" "}
             <Link href="/auth/register" className="font-medium text-blue-600 hover:underline">
               Registrate
             </Link>
           </p>
           <p className="text-sm text-gray-600 mt-2">
             <Link href="/auth/forgot-password" className="font-medium text-blue-600 hover:underline">
-              Â?Olvidaste tu Contrasena?
+              ?Olvidaste tu contrasena?
             </Link>
           </p>
           <p className="text-sm text-gray-600 mt-2">
             <Link href="/auth/forgot-username" className="font-medium text-blue-600 hover:underline">
-              Â?Olvidaste tu usuario?
+              ?Olvidaste tu usuario?
             </Link>
           </p>
-          <p className="text-sm text-gray-600 mt-3">Â?No recibiste el correo de verificacion?</p>
+          <p className="text-sm text-gray-600 mt-3">?No recibiste el correo de verificacion?</p>
           <button
             type="button"
             onClick={async () => {
@@ -150,7 +153,7 @@ export default function LoginPage() {
                   setResendMsg("Te enviamos el enlace si el email existe y no estaba verificado.");
                 } else {
                   setResendOk(false);
-                  setResendMsg("No se pudo reenviar. Intenta mÃ!s tarde.");
+                  setResendMsg("No se pudo reenviar. Intenta mas tarde.");
                 }
               } catch {
                 setResendOk(false);
@@ -166,7 +169,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-
-
-
