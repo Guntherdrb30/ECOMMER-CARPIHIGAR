@@ -14,6 +14,7 @@ export default function RegisterPage() {
   const [deliveryCedula, setDeliveryCedula] = useState("");
   const [deliveryPhone, setDeliveryPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryVehicleType, setDeliveryVehicleType] = useState("MOTO");
   const [deliveryMotoPlate, setDeliveryMotoPlate] = useState("");
   const [deliveryChassisSerial, setDeliveryChassisSerial] = useState("");
   const [deliveryIdImageUrl, setDeliveryIdImageUrl] = useState("");
@@ -66,6 +67,7 @@ export default function RegisterPage() {
         deliveryCedula,
         deliveryPhone: normalizeVePhone(deliveryPhone) || deliveryPhone,
         deliveryAddress,
+        deliveryVehicleType,
         deliveryMotoPlate,
         deliveryChassisSerial,
         deliveryIdImageUrl,
@@ -214,9 +216,22 @@ export default function RegisterPage() {
                 required
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label className="block text-gray-700">Placa de moto</label>
+                <label className="block text-gray-700">Tipo de vehiculo</label>
+                <select
+                  value={deliveryVehicleType}
+                  onChange={(e) => setDeliveryVehicleType(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  required
+                >
+                  <option value="MOTO">Moto</option>
+                  <option value="CARRO">Carro</option>
+                  <option value="CAMIONETA">Camioneta</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-700">Placa del vehiculo</label>
                 <input
                   type="text"
                   value={deliveryMotoPlate}

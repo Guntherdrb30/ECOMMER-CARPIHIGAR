@@ -78,6 +78,7 @@ model User {
   deliveryStatus        DeliveryStatus @default(NONE)
   deliveryCedula        String?
   deliveryAddress       String?
+  deliveryVehicleType   String?
   deliveryMotoPlate     String?
   deliveryChassisSerial String?
   deliveryIdImageUrl    String?
