@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import { signIn } from "next-auth/react";
@@ -30,7 +30,7 @@ export default function RegisterPage() {
     if (isDelivery) {
       const normalized = normalizeVePhone(deliveryPhone);
       if (!normalized) {
-        setError("Teléfono inválido. Usa 0412-1234567 o +58 412 1234567");
+        setError("TelÃ©fono invÃ¡lido. Usa 0412-1234567 o +58 412 1234567");
         return;
       }
       if (
@@ -43,7 +43,7 @@ export default function RegisterPage() {
         !deliverySelfieUrl.trim()
       ) {
         setError(
-          "Para registrarte como Delivery, completa todos los campos y sube las imágenes requeridas."
+          "Para registrarte como Delivery, completa todos los campos y sube las imÃ¡genes requeridas."
         );
         return;
       }
@@ -77,7 +77,7 @@ export default function RegisterPage() {
       setDone(true);
     } else {
       const data = await response.json().catch(() => ({} as any));
-      setError((data as any)?.message || "Algo salió mal");
+      setError((data as any)?.message || "Algo saliÃ³ mal");
     }
   };
 
@@ -87,7 +87,7 @@ export default function RegisterPage() {
         <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg space-y-4 text-center">
           <h1 className="text-2xl font-bold">Revisa tu correo</h1>
           <p className="text-gray-700">
-            Enviamos un enlace de verificación a <span className="font-semibold">{email}</span>. Debes verificar tu correo para activar tu cuenta.
+            Enviamos un enlace de verificaciÃ³n a <span className="font-semibold">{email}</span>. Debes verificar tu correo para activar tu cuenta.
           </p>
           <button
             type="button"
@@ -105,22 +105,22 @@ export default function RegisterPage() {
                   setResendMsg("Te reenviamos el enlace si el email existe y no estaba verificado.");
                 } else {
                   setResendOk(false);
-                  setResendMsg("No se pudo reenviar. Intenta más tarde.");
+                  setResendMsg("No se pudo reenviar. Intenta mÃ¡s tarde.");
                 }
               } catch {
                 setResendOk(false);
-                setResendMsg("Error reenviando verificación");
+                setResendMsg("Error reenviando verificaciÃ³n");
               }
             }}
             className="w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
           >
-            Reenviar verificación
+            Reenviar verificaciÃ³n
           </button>
           {resendMsg ? (
             <p className="text-xs" style={{ color: resendOk ? "#16a34a" : "#dc2626" }}>{resendMsg}</p>
           ) : null}
           <a href="/auth/login" className="inline-block mt-2 text-blue-600 underline">
-            Ir a iniciar sesión
+            Ir a iniciar sesiÃ³n
           </a>
         </div>
       </div>
@@ -156,7 +156,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-gray-700">Contraseña</label>
+          <label className="block text-gray-700">ContraseÃ±a</label>
           <input
             type="password"
             value={password}
@@ -169,7 +169,7 @@ export default function RegisterPage() {
         <div>
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={isAlly} onChange={(e) => setIsAlly(e.target.checked)} />
-            <span className="text-gray-700">Soy arquitecto/diseñador/aliado</span>
+            <span className="text-gray-700">Soy arquitecto/diseÃ±ador/aliado</span>
           </label>
         </div>
 
@@ -183,7 +183,7 @@ export default function RegisterPage() {
         {isDelivery && (
           <div className="space-y-3 border rounded p-3">
             <div>
-              <label className="block text-gray-700">Cédula / ID</label>
+              <label className="block text-gray-700">CÃ©dula / ID</label>
               <input
                 type="text"
                 value={deliveryCedula}
@@ -193,7 +193,7 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-gray-700">Teléfono</label>
+              <label className="block text-gray-700">TelÃ©fono</label>
               <input
                 type="tel"
                 value={deliveryPhone}
@@ -204,7 +204,7 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-gray-700">Dirección</label>
+              <label className="block text-gray-700">DirecciÃ³n</label>
               <input
                 type="text"
                 value={deliveryAddress}
@@ -237,7 +237,7 @@ export default function RegisterPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-gray-700">URL foto cédula/ID</label>
+                <label className="block text-gray-700">URL foto cÃ©dula/ID</label>
                 <input
                   type="url"
                   value={deliveryIdImageUrl}
@@ -271,7 +271,7 @@ export default function RegisterPage() {
         </button>
         <button
           type="button"
-          onClick={() => signIn("google", { callbackUrl: "/" })}
+          onClick={() => signIn("google", { callbackUrl: "/auth/after-login" })}
           className="w-full mt-2 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
         >
           Continuar con Google
@@ -280,3 +280,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+
