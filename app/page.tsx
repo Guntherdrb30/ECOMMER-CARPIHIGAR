@@ -1,8 +1,9 @@
-import HeroCarousel from '@/components/hero-carousel-simple';
+﻿import HeroCarousel from '@/components/hero-carousel-simple';
 import FeaturedCategories from '@/components/featured-categories';
 import NewProducts from '@/components/new-products';
 import TrendingProducts from '@/components/trending-products';
 import AlliesRanking from '@/components/allies-ranking';
+import ShowToastFromSearch from '@/components/show-toast-from-search';
 import { getSettings } from '@/server/actions/settings';
 
 export default async function Home() {
@@ -13,6 +14,7 @@ export default async function Home() {
   return (
     <div>
       <HeroCarousel images={images} autoplayMs={Number((settings as any).heroAutoplayMs || 5000)} />
+      <ShowToastFromSearch successParam="message" errorParam="error" />
       <FeaturedCategories />
       <NewProducts />
       <TrendingProducts />
@@ -20,4 +22,6 @@ export default async function Home() {
     </div>
   );
 }
+
+
 
