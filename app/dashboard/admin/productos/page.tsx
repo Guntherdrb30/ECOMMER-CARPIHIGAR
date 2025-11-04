@@ -1,4 +1,6 @@
-﻿import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm } from "@/server/actions/products";
+﻿import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm } from "@/server/actions/products";
 import ProductCsvUploader from '@/components/admin/product-csv-uploader';
 import SecretDeleteButton from "@/components/admin/secret-delete-button";
 import { getCategoriesFlattened } from "@/server/actions/categories";
