@@ -1,4 +1,4 @@
-
+﻿
 import { getUsers, approveAlly, createAdminUser, updateUser, deleteUserByForm, updateUserPasswordByForm, anonymizeUserByForm } from "@/server/actions/users";
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import { getServerSession } from 'next-auth';
@@ -48,8 +48,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
         }} className="grid grid-cols-1 md:grid-cols-4 gap-2">
           <input name="name" placeholder="Nombre" className="border rounded px-2 py-1" required />
           <input type="email" name="email" placeholder="Email" className="border rounded px-2 py-1" required />
-          <input type="password" name="password" placeholder="Contraseña" className="border rounded px-2 py-1" required />
-          <PendingButton className="bg-blue-600 text-white px-3 py-1 rounded" pendingText="Creando…">Crear Admin</PendingButton>
+          <input type="password" name="password" placeholder="ContraseÃ±a" className="border rounded px-2 py-1" required />
+          <PendingButton className="bg-blue-600 text-white px-3 py-1 rounded" pendingText="Creandoâ€¦">Crear Admin</PendingButton>
         </form>
       </div>
       <div className="bg-white p-4 rounded-lg shadow mb-4">
@@ -65,9 +65,9 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
         }} className="grid grid-cols-1 md:grid-cols-5 gap-2">
           <input name="seller_name" placeholder="Nombre" className="border rounded px-2 py-1" required />
           <input type="email" name="seller_email" placeholder="Email" className="border rounded px-2 py-1" required />
-          <input type="password" name="seller_password" placeholder="Contraseña" className="border rounded px-2 py-1" required />
-          <input type="number" step="0.01" min="0" max="100" name="seller_commission" placeholder="% Comisión (opcional)" className="border rounded px-2 py-1" />
-          <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creando…">Crear Vendedor</PendingButton>
+          <input type="password" name="seller_password" placeholder="ContraseÃ±a" className="border rounded px-2 py-1" required />
+          <input type="number" step="0.01" min="0" max="100" name="seller_commission" placeholder="% ComisiÃ³n (opcional)" className="border rounded px-2 py-1" />
+          <PendingButton className="bg-green-600 text-white px-3 py-1 rounded" pendingText="Creandoâ€¦">Crear Vendedor</PendingButton>
         </form>
       </div>
       <div className="bg-white p-4 rounded-lg shadow mb-4">
@@ -82,7 +82,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
         }} className="grid grid-cols-1 md:grid-cols-4 gap-2">
           <input name="dispatch_name" placeholder="Nombre" className="border rounded px-2 py-1" required />
           <input type="email" name="dispatch_email" placeholder="Email" className="border rounded px-2 py-1" required />
-          <input type="password" name="dispatch_password" placeholder="Contrasena" className="border rounded px-2 py-1" required minLength={8} pattern="(?=.*\\d).{8,}" title="Mínimo 8 caracteres y al menos un número" />
+          <input type="password" name="dispatch_password" placeholder="Contrasena" className="border rounded px-2 py-1" required minLength={8} pattern="(?=.*\\d).{8,}" title="MÃ­nimo 8 caracteres y al menos un nÃºmero" />
           <PendingButton className="bg-purple-600 text-white px-3 py-1 rounded" pendingText="Creando...">Crear Despacho</PendingButton>
         </form>
       </div>
@@ -118,7 +118,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                           'use server';
                           await approveAlly(user.id);
                       }}>
-                        <PendingButton className="bg-green-500 text-white px-2 py-1 rounded" pendingText="Aprobando…">Aprobar Aliado</PendingButton>
+                        <PendingButton className="bg-green-500 text-white px-2 py-1 rounded" pendingText="Aprobandoâ€¦">Aprobar Aliado</PendingButton>
                       </form>
                     )}
                     <form action={updateUser} className="flex flex-wrap gap-2 items-center">
@@ -132,30 +132,30 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                         <option value="ADMIN">ADMIN</option>
                       </select>
                       {user.role === 'VENDEDOR' && (
-                        <input name="commissionPercent" type="number" step="0.01" min="0" max="100" defaultValue={(user as any).commissionPercent?.toString?.()} placeholder="% Comisión" className="border rounded px-2 py-1 w-32" />
+                        <input name="commissionPercent" type="number" step="0.01" min="0" max="100" defaultValue={(user as any).commissionPercent?.toString?.()} placeholder="% ComisiÃ³n" className="border rounded px-2 py-1 w-32" />
                       )}
-                      <PendingButton className="px-3 py-1 bg-gray-800 text-white rounded" pendingText="Guardando…">Guardar</PendingButton>
+                      <PendingButton className="px-3 py-1 bg-gray-800 text-white rounded" pendingText="Guardandoâ€¦">Guardar</PendingButton>
                     </form>
                     <form method="post" action="/dashboard/admin/usuarios/resend-verification" className="flex gap-2 items-center">
                       <input type="hidden" name="email" value={user.email} />
-                      <button className="px-3 py-1 border rounded" title="Reenviar verificación" type="submit">Reenviar verificación</button>
+                      <button className="px-3 py-1 border rounded" title="Reenviar verificaciÃ³n" type="submit">Reenviar verificaciÃ³n</button>
                     </form>
                     <form action={anonymizeUserByForm} className="flex flex-wrap gap-2 items-center">
                       <input type="hidden" name="id" value={user.id} />
                       <input name="secret" type="password" placeholder="Clave secreta" className="border rounded px-2 py-1 w-40" required />
-                      <PendingButton className="px-3 py-1 bg-yellow-600 text-white rounded" pendingText="Anonimizando�" title="Anononimizar usuario">Anonimizar</PendingButton>
+                      <PendingButton className="px-3 py-1 bg-yellow-600 text-white rounded" pendingText="Anonimizando…" title="Anononimizar usuario">Anonimizar</PendingButton>
                     </form>
                     <form action={deleteUserByForm} className="flex flex-wrap gap-2 items-center">
                       <input type="hidden" name="id" value={user.id} />
                       <input name="secret" type="password" placeholder="Clave secreta" className="border rounded px-2 py-1 w-40" required />
-                      <PendingButton className="px-3 py-1 bg-red-600 text-white rounded" pendingText="Eliminando…" title="Eliminar usuario">Eliminar</PendingButton>
+                      <PendingButton className="px-3 py-1 bg-red-600 text-white rounded" pendingText="Eliminandoâ€¦" title="Eliminar usuario">Eliminar</PendingButton>
                     </form>
                     {isRoot && (
                       <form action={updateUserPasswordByForm} className="flex flex-wrap gap-2 items-center">
                         <input type="hidden" name="id" value={user.id} />
-                        <input name="newPassword" type="password" placeholder="Nueva clave (min 8 + número)" className="border rounded px-2 py-1 w-56" required minLength={8} pattern="(?=.*\d).{8,}" />
+                        <input name="newPassword" type="password" placeholder="Nueva clave (min 8 + nÃºmero)" className="border rounded px-2 py-1 w-56" required minLength={8} pattern="(?=.*\d).{8,}" />
                         <input name="confirm" type="password" placeholder="Confirmar clave" className="border rounded px-2 py-1 w-56" required minLength={8} />
-                        <PendingButton className="px-3 py-1 bg-blue-600 text-white rounded" pendingText="Actualizando…" title="Cambiar clave">Cambiar clave</PendingButton>
+                        <PendingButton className="px-3 py-1 bg-blue-600 text-white rounded" pendingText="Actualizandoâ€¦" title="Cambiar clave">Cambiar clave</PendingButton>
                       </form>
                     )}
                   </td>
@@ -168,3 +168,4 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
     </div>
   );
 }
+
