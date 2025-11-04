@@ -1,9 +1,7 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
-import { normalizeVePhone, prettyVePhone } from "@/lib/phone";
-import { useRouter } from "next/navigation";
-import { upload } from "@vercel/blob/client";
+import { normalizeVePhone } from "@/lib/phone";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -18,21 +16,20 @@ export default function RegisterPage() {
   const [deliveryChassisSerial, setDeliveryChassisSerial] = useState("");
   const [deliveryIdImageUrl, setDeliveryIdImageUrl] = useState("");
   const [deliverySelfieUrl, setDeliverySelfieUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
   const [agreeDelivery, setAgreeDelivery] = useState(false);
+  const [error, setError] = useState("");
   const [done, setDone] = useState(false);
-  const [resendMsg, setResendMsg] = useState(\"\");
-  const [resendOk, setResendOk] = useState(null as null | boolean);
-  const router = useRouter();
+  const [resendMsg, setResendMsg] = useState("");
+  const [resendOk, setResendOk] = useState<null | boolean>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
     if (isDelivery) {
       const normalized = normalizeVePhone(deliveryPhone);
       if (!normalized) {
-        setError("TelÃ©fono invÃ¡lido. Usa 0412-1234567 o +58 412 1234567");
+        setError("Teléfono inválido. Usa 0412-1234567 o +58 412 1234567");
         return;
       }
       if (
@@ -41,15 +38,18 @@ export default function RegisterPage() {
         !deliveryAddress.trim() ||
         !deliveryMotoPlate.trim() ||
         !deliveryChassisSerial.trim() ||
-        !deliveryIdImageUrl ||
-        !deliverySelfieUrl
+        !deliveryIdImageUrl.trim() ||
+        !deliverySelfieUrl.trim()
       ) {
         setError(
-          "Para registrarte como Delivery, completa todos los campos y sube las imÃ¡genes requeridas."
+          "Para registrarte como Delivery, completa todos los campos y sube las imágenes requeridas."
         );
         return;
       }
-      if (!agreeDelivery) { setError('Debes aceptar el Contrato de Servicio de Delivery.'); return; }
+      if (!agreeDelivery) {
+        setError("Debes aceptar el Contrato de Servicio de Delivery.");
+        return;
+      }
     }
 
     const response = await fetch("/api/auth/register", {
@@ -72,45 +72,63 @@ export default function RegisterPage() {
       }),
     });
 
-        if (response.ok) {
+    if (response.ok) {
       setDone(true);
-    } else {} else {
+    } else {
       const data = await response.json().catch(() => ({} as any));
-      setError((data as any)?.message || "Algo saliÃ³ mal");
+      setError((data as any)?.message || "Algo salió mal");
     }
   };
 
-    if (done) {
+  if (done) {
     return (
       <div className="flex justify-center items-center min-h-screen p-4">
         <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg space-y-4 text-center">
           <h1 className="text-2xl font-bold">Revisa tu correo</h1>
-          <p className="text-gray-700">Enviamos un enlace de verificación a <span className="font-semibold">{email}</span>. Debes verificar tu correo para activar tu cuenta.</p>
+          <p className="text-gray-700">
+            Enviamos un enlace de verificación a <span className="font-semibold">{email}</span>. Debes verificar tu correo para activar tu cuenta.
+          </p>
           <button
             type="button"
             onClick={async () => {
-              setResendMsg(""); setResendOk(null);
+              setResendMsg("");
+              setResendOk(null);
               try {
-                const res = await fetch('/api/auth/resend-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-                if (res.ok) { setResendOk(true); setResendMsg('Te reenviamos el enlace si el email existe y no estaba verificado.'); }
-                else { setResendOk(false); setResendMsg('No se pudo reenviar. Intenta más tarde.'); }
-              } catch { setResendOk(false); setResendMsg('Error reenviando verificación'); }
+                const res = await fetch("/api/auth/resend-verification", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email }),
+                });
+                if (res.ok) {
+                  setResendOk(true);
+                  setResendMsg("Te reenviamos el enlace si el email existe y no estaba verificado.");
+                } else {
+                  setResendOk(false);
+                  setResendMsg("No se pudo reenviar. Intenta más tarde.");
+                }
+              } catch {
+                setResendOk(false);
+                setResendMsg("Error reenviando verificación");
+              }
             }}
             className="w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
           >
             Reenviar verificación
           </button>
-          {resendMsg ? (<p className="text-xs" style={{ color: resendOk ? '#16a34a' : '#dc2626' }}>{resendMsg}</p>) : null}
-          <a href="/auth/login" className="inline-block mt-2 text-blue-600 underline">Ir a iniciar sesión</a>
+          {resendMsg ? (
+            <p className="text-xs" style={{ color: resendOk ? "#16a34a" : "#dc2626" }}>{resendMsg}</p>
+          ) : null}
+          <a href="/auth/login" className="inline-block mt-2 text-blue-600 underline">
+            Ir a iniciar sesión
+          </a>
         </div>
       </div>
     );
-  }return (
+  }
+
+  return (
     <div className="flex justify-center items-center min-h-screen p-4">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg space-y-4"
-      >
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg space-y-4">
         <h1 className="text-2xl font-bold">Registro</h1>
         {error && <p className="text-red-500">{error}</p>}
 
@@ -137,7 +155,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-gray-700">ContraseÃ±a</label>
+          <label className="block text-gray-700">Contraseña</label>
           <input
             type="password"
             value={password}
@@ -149,22 +167,14 @@ export default function RegisterPage() {
 
         <div>
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={isAlly}
-              onChange={(e) => setIsAlly(e.target.checked)}
-            />
-            <span className="text-gray-700">Soy arquitecto/diseÃ±ador/aliado</span>
+            <input type="checkbox" checked={isAlly} onChange={(e) => setIsAlly(e.target.checked)} />
+            <span className="text-gray-700">Soy arquitecto/diseñador/aliado</span>
           </label>
         </div>
 
         <div>
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={isDelivery}
-              onChange={(e) => setIsDelivery(e.target.checked)}
-            />
+            <input type="checkbox" checked={isDelivery} onChange={(e) => setIsDelivery(e.target.checked)} />
             <span className="text-gray-700">Quiero ser Delivery autorizado</span>
           </label>
         </div>
@@ -172,7 +182,7 @@ export default function RegisterPage() {
         {isDelivery && (
           <div className="space-y-3 border rounded p-3">
             <div>
-              <label className="block text-gray-700">CÃ©dula / ID</label>
+              <label className="block text-gray-700">Cédula / ID</label>
               <input
                 type="text"
                 value={deliveryCedula}
@@ -182,21 +192,20 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-gray-700">TelÃ©fono</label>
+              <label className="block text-gray-700">Teléfono</label>
               <input
                 type="tel"
-                inputMode="tel"
-                placeholder="0412-1234567"
                 value={deliveryPhone}
-                onBlur={() => setDeliveryPhone(prettyVePhone(deliveryPhone))}
                 onChange={(e) => setDeliveryPhone(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg"
+                placeholder="0412-1234567"
                 required
               />
             </div>
             <div>
-              <label className="block text-gray-700">DirecciÃ³n</label>
-              <textarea
+              <label className="block text-gray-700">Dirección</label>
+              <input
+                type="text"
                 value={deliveryAddress}
                 onChange={(e) => setDeliveryAddress(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg"
@@ -205,7 +214,7 @@ export default function RegisterPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-gray-700">Placa de la moto</label>
+                <label className="block text-gray-700">Placa de moto</label>
                 <input
                   type="text"
                   value={deliveryMotoPlate}
@@ -215,7 +224,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="block text-gray-700">Serial de carrocerÃ­a</label>
+                <label className="block text-gray-700">Serial del chasis</label>
                 <input
                   type="text"
                   value={deliveryChassisSerial}
@@ -226,145 +235,41 @@ export default function RegisterPage() {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <UploadField
-                label="Foto de la cÃ©dula"
-                value={deliveryIdImageUrl}
-                setValue={setDeliveryIdImageUrl}
-                setUploading={setUploading}
-              />
-              <UploadField
-                label="Foto de tu rostro (selfie)"
-                value={deliverySelfieUrl}
-                setValue={setDeliverySelfieUrl}
-                setUploading={setUploading}
-              />
+              <div>
+                <label className="block text-gray-700">URL foto cédula/ID</label>
+                <input
+                  type="url"
+                  value={deliveryIdImageUrl}
+                  onChange={(e) => setDeliveryIdImageUrl(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="https://..."
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700">URL selfie</label>
+                <input
+                  type="url"
+                  value={deliverySelfieUrl}
+                  onChange={(e) => setDeliverySelfieUrl(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="https://..."
+                  required
+                />
+              </div>
             </div>
-            <p className="text-xs text-gray-600">
-              Tu solicitud quedarÃ¡ en revisiÃ³n. Te avisaremos cuando seas aprobado.
-          <div className="mt-2">
-            <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" checked={agreeDelivery} onChange={(e) => setAgreeDelivery(e.target.checked)} required={isDelivery} />
-              <span>Acepto el <a className="text-blue-600 underline" href="/delivery/contrato" target="_blank" rel="noreferrer">Contrato de Servicio de Delivery</a>.</span>
+            <label className="flex items-start gap-2">
+              <input type="checkbox" checked={agreeDelivery} onChange={(e) => setAgreeDelivery(e.target.checked)} />
+              <span className="text-gray-700">Acepto el Contrato de Servicio de Delivery.</span>
             </label>
-          </div>
-            </p>
           </div>
         )}
 
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded-lg"
-          disabled={uploading}
-        >
-          {uploading ? "Subiendo archivos..." : "Registrarse"}
+        <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
+          Registrarme
         </button>
       </form>
     </div>
   );
 }
-
-function UploadField({
-  label,
-  value,
-  setValue,
-  setUploading,
-}: {
-  label: string;
-  value: string;
-  setValue: (v: string) => void;
-  setUploading: (b: boolean) => void;
-}) {
-  const inputRef = React.useRef<HTMLInputElement | null>(null);
-  const [open, setOpen] = React.useState(false);
-  const handlePick = () => inputRef.current?.click();
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setUploading(true);
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
-      const base = `uploads/delivery/${yyyy}/${mm}/`;
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const name = `${base}${Math.random().toString(36).slice(2)}.${ext}`;
-      // Validate type and size (<= 5MB)
-      const isImage = (file.type || "").startsWith("image/");
-      const maxBytes = 5 * 1024 * 1024;
-      if (!isImage) throw new Error("Solo se permiten imÃ¡genes");
-      if (file.size > maxBytes) throw new Error("La imagen debe pesar <= 5MB");
-
-      let finalUrl: string | null = null;
-      try {
-        const res = await upload(name, file, { handleUploadUrl: "/api/blob/handle-upload", access: "public" });
-        finalUrl = (res as any)?.url || null;
-      } catch (err: any) {
-        try {
-          const probe = await fetch("/api/blob/handle-upload", { method: "GET" });
-          const info = await probe.json().catch(() => ({} as any));
-          const msg = String(err?.message || "").toLowerCase();
-          const tokenMissing = !probe.ok || info?.hasToken === false || msg.includes("client token") || msg.includes("access must be");
-          if (tokenMissing) {
-            const fd = new FormData();
-            fd.append("file", file);
-            fd.append("type", "image");
-            const resp = await fetch("/api/upload", { method: "POST", body: fd });
-            const data = await resp.json().catch(() => ({} as any));
-            if (resp.ok && data?.url) finalUrl = String(data.url);
-            else throw new Error(data?.error || "Upload fallido");
-          } else {
-            throw err;
-          }
-        } catch (e) {
-          throw e;
-        }
-      }
-      if (finalUrl) setValue(finalUrl);
-    } catch (err) {
-      console.error("Upload error", err);
-      alert("No se pudo subir el archivo. Intenta de nuevo.");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  };
-  return (
-    <div>
-      <label className="block text-gray-700 mb-1">{label}</label>
-      <div className="flex items-center gap-3">
-        {value ? (
-          <img
-            src={value}
-            alt="preview"
-            className="h-16 w-16 object-cover rounded border cursor-zoom-in"
-            onClick={() => setOpen(true)}
-          />
-        ) : (
-          <div className="h-16 w-16 rounded border bg-gray-50 flex items-center justify-center text-xs text-gray-400">Sin imagen</div>
-        )}
-        <div className="flex flex-col gap-1">
-          <button type="button" onClick={handlePick} className="px-3 py-1.5 rounded bg-gray-800 text-white text-sm disabled:opacity-50">{value ? "Cambiar imagen" : "Subir imagen"}</button>
-          {value && (
-            <button type="button" onClick={() => setValue("")} className="text-xs text-red-600 text-left">Quitar</button>
-          )}
-        </div>
-      </div>
-      <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-      {value && open && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center" onClick={() => setOpen(false)}>
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={value} alt="preview-full" className="max-h-[85vh] max-w-[90vw] rounded shadow-xl" />
-            <button type="button" className="absolute -top-3 -right-3 bg-white rounded-full px-2 py-1 text-sm shadow" onClick={() => setOpen(false)}>Cerrar</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
-
-
-
 
