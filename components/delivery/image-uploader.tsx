@@ -8,12 +8,14 @@ export default function DeliveryImageUploader({
   value,
   onChange,
   required,
+  onBusyChange,
   hint,
 }: {
   label: string;
   value: string;
   onChange: (url: string) => void;
   required?: boolean;
+  onBusyChange?: (busy: boolean) => void;
   hint?: string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -22,6 +24,7 @@ export default function DeliveryImageUploader({
 
   const doUpload = async (file: File) => {
     setBusy(true);
+    try { onBusyChange?.(true); } catch {}
     setError(null);
     try {
       const now = new Date();
@@ -41,6 +44,7 @@ export default function DeliveryImageUploader({
       setError(e?.message || "Error al subir la imagen");
     } finally {
       setBusy(false);
+      try { onBusyChange?.(false); } catch {}
     }
   };
 

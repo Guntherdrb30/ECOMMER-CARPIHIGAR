@@ -28,6 +28,8 @@ export default function RegisterPage() {
   const [done, setDone] = useState(false);
   const [resendMsg, setResendMsg] = useState("");
   const [resendOk, setResendOk] = useState<null | boolean>(null);
+  const [uploadBusyCount, setUploadBusyCount] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +72,7 @@ export default function RegisterPage() {
       }
     }
 
+    setSubmitting(true);
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -99,6 +102,7 @@ export default function RegisterPage() {
       const data = await response.json().catch(() => ({} as any));
       setError((data as any)?.message || "Algo salio mal");
     }
+    setSubmitting(false);
   };
 
   if (done) {
@@ -316,6 +320,7 @@ export default function RegisterPage() {
                 value={deliveryIdImageUrl}
                 onChange={setDeliveryIdImageUrl}
                 required
+                onBusyChange={(b) => setUploadBusyCount((n) => (b ? n + 1 : Math.max(0, n - 1)))}
                 hint="Foto frontal legible, sin reflejos. Formatos: PNG/JPG/WEBP."
               />
               <DeliveryImageUploader
@@ -323,6 +328,7 @@ export default function RegisterPage() {
                 value={deliverySelfieUrl}
                 onChange={setDeliverySelfieUrl}
                 required
+                onBusyChange={(b) => setUploadBusyCount((n) => (b ? n + 1 : Math.max(0, n - 1)))}
                 hint="Selfie sosteniendo tu cedula/ID, rostro visible."
               />
             </div>
@@ -333,9 +339,19 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
-          Registrarme
-        </button>
+        {(() => {
+          const isMoto = deliveryVehicleType === 'MOTO';
+          const plateOk = /^[A-Z0-9-]{5,8}$/.test((deliveryMotoPlate || '').replace(/\s+/g,'').toUpperCase());
+          const vinVal = (deliveryChassisSerial || '').replace(/\s+/g,'').toUpperCase();
+          const vinOk = isMoto ? (vinVal.length >= 6) : /^[A-HJ-NPR-Z0-9]{17}$/.test(vinVal);
+          const disableForValidation = isDelivery && (!plateOk || !vinOk);
+          const disabled = submitting || uploadBusyCount > 0 || disableForValidation;
+          return (
+            <button type="submit" disabled={disabled} className={`w-full py-2 rounded-lg ${disabled ? 'bg-blue-300 cursor-not-allowed text-white' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>
+              {submitting ? 'Enviando...' : (uploadBusyCount > 0 ? 'Esperando imagenes...' : 'Registrarme')}
+            </button>
+          );
+        })()}
         <button
           type="button"
           onClick={() => signIn("google", { callbackUrl: "/auth/after-login" })}
