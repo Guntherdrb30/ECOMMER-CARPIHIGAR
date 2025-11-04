@@ -133,7 +133,10 @@ export default function RegisterPage() {
   return (
     <div className="flex justify-center items-center min-h-screen p-4">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg space-y-4">
-        <div className="flex flex-col items-center mb-1"><img src="/logo-default.svg" alt="Carpihogar" className="h-10 mb-2" /><div className="flex flex-col items-center mb-1"><img src="/logo-default.svg" alt="Carpihogar" className="h-10 mb-2" /><h1 className="text-2xl font-bold">Registro</h1></div></div>
+        <div className="flex flex-col items-center mb-1">
+          <img src="/logo-default.svg" alt="Carpihogar" className="h-10 mb-2" />
+          <h1 className="text-2xl font-bold">Registro</h1>
+        </div>
         {error && <p className="text-red-500">{error}</p>}
 
         <div>
@@ -184,7 +187,8 @@ export default function RegisterPage() {
         </div>
 
         {isDelivery && (
-          <div className="space-y-3 border rounded p-3">
+          <div className="space-y-4 border rounded p-4">
+            <h2 className="text-lg font-semibold">Solicitud de Delivery</h2>
             <div>
               <label className="block text-gray-700">Cedula / ID</label>
               <input

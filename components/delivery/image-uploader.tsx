@@ -54,32 +54,32 @@ export default function DeliveryImageUploader({
   };
 
   return (
-    <div>
-      <label className="block text-gray-700 mb-1">{label}</label>
+    <div className="space-y-2">
+      <label className="block text-gray-700">{label}</label>
       {value ? (
-        <div className="flex items-center gap-3 mb-2">
-          <img src={value} alt={label} className="w-16 h-16 rounded border object-cover" />
+        <div className="flex items-center gap-3">
+          <img src={value} alt={label} className="w-20 h-20 rounded-md border object-cover" />
           <a href={value} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm">Abrir</a>
           <button type="button" className="text-sm text-red-600" onClick={() => onChange("")}>
             Quitar
           </button>
         </div>
       ) : null}
+      <input
+        type="url"
+        placeholder="https://..."
+        className="w-full px-3 py-2 border rounded-lg"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+      />
       <div className="flex items-center gap-2">
-        <input ref={fileRef} type="file" accept="image/*" onChange={onInput} />
-        <input
-          type="url"
-          placeholder="https://..."
-          className="flex-1 px-3 py-2 border rounded-lg"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          required={required}
-        />
+        <input ref={fileRef} type="file" accept="image/*" onChange={onInput} className="max-w-full" />
+        <button type="button" onClick={() => fileRef.current?.click()} className="px-3 py-1 rounded border">Elegir archivo</button>
       </div>
-      <p className="text-xs text-gray-500 mt-1">Puedes subir una imagen o pegar un enlace (PNG/JPG/WEBP/SVG).</p>
+      <p className="text-xs text-gray-500">Sube una imagen o pega un enlace (PNG/JPG/WEBP/SVG).</p>
       {busy && <p className="text-xs text-gray-500">Subiendo...</p>}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
 }
-
