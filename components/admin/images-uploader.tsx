@@ -35,7 +35,7 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
       setUrls((prev) => [...prev, ...next]);
     } catch (e: any) {
       console.error('[ImagesUploader] upload error', e);
-      setError(e?.message || 'Error al subir im·genes');
+      setError(e?.message || 'Error al subir im√°genes');
     } finally {
       setBusy(false);
     }
@@ -53,9 +53,9 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
         ))}
       </div>
       <div className="flex items-center gap-2">
-        <input ref={fileRef} type="file" accept="image/*" multiple onChange={(e) => onFiles(e.target.files)} />
-        <button type="button" onClick={() => onFiles(fileRef.current?.files || null)} disabled={busy} className="px-3 py-1 rounded border">
-          {busy ? 'Subiendo...' : 'Subir seleccionadas'}
+        <input ref={fileRef} type="file" accept="image/*" multiple onChange={(e) => onFiles(e.target.files)} className="hidden" />
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="px-3 py-1 rounded border">
+          {busy ? 'Subiendo...' : 'Subir imagenes'}
         </button>
       </div>
     </div>

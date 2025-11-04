@@ -120,11 +120,11 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
         />
         <button
           type="button"
-          onClick={() => onFiles(fileRef.current?.files || null)}
+          onClick={() => fileRef.current?.click()}
           disabled={busy || reached}
           className="px-3 py-1 rounded border"
         >
-          {busy ? 'Subiendo...' : 'Subir seleccionadas'}
+          {busy ? 'Subiendo...' : 'Subir imagenes'}
         </button>
         {reached && (
           <span className="text-xs text-gray-500">LÃ­mite alcanzado</span>
@@ -133,6 +133,7 @@ export default function ImagesUploader({ targetName = 'images[]', max }: { targe
     </div>
   );
 }
+
 
 
 

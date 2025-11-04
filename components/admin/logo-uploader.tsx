@@ -106,9 +106,9 @@ export default function LogoUploader({ targetInputName, defaultUrl }: { targetIn
         </div>
       )}
       <div className="flex items-center gap-2">
-        <input ref={fileRef} type="file" accept="image/*" onChange={handleChange} />
-        <button type="button" onClick={handleUpload} className="px-3 py-1 rounded bg-gray-800 text-white" disabled={loading}>
-          {loading ? 'Subiendo...' : 'Subir'}
+        <input ref={fileRef} type="file" accept="image/*" onChange={handleChange} className="hidden" />
+        <button type="button" onClick={() => fileRef.current?.click()} className="px-3 py-1 rounded bg-gray-800 text-white" disabled={loading}>
+          {loading ? 'Subiendo...' : 'Subir archivo'}
         </button>
       </div>
       <p className="text-xs text-gray-500">Formatos permitidos: PNG, JPG, WEBP, SVG. Tamaño máximo: 2MB.</p>
