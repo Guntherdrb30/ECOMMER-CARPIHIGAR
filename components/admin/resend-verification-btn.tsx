@@ -24,10 +24,10 @@ export default function ResendVerificationBtn({ email }: { email: string }) {
           setMsg("El correo ya estaba verificado.");
         } else if (json?.emailed === true) {
           setOk(true);
-          setMsg("Se envió verificación al correo.");
+          setMsg("Se envio verificacion al correo.");
         } else {
           setOk(false);
-          setMsg("No se envió el correo (deshabilitado o sin SMTP).");
+          setMsg("No se envio el correo (deshabilitado o sin SMTP).");
         }
       } else {
         setOk(false);
@@ -35,7 +35,7 @@ export default function ResendVerificationBtn({ email }: { email: string }) {
       }
     } catch {
       setOk(false);
-      setMsg("Error reenviando verificación.");
+      setMsg("Error reenviando verificacion.");
     } finally {
       setPending(false);
     }
@@ -48,9 +48,9 @@ export default function ResendVerificationBtn({ email }: { email: string }) {
         onClick={onClick}
         disabled={pending}
         className="px-3 py-1 border rounded disabled:opacity-60"
-        title="Reenviar verificación"
+        title="Reenviar verificacion"
       >
-        {pending ? "Enviando…" : "Reenviar verificación"}
+        {pending ? "Enviando..." : "Reenviar verificacion"}
       </button>
       {msg ? (
         <span
@@ -63,3 +63,4 @@ export default function ResendVerificationBtn({ email }: { email: string }) {
     </div>
   );
 }
+

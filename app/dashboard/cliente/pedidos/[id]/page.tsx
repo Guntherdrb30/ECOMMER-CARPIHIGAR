@@ -1,5 +1,5 @@
 import { getMyOrderById } from "@/server/actions/orders";
-import { sendReceiptEmailByForm } from "@/server/actions/email";
+import { sendReceiptEmailByForm } from "@/server/actions/email_byform";
 
 export default async function ClientePedidoDetalle({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -1,8 +1,7 @@
-﻿import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getProducts, createProduct, deleteProductByForm, updateProductInline, createStockMovement, updateProductBarcodeByForm } from "@/server/actions/products";
+import { getProducts, createProduct } from "@/server/actions/products";
 import ProductCsvUploader from '@/components/admin/product-csv-uploader';
-import SecretDeleteButton from "@/components/admin/secret-delete-button";
 import { getCategoriesFlattened } from "@/server/actions/categories";
 import { getSuppliers } from "@/server/actions/procurement";
 import { getSettings } from "@/server/actions/settings";
@@ -15,12 +14,19 @@ import { PendingButton } from '@/components/pending-button';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import RelatedProductsPicker from "@/components/admin/related-products-picker";
 
-export default async function AdminProductsPage() {\n  const session = await getServerSession(authOptions as any);\n  const email = String((session?.user as any)?.email || '').toLowerCase();\n  const role = String((session?.user as any)?.role || '');\n  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();\n  const isRoot = role === 'ADMIN' && email === rootEmail;
-  const sp = (await searchParams) || {} as any;
+export default async function AdminProductsPage({ searchParams }: { searchParams?: Promise<{ q?: string; categoria?: string; proveedor?: string; message?: string; error?: string }> }) {
+  const session = await getServerSession(authOptions as any);
+  const email = String((session?.user as any)?.email || '').toLowerCase();
+  const role = String((session?.user as any)?.role || '');
+  const rootEmail = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
+  const isRoot = role === 'ADMIN' && email === rootEmail;
+
+  const sp = (await searchParams) || ({} as any);
   const q = sp.q || '';
   const categoria = sp.categoria || '';
   const proveedor = (sp as any).proveedor || '';
   const message = (sp as any).message || '';
+
   const [products, categories, settings, suppliers] = await Promise.all([
     getProducts({ categorySlug: categoria || undefined, q: q || undefined, supplierId: proveedor || undefined }),
     getCategoriesFlattened(),
@@ -35,7 +41,7 @@ export default async function AdminProductsPage() {\n  const session = await get
       <h1 className="text-2xl font-bold mb-4">Gestionar Productos</h1>
       {/* Buscador superior */}
       <form className="mb-3 flex gap-2" method="get">
-        <input name="q" placeholder="Buscar por nombre, SKU o código" defaultValue={q} className="flex-1 border rounded px-2 py-1" />
+        <input name="q" placeholder="Buscar por nombre, SKU o codigo" defaultValue={q} className="flex-1 border rounded px-2 py-1" />
         <button className="px-3 py-1 rounded bg-brand hover:bg-opacity-90 text-white">Buscar</button>
         {q && (<a href="/dashboard/admin/productos" className="px-3 py-1 rounded border">Limpiar</a>)}
       </form>
@@ -45,9 +51,9 @@ export default async function AdminProductsPage() {\n  const session = await get
         <a href="/api/reports/products-csv" className="text-blue-600 underline" target="_blank">Exportar productos (CSV)</a>
       </div>
       <details className="mb-4 p-4 bg-white rounded shadow">
-        <summary className="text-lg font-semibold cursor-pointer">Carga masiva (CSV) con previsualización</summary>
+        <summary className="text-lg font-semibold cursor-pointer">Carga masiva (CSV) con previsualizacion</summary>
         <div className="mt-2">
-          <p className="text-sm text-gray-600 mb-2">Columnas: <code>name</code>, <code>slug</code>, <code>sku</code>, <code>barcode</code>, <code>brand</code>, <code>priceUSD</code>, <code>priceAllyUSD</code>, <code>stock</code>, <code>categoryId</code>, <code>supplierId</code>, <code>image</code>, <code>images</code>. Puedes omitir precios y solo indicar costo; si no indicas precios, se calculan con los márgenes por defecto.</p>
+          <p className="text-sm text-gray-600 mb-2">Columnas: <code>name</code>, <code>slug</code>, <code>sku</code>, <code>barcode</code>, <code>brand</code>, <code>priceUSD</code>, <code>priceAllyUSD</code>, <code>stock</code>, <code>categoryId</code>, <code>supplierId</code>, <code>image</code>, <code>images</code>. Puedes omitir precios y solo indicar costo; si no indicas precios, se calculan con los margenes por defecto.</p>
           <ProductCsvUploader />
         </div>
       </details>
@@ -122,7 +128,8 @@ export default async function AdminProductsPage() {\n  const session = await get
           </div>
           <input name="priceUSD" type="number" step="0.01" placeholder="Precio USD" className="form-input" required />
           <input name="priceAllyUSD" type="number" step="0.01" placeholder="Precio Aliado USD (opcional)" className="form-input" />
-          <input name="stock" type="number" placeholder="Stock" className="form-input" defaultValue={0} />
+          <input name="stock" type="number" min="0" placeholder="Stock" className="form-input" required />
+          <input name="videoUrl" placeholder="URL de video (opcional)" className="form-input" />
           <select name="categoryId" className="form-select">
             <option value="">Sin categoria</option>
             {(categories as any[]).map((c: any) => (
@@ -195,3 +202,4 @@ export default async function AdminProductsPage() {\n  const session = await get
     </div>
   );
 }
+
