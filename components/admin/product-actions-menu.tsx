@@ -9,7 +9,7 @@
           />
 import { PendingButton } from '@/components/pending-button';
 import SecretDeleteButton from '@/components/admin/secret-delete-button';
-import { updateProductInline, createStockMovement, updateProductBarcodeByForm, deleteProductByForm } from '@/server/actions/products';
+import { updateProductInline, createStockMovement, updateProductBarcodeByForm, deleteProductByForm, anonymizeProductByForm } from '@/server/actions/products';
 
 export default function ProductActionsMenu({ product, lowStock = 5 }: { product: any; lowStock?: number }) {
   return (
