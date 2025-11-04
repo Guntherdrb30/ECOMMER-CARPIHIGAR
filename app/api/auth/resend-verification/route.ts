@@ -31,7 +31,7 @@ export async function POST(req: Request) {
         emailed = !!r?.ok;
       } catch {}
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, emailed });
   } catch {
     return NextResponse.json({ ok: false }, { status: 500 });
   }
