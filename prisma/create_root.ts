@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = process.env.ROOT_EMAIL || 'root@carpihogar.com';
+  const email = (process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
   const plain = process.env.ROOT_PASSWORD || '';
 
   if (!plain) {

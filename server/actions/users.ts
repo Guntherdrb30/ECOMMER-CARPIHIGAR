@@ -94,8 +94,9 @@ export async function getUsers(q?: string) {
 export async function createAdminUser(name: string, email: string, password: string) {
   const session = await getServerSession(authOptions);
   if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const emailLc = String(email || '').trim().toLowerCase();
   const bcrypt = (await import('bcrypt')).default; const hashed = await bcrypt.hash(password, 10);
-  const user = await prisma.user.upsert({ where: { email }, update: { name, password: hashed, role: 'ADMIN', alliedStatus: 'NONE' }, create: { name, email, password: hashed, role: 'ADMIN', alliedStatus: 'NONE' } });
+  const user = await prisma.user.upsert({ where: { email: emailLc }, update: { name, password: hashed, role: 'ADMIN', alliedStatus: 'NONE' }, create: { name, email: emailLc, password: hashed, role: 'ADMIN', alliedStatus: 'NONE' } });
   revalidatePath('/dashboard/admin/usuarios');
   try {
     if (process.env.EMAIL_ENABLED === 'true') {
@@ -123,8 +124,9 @@ export async function createAdminUser(name: string, email: string, password: str
 export async function createSellerUser(name: string, email: string, password: string, commissionPercent?: number) {
   const session = await getServerSession(authOptions);
   if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const emailLc = String(email || '').trim().toLowerCase();
   const bcrypt = (await import('bcrypt')).default; const hashed = await bcrypt.hash(password, 10);
-  const user = await prisma.user.upsert({ where: { email }, update: { name, password: hashed, role: 'VENDEDOR', alliedStatus: 'NONE', commissionPercent: (commissionPercent ?? null) as any }, create: { name, email, password: hashed, role: 'VENDEDOR', alliedStatus: 'NONE', commissionPercent: (commissionPercent ?? null) as any } });
+  const user = await prisma.user.upsert({ where: { email: emailLc }, update: { name, password: hashed, role: 'VENDEDOR', alliedStatus: 'NONE', commissionPercent: (commissionPercent ?? null) as any }, create: { name, email: emailLc, password: hashed, role: 'VENDEDOR', alliedStatus: 'NONE', commissionPercent: (commissionPercent ?? null) as any } });
   revalidatePath('/dashboard/admin/usuarios');
   try {
     if (process.env.EMAIL_ENABLED === 'true') {
@@ -157,12 +159,13 @@ export async function createDispatcherUser(name: string, email: string, password
     try { redirect('/dashboard/admin/usuarios?error=Clave%20inv%C3%A1lida%20(min%208%20y%20un%20n%C3%BAmero)'); } catch {}
     return;
   }
+  const emailLc = String(email || '').trim().toLowerCase();
   const bcrypt = (await import('bcrypt')).default;
   const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.upsert({
-    where: { email },
+    where: { email: emailLc },
     update: { name, password: hashed, role: 'DESPACHO', alliedStatus: 'NONE' },
-    create: { name, email, password: hashed, role: 'DESPACHO', alliedStatus: 'NONE' },
+    create: { name, email: emailLc, password: hashed, role: 'DESPACHO', alliedStatus: 'NONE' },
   });
   revalidatePath('/dashboard/admin/usuarios');
   try {

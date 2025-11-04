@@ -8,13 +8,14 @@ const prisma = new PrismaClient();
 export async function POST(req: Request) {
   try {
     const { name, email, password, isAlly, isDelivery, deliveryCedula, deliveryPhone, deliveryAddress, deliveryMotoPlate, deliveryChassisSerial, deliveryIdImageUrl, deliverySelfieUrl, agreeDelivery } = await req.json();
+    const emailLc = String(email || '').trim().toLowerCase();
 
-    if (!name || !email || !password) {
+    if (!name || !emailLc || !password) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
     }
 
     const exist = await prisma.user.findUnique({
-      where: { email },
+      where: { email: emailLc },
     });
 
     if (exist) {
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: emailLc,
         password: hashedPassword,
         role: 'CLIENTE',
         phone: (isDelivery ? (deliveryPhone || null) : null),
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
         const base = process.env.NEXT_PUBLIC_URL || new URL(req.url).origin;
         const verifyUrl = `${base}/api/auth/verify-email?token=${token}`;
         const html = basicTemplate('Verifica tu correo', `<p>Hola ${name || ''},</p><p>Confirma tu correo para activar tu cuenta:</p><p><a href="${verifyUrl}">Verificar correo</a></p><p>O copia este enlace:<br>${verifyUrl}</p>`);
-        await sendMail({ to: email, subject: 'Verifica tu correo', html });
+        await sendMail({ to: emailLc, subject: 'Verifica tu correo', html });
       }
     } catch {}
 

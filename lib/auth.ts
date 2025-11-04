@@ -50,8 +50,9 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
+        const loginEmail = String(credentials.email || '').trim().toLowerCase();
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: loginEmail },
         });
 
         if (!user) {
@@ -123,13 +124,14 @@ export const authOptions: AuthOptions = {
         if (account?.provider === "google") {
           const email = (user as any)?.email as string | undefined;
           if (email) {
-            let dbUser = await prisma.user.findUnique({ where: { email } });
+            const emailLc = String(email).trim().toLowerCase();
+            let dbUser = await prisma.user.findUnique({ where: { email: emailLc } });
             if (!dbUser) {
               const rawPassword = randomBytes(16).toString("hex");
               const hashed = await bcrypt.hash(rawPassword, 10);
               dbUser = await prisma.user.create({
                 data: {
-                  email,
+                  email: emailLc,
                   name: (user as any)?.name || undefined,
                   password: hashed,
                   // role and alliedStatus use schema defaults
