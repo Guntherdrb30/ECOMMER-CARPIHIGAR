@@ -50,6 +50,7 @@ export default function AdminSidebar() {
     { href: '/dashboard/admin/envios/online', label: 'Envíos Online' },
     { href: '/dashboard/admin/envios/tienda', label: 'Envíos en Tienda' },
     { href: '/dashboard/admin/ajustes', label: 'Ajustes' },
+    { href: '/dashboard/admin/envios/logs', label: 'Logs de Envios' },
     ...(isRoot ? [{ href: '/dashboard/admin/ajustes/sistema', label: 'Ajustes del Sistema (Root)' }] : []),
     { href: '/dashboard/admin/reportes', label: 'Reportes' },
     { href: '/dashboard/admin/mensajeria', label: 'Mensajería' },
@@ -90,5 +91,13 @@ export default function AdminSidebar() {
     </aside>
   );
 }
+
+
+
+
+
+
+
+
 
 
