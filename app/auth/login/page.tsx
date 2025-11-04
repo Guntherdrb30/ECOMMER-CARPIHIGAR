@@ -72,7 +72,7 @@ export default function Iniciar sesiónPage() {
   return (
     <div className="flex justify-center items-center h-screen">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-4">Iniciar sesión</h1>
+        <div className="flex flex-col items-center mb-4"><img src="/logo-default.svg" alt="Carpihogar" className="h-10 mb-2" /><h1 className="text-2xl font-bold">Iniciar sesión</h1></div>
         {verifiedMsg ? (
           <div className="mb-4 rounded border border-green-300 bg-green-50 text-green-800 px-3 py-2 text-sm">
             Tu correo fue verificado. Ya puedes iniciar sesiÃ³n.
@@ -166,5 +166,6 @@ export default function Iniciar sesiónPage() {
     </div>
   );
 }
+
 
 
