@@ -14,23 +14,26 @@ export async function POST(req: Request) {
     }
     if (!email) return NextResponse.json({ ok: false, error: 'email_required' }, { status: 400 });
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return NextResponse.json({ ok: true }); // don't leak
+    if (!user) return NextResponse.json({ ok: true, emailed }); // don't leak
     if ((user as any).emailVerifiedAt) return NextResponse.json({ ok: true, already: true });
     const crypto = await import('crypto');
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
     await prisma.user.update({ where: { id: user.id }, data: { emailVerificationToken: token, emailVerificationTokenExpiresAt: expires as any } });
+    let emailed = false;
     if (process.env.EMAIL_ENABLED === 'true') {
       try {
         const { sendMail, basicTemplate } = await import('@/lib/mailer');
         const base = process.env.NEXT_PUBLIC_URL || new URL(req.url).origin;
         const verifyUrl = `${base}/api/auth/verify-email?token=${token}`;
         const html = basicTemplate('Verifica tu correo', `<p>Confirma tu correo para activar tu cuenta:</p><p><a href=\"${verifyUrl}\">Verificar correo</a></p>`);
-        await sendMail({ to: email, subject: 'Verifica tu correo', html });
+        const r: any = await sendMail({ to: email, subject: 'Verifica tu correo', html });\n        emailed = !!r?.ok;
       } catch {}
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, emailed });
   } catch {
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }
+
+

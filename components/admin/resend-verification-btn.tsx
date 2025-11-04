@@ -17,9 +17,18 @@ export default function ResendVerificationBtn({ email }: { email: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
+      const json = await res.json().catch(() => ({} as any));
       if (res.ok) {
-        setOk(true);
-        setMsg("Si el correo no estaba verificado, se envió el enlace.");
+        if (json?.already) {
+          setOk(true);
+          setMsg("El correo ya estaba verificado.");
+        } else if (json?.emailed === true) {
+          setOk(true);
+          setMsg("Se envió verificación al correo.");
+        } else {
+          setOk(false);
+          setMsg("No se envió el correo (deshabilitado o sin SMTP).");
+        }
       } else {
         setOk(false);
         setMsg("No se pudo reenviar. Verifica SMTP/EMAIL_ENABLED.");
@@ -54,4 +63,3 @@ export default function ResendVerificationBtn({ email }: { email: string }) {
     </div>
   );
 }
-
