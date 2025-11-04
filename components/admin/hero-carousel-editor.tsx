@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRef, useState } from 'react';
 import { upload } from '@vercel/blob/client';
@@ -91,10 +91,10 @@ export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: strin
       {items.map((url, i) => (
         <div key={i} className="border p-3 rounded-lg">
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-gray-700 font-medium">Posición #{i + 1}</label>
+            <label className="block text-gray-700 font-medium">PosiciÃ³n #{i + 1}</label>
             <div className="flex gap-2">
-              <button type="button" className="px-2 py-1 border rounded disabled:opacity-50" onClick={() => move(i, -1)} disabled={i === 0}>↑</button>
-              <button type="button" className="px-2 py-1 border rounded disabled:opacity-50" onClick={() => move(i, 1)} disabled={i === 2}>↓</button>
+              <button type="button" className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50" onClick={() => move(i, -1)} disabled={i === 0}>â†‘</button>
+              <button type="button" className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50" onClick={() => move(i, 1)} disabled={i === 2}>â†“</button>
             </div>
           </div>
           <div className="mb-2">
@@ -113,7 +113,7 @@ export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: strin
             <button type="button" onClick={() => fileRefs[i].current?.click()} className="px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 flex-none" disabled={busyIndex === i}>
               {busyIndex === i ? 'Subiendo...' : 'Subir archivo'}
             </button>
-            <button type="button" onClick={() => clearSlot(i)} className="px-3 py-1 rounded border flex-none">Limpiar</button>
+            <button type="button" onClick={() => clearSlot(i)} className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 flex-none">Limpiar</button>
           </div>
           <input type="hidden" name={`homeHeroUrl${i + 1}`} value={url} />
         </div>
@@ -122,3 +122,4 @@ export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: strin
     </div>
   );
 }
+
