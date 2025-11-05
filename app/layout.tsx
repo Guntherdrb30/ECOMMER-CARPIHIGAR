@@ -6,6 +6,8 @@ import Footer from "@/components/footer";
 import { Inter } from "next/font/google";
 import { getSettings } from "@/server/actions/settings";
 import Providers from "@/components/providers";
+import CookieConsent from "@/components/cookie-consent";
+import { cookies } from "next/headers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +25,12 @@ export default async function RootLayout({
 }>) {
   const settings = await getSettings();
   const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://carpihogar.com';
+  const initialConsent = (() => {
+    try {
+      const v = cookies().get('cookie_consent')?.value || null;
+      return v === 'all' || v === 'necessary' ? (v as any) : null;
+    } catch { return null; }
+  })();
 
   const siteJsonLd = {
     '@context': 'https://schema.org',
@@ -68,6 +76,7 @@ export default async function RootLayout({
           </main>
           <Toaster richColors />
           <Footer />
+          <CookieConsent initialConsent={initialConsent} />
         </Providers>
       </body>
     </html>
