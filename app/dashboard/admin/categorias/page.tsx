@@ -51,21 +51,23 @@ export default async function AdminCategoriesPage({ searchParams }: { searchPara
 
       <div className="form-card">
         <h2 className="text-lg font-bold mb-2">Todas las Categorías</h2>
+        <details className="rounded border border-gray-200" open>
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700">Ver categorias</summary>
         <div className="overflow-x-auto">
-          <table className="w-full table-auto">
+          <table className="w-full table-fixed text-sm">
             <thead>
-              <tr className="bg-gray-200">
-                <th className="px-4 py-2">Nombre</th>
-                <th className="px-4 py-2">Slug</th>
-                <th className="px-4 py-2">Principal</th>
-                <th className="px-4 py-2">Acciones</th>
+              <tr className="bg-gray-100 text-gray-700">
+                <th className="px-2 py-1 text-left w-64">Nombre</th>
+                <th className="px-2 py-1 text-left w-48">Slug</th>
+                <th className="px-2 py-1 text-left w-28">Nivel</th>
+                <th className="px-2 py-1 text-left">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {categories.map((category: any) => (
-                <tr key={category.id}>
-                  <td className="border px-4 py-2">{`${'- '.repeat(category.depth || 0)}${category.name}`}</td>
-                  <td className="border px-4 py-2">{category.slug}</td>
+                <tr key={category.id} className="border-t">
+                  <td className="px-2 py-1 align-top">{`${'- '.repeat(category.depth || 0)}${category.name}`}</td>
+                  <td className="px-2 py-1 align-top">{category.slug}</td>
                   <td className="border px-4 py-2">{category.parentId ? 'Subcategoría' : 'Principal'}</td>
                   <td className="border px-4 py-2">
                     <a href={`/dashboard/admin/categorias/${category.id}`} className="text-blue-600 hover:underline mr-3">Editar</a>
@@ -82,6 +84,7 @@ export default async function AdminCategoriesPage({ searchParams }: { searchPara
             </tbody>
           </table>
         </div>
+        </details>
       </div>
     </div>
   );

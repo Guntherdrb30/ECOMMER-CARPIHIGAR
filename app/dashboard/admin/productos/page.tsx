@@ -160,46 +160,48 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         </form>
       </details>
 
-      {/* Lista */}
+      {/* Lista compacta con acordeón */}
       <div className="bg-white p-4 rounded-lg shadow mt-4">
         <h2 className="text-lg font-bold mb-2">Todos los Productos</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="px-4 py-2">Nombre</th>
-                <th className="px-4 py-2">Slug</th>
-                <th className="px-4 py-2">Precio USD</th>
-                <th className="px-4 py-2">Precio Aliado USD</th>
-                <th className="px-4 py-2">Stock</th>
-                <th className="px-4 py-2">Categoria</th>
-                <th className="px-4 py-2">Proveedor</th>
-                <th className="px-4 py-2">Nuevo</th>
-                <th className="px-4 py-2">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product: any) => (
-                <tr key={product.id}>
-                  <td className="border px-4 py-2">{product.name}</td>
-                  <td className="border px-4 py-2">{product.slug}</td>
-                  <td className="border px-4 py-2">{Number(product.priceUSD).toFixed ? Number(product.priceUSD).toFixed(2) : String(product.priceUSD)}</td>
-                  <td className="border px-4 py-2">{product.priceAllyUSD != null ? (Number(product.priceAllyUSD).toFixed ? Number(product.priceAllyUSD).toFixed(2) : String(product.priceAllyUSD)) : ''}</td>
-                  <td className={`border px-4 py-2 ${product.stock <= lowStock ? 'bg-red-50 text-red-700 font-semibold' : ''}`}>{product.stock}</td>
-                  <td className="border px-4 py-2">{product.category?.name}</td>
-                  <td className="border px-4 py-2">{product.supplier?.name || '-'}</td>
-                  <td className="border px-4 py-2">{product.isNew ? 'Si' : 'No'}</td>
-                  <td className="border px-4 py-2 space-y-2">
-                    <ProductActionsMenu product={product} lowStock={lowStock} isRoot={isRoot} />
-                    <StockHistory productId={product.id} />
-                  </td>
+        <details className="rounded border border-gray-200" open>
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700">Ver productos</summary>
+          <div className="overflow-x-auto">
+            <table className="w-full table-fixed text-sm">
+              <thead>
+                <tr className="bg-gray-100 text-gray-700">
+                  <th className="px-2 py-1 text-left w-64">Nombre</th>
+                  <th className="px-2 py-1 text-left w-48">Slug</th>
+                  <th className="px-2 py-1 text-left w-24">Precio USD</th>
+                  <th className="px-2 py-1 text-left w-28">Precio Aliado</th>
+                  <th className="px-2 py-1 text-left w-20">Stock</th>
+                  <th className="px-2 py-1 text-left w-40">Categoria</th>
+                  <th className="px-2 py-1 text-left w-40">Proveedor</th>
+                  <th className="px-2 py-1 text-left w-16">Nuevo</th>
+                  <th className="px-2 py-1 text-left">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {products.map((product: any) => (
+                  <tr key={product.id} className="border-t">
+                    <td className="px-2 py-1 align-top">{product.name}</td>
+                    <td className="px-2 py-1 align-top">{product.slug}</td>
+                    <td className="px-2 py-1 align-top">{Number(product.priceUSD).toFixed ? Number(product.priceUSD).toFixed(2) : String(product.priceUSD)}</td>
+                    <td className="px-2 py-1 align-top">{product.priceAllyUSD != null ? (Number(product.priceAllyUSD).toFixed ? Number(product.priceAllyUSD).toFixed(2) : String(product.priceAllyUSD)) : ''}</td>
+                    <td className={`px-2 py-1 align-top ${product.stock <= lowStock ? 'bg-red-50 text-red-700 font-semibold' : ''}`}>{product.stock}</td>
+                    <td className="px-2 py-1 align-top">{product.category?.name}</td>
+                    <td className="px-2 py-1 align-top">{product.supplier?.name || '-'}</td>
+                    <td className="px-2 py-1 align-top">{product.isNew ? 'Si' : 'No'}</td>
+                    <td className="px-2 py-1 align-top space-y-2">
+                      <ProductActionsMenu product={product} lowStock={lowStock} isRoot={isRoot} />
+                      <StockHistory productId={product.id} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
       </div>
     </div>
   );
 }
-

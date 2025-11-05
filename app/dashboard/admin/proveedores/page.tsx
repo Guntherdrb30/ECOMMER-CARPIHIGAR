@@ -28,8 +28,10 @@ export default async function SuppliersPage({ searchParams }: { searchParams?: P
 
       <div className="form-card">
         <h2 className="text-lg font-bold mb-2">Listado</h2>
+        <details className="rounded border border-gray-200" open>
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700">Ver proveedores</summary>
         <div className="overflow-x-auto">
-          <table className="w-full table-auto text-sm">
+          <table className="w-full table-fixed text-sm">
             <thead>
               <tr className="bg-gray-100">
                 <th className="px-3 py-2 text-left">Nombre</th>
@@ -52,11 +54,13 @@ export default async function SuppliersPage({ searchParams }: { searchParams?: P
             </tbody>
           </table>
         </div>
+        </details>
       </div>
 
       <div className="form-card">
-        <h2 className="text-lg font-bold mb-2">Editar proveedores</h2>
-        <p className="text-sm text-gray-600 mb-2">Edita cualquier campo y guarda para aplicar cambios.</p>
+        <details className="rounded border border-gray-200" open>
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700">Editar proveedores</summary>
+          <p className="text-sm text-gray-600 mb-2">Edita cualquier campo y guarda para aplicar cambios.</p>
         <div className="space-y-3">
           {suppliers.map((s: any) => (
             <form key={s.id} action={updateSupplier} className="grid grid-cols-1 md:grid-cols-7 gap-2 items-end">
@@ -70,6 +74,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams?: P
             </form>
           ))}
         </div>
+        </details>
       </div>
     </div>
   );

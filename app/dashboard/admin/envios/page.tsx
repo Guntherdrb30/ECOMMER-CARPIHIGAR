@@ -30,6 +30,8 @@ export default async function AdminEnviosPage({
         </form>
       </div>
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <details className="rounded border border-gray-200 m-4" open>
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700">Ver envíos</summary>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -114,6 +116,7 @@ PDF: ${(process.env.NEXT_PUBLIC_URL || '') + '/api/shipments/' + order.id + '/pd
             </tbody>
           </table>
         </div>
+        </details>
       </div>
     </div>
   );

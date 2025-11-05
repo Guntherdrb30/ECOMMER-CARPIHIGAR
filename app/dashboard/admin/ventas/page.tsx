@@ -54,28 +54,30 @@ export default async function AdminSalesPage({ searchParams }: { searchParams?: 
 
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-bold mb-2">Listado de Ventas</h2>
+        <details className="rounded border border-gray-200" open>
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700">Ver ventas</summary>
         <div className="overflow-x-auto">
-          <table className="w-full table-auto">
+          <table className="w-full table-fixed text-sm">
             <thead>
-              <tr className="bg-gray-200">
-                <th className="px-4 py-2">Fecha</th>
-                <th className="px-4 py-2">Cliente</th>
-                <th className="px-4 py-2">Vendedor</th>
-                <th className="px-4 py-2">Total USD</th>
-                <th className="px-4 py-2">Estado</th>
-                <th className="px-4 py-2">Pago</th>
-                <th className="px-4 py-2">Imprimir</th>
+              <tr className="bg-gray-100 text-gray-700">
+                <th className="px-2 py-1 text-left w-40">Fecha</th>
+                <th className="px-2 py-1 text-left w-56">Cliente</th>
+                <th className="px-2 py-1 text-left w-40">Vendedor</th>
+                <th className="px-2 py-1 text-left w-28">Total USD</th>
+                <th className="px-2 py-1 text-left w-32">Estado</th>
+                <th className="px-2 py-1 text-left w-56">Pago</th>
+                <th className="px-2 py-1 text-left">Imprimir</th>
               </tr>
             </thead>
             <tbody>
               {orders.map((o: any) => (
-                <tr key={o.id}>
-                  <td className="border px-4 py-2">{new Date(o.createdAt).toLocaleString()}</td>
-                  <td className="border px-4 py-2">{o.user?.name || o.user?.email}</td>
-                  <td className="border px-4 py-2">{o.seller?.name || '-'}</td>
-                  <td className="border px-4 py-2">{Number(o.totalUSD).toFixed(2)}</td>
-                  <td className="border px-4 py-2">{o.status}</td>
-                  <td className="border px-4 py-2 text-sm">
+                <tr key={o.id} className="border-t">
+                  <td className="px-2 py-1 align-top">{new Date(o.createdAt).toLocaleString()}</td>
+                  <td className="px-2 py-1 align-top">{o.user?.name || o.user?.email}</td>
+                  <td className="px-2 py-1 align-top">{o.seller?.name || '-'}</td>
+                  <td className="px-2 py-1 align-top">{Number(o.totalUSD).toFixed(2)}</td>
+                  <td className="px-2 py-1 align-top">{o.status}</td>
+                  <td className="px-2 py-1 align-top text-sm">
                     {o.payment ? (
                       <div className="space-y-0.5">
                         <div>{o.payment.method} · {o.payment.currency}</div>
@@ -92,7 +94,7 @@ export default async function AdminSalesPage({ searchParams }: { searchParams?: 
                       <span className="text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="border px-4 py-2 text-sm">
+                  <td className="px-2 py-1 align-top text-sm">
                     {(o.status === 'PAGADO' || o.status === 'COMPLETADO') ? (
                       <div className="flex flex-wrap gap-2">
                         <a className="text-blue-600 hover:underline" href={`/dashboard/admin/ventas/${o.id}/print?tipo=recibo&moneda=USD`}>Recibo USD</a>
@@ -110,31 +112,34 @@ export default async function AdminSalesPage({ searchParams }: { searchParams?: 
             </tbody>
           </table>
         </div>
+        </details>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-bold mb-2">Comisiones</h2>
+        <details className="rounded border border-gray-200" open>
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700">Ver comisiones</summary>
         <div className="overflow-x-auto">
-          <table className="w-full table-auto">
+          <table className="w-full table-fixed text-sm">
             <thead>
-              <tr className="bg-gray-200">
-                <th className="px-4 py-2">Fecha</th>
-                <th className="px-4 py-2">Vendedor</th>
-                <th className="px-4 py-2">Orden</th>
-                <th className="px-4 py-2">%</th>
-                <th className="px-4 py-2">Monto USD</th>
-                <th className="px-4 py-2">Estatus</th>
+              <tr className="bg-gray-100 text-gray-700">
+                <th className="px-2 py-1 text-left w-40">Fecha</th>
+                <th className="px-2 py-1 text-left w-48">Vendedor</th>
+                <th className="px-2 py-1 text-left w-28">Orden</th>
+                <th className="px-2 py-1 text-left w-16">%</th>
+                <th className="px-2 py-1 text-left w-32">Monto USD</th>
+                <th className="px-2 py-1 text-left">Estatus</th>
               </tr>
             </thead>
             <tbody>
               {commissions.map((c: any) => (
-                <tr key={c.id}>
-                  <td className="border px-4 py-2">{new Date(c.createdAt).toLocaleString()}</td>
-                  <td className="border px-4 py-2">{c.seller?.name || c.seller?.email}</td>
-                  <td className="border px-4 py-2">{c.orderId}</td>
-                  <td className="border px-4 py-2">{Number(c.percent).toFixed(2)}</td>
-                  <td className="border px-4 py-2">{Number(c.amountUSD).toFixed(2)}</td>
-                  <td className="border px-4 py-2">
+                <tr key={c.id} className="border-t">
+                  <td className="px-2 py-1 align-top">{new Date(c.createdAt).toLocaleString()}</td>
+                  <td className="px-2 py-1 align-top">{c.seller?.name || c.seller?.email}</td>
+                  <td className="px-2 py-1 align-top">{c.orderId}</td>
+                  <td className="px-2 py-1 align-top">{Number(c.percent).toFixed(2)}</td>
+                  <td className="px-2 py-1 align-top">{Number(c.amountUSD).toFixed(2)}</td>
+                  <td className="px-2 py-1 align-top">
                     {c.status}
                     {c.status === 'PENDIENTE' && (
                       <form action={markCommissionPaid} className="inline-block ml-2">
@@ -148,6 +153,7 @@ export default async function AdminSalesPage({ searchParams }: { searchParams?: 
             </tbody>
           </table>
         </div>
+        </details>
       </div>
     </div>
   );
