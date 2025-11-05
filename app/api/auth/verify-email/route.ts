@@ -13,7 +13,12 @@ export async function GET(req: Request) {
       return NextResponse.redirect(url.origin + '/?error=Enlace%20expirado');
     }
     await prisma.user.update({ where: { id: user.id }, data: { emailVerifiedAt: now as any, emailVerificationToken: null, emailVerificationTokenExpiresAt: null } });
-    return NextResponse.redirect(url.origin + '/?message=' + encodeURIComponent('Correo verificado')); 
+    const res = NextResponse.redirect(url.origin + '/?message=' + encodeURIComponent('Correo verificado'));
+    try {
+      // Set a short‑lived cookie so middleware can allow access immediately
+      res.headers.set('Set-Cookie', `verified_email=1; Path=/; Max-Age=900; SameSite=Lax`);
+    } catch {}
+    return res; 
   } catch (e) {
     return NextResponse.redirect(new URL('/?error=' + encodeURIComponent('Error verificando correo'), req.url));
   }

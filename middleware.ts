@@ -8,13 +8,16 @@ export default withAuth(
     const path = req.nextUrl.pathname;
     const role = req.nextauth.token?.role as string | undefined;
     const emailVerified = (req.nextauth.token as any)?.emailVerified === true;
+    // Accept short-lived cookie set by /api/auth/verify-email so
+    // users can navigate immediately after clicking the email link
+    const tempVerified = req.cookies.get('verified_email')?.value === '1';
     const needsVerified = (
       path.startsWith('/checkout') ||
       path.startsWith('/dashboard/') ||
       path === '/dashboard'
     );
     const requiresVerification = role === 'CLIENTE' || role === 'ALIADO' || role === 'DELIVERY';
-    if (needsVerified && requiresVerification && !emailVerified) {
+    if (needsVerified && requiresVerification && !emailVerified && !tempVerified) {
       return NextResponse.rewrite(new URL('/auth/verify-required', req.url));
     }
     // Prevent ADMIN (root) from accessing client dashboard; send to admin home
