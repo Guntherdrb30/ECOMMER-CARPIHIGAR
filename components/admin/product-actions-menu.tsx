@@ -10,7 +10,7 @@ export default function ProductActionsMenu({ product, lowStock = 5, isRoot = fal
   return (
     <details className="relative">
       <summary className="cursor-pointer inline-flex items-center px-2 py-1 border rounded text-sm bg-white hover:bg-gray-50">Acciones</summary>
-      <div className="mt-2 p-3 border rounded bg-gray-50 space-y-3">
+      <div className="absolute right-0 top-full z-50 mt-1 w-[22rem] p-3 border rounded bg-white shadow-lg space-y-3">
         <div className="text-xs text-gray-600">Edicion rapida</div>
         <form action={updateProductInline} className="flex flex-wrap gap-2 items-center text-sm">
           <input type="hidden" name="id" value={product.id} />
