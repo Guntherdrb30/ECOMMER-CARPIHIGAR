@@ -181,6 +181,9 @@ export const authOptions: AuthOptions = {
         }
         // Always propagate latest verification status to token
         (token as any).emailVerified = Boolean((dbUser as any).emailVerifiedAt);
+        // Also keep role and alliedStatus in sync so UI reflects admin changes immediately
+        token.role = (dbUser as any).role;
+        token.alliedStatus = (dbUser as any).alliedStatus;
       }
 
       return token;
