@@ -6,11 +6,14 @@ type FooterProps = {
   contactEmail?: string;
   contactPhone?: string;
   whatsappPhone?: string;
+  supportHours?: string;
 };
 
-export default function Footer({ brandName, contactEmail, contactPhone, whatsappPhone }: FooterProps) {
+export default function Footer({ brandName, contactEmail, contactPhone, whatsappPhone, supportHours }: FooterProps) {
   const whatsappNumber = (whatsappPhone || process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '').replace(/\D+/g, '');
   const whatsappUrl = whatsappNumber ? `https://wa.me/${whatsappNumber}` : '#';
+  const waText = encodeURIComponent(`Hola ${brandName || 'Carpihogar'}, necesito soporte.`);
+  const whatsappSupportUrl = whatsappNumber ? `https://wa.me/${whatsappNumber}?text=${waText}` : '#';
 
   return (
     <footer className="text-white py-10 bg-[var(--color-secondary)]/95 backdrop-blur">
@@ -24,6 +27,7 @@ export default function Footer({ brandName, contactEmail, contactPhone, whatsapp
             <h3 className="text-xl font-bold mb-2">Contacto</h3>
             <p className="text-gray-400">Email: {contactEmail || 'root@carpihogar.com'}</p>
             <p className="text-gray-400">Teléfono: {contactPhone || '+58 000-000-0000'}</p>
+            <p className="text-gray-400">Horario: {supportHours || 'Lun–Vie 9:00–18:00'}</p>
           </div>
           <div>
             <h3 className="text-xl font-bold mb-2">Envíos</h3>
@@ -31,6 +35,11 @@ export default function Footer({ brandName, contactEmail, contactPhone, whatsapp
             {whatsappNumber ? (
               <Button as="a" href={whatsappUrl} target="_blank" rel="noopener noreferrer" color="success" variant="solid" className="mt-4">
                 Contáctanos por WhatsApp
+              </Button>
+            ) : null}
+            {whatsappNumber ? (
+              <Button as="a" href={whatsappSupportUrl} target="_blank" rel="noopener noreferrer" color="success" variant="flat" className="mt-2">
+                Soporte por WhatsApp
               </Button>
             ) : null}
           </div>
@@ -41,4 +50,3 @@ export default function Footer({ brandName, contactEmail, contactPhone, whatsapp
     </footer>
   );
 }
-

@@ -26,7 +26,8 @@ async function ensureSiteSettingsColumns() {
       'ADD COLUMN IF NOT EXISTS "paymentBanescoName" TEXT, ' +
       'ADD COLUMN IF NOT EXISTS "paymentMercantilAccount" TEXT, ' +
       'ADD COLUMN IF NOT EXISTS "paymentMercantilRif" TEXT, ' +
-      'ADD COLUMN IF NOT EXISTS "paymentMercantilName" TEXT'
+      'ADD COLUMN IF NOT EXISTS "paymentMercantilName" TEXT, ' +
+      'ADD COLUMN IF NOT EXISTS "supportHours" TEXT'
     );
   } catch {}
 }
@@ -83,6 +84,7 @@ export async function getSettings() {
       paymentMercantilAccount: (settings as any).paymentMercantilAccount || '',
       paymentMercantilRif: (settings as any).paymentMercantilRif || '',
       paymentMercantilName: (settings as any).paymentMercantilName || '',
+      supportHours: (settings as any).supportHours || 'Lun–Vie 9:00–18:00',
     } as any;
   } catch (err) {
     console.warn('[getSettings] DB not reachable, using defaults.', err);
@@ -116,6 +118,7 @@ export async function getSettings() {
       paymentMercantilAccount: '',
       paymentMercantilRif: '',
       paymentMercantilName: '',
+      supportHours: 'Lun–Vie 9:00–18:00',
     } as any;
   }
 }

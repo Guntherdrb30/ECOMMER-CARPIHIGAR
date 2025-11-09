@@ -80,6 +80,7 @@ export default async function RootLayout({
             contactEmail={(settings as any).contactEmail || 'root@carpihogar.com'}
             contactPhone={(settings as any).contactPhone || undefined}
             whatsappPhone={(settings as any).whatsappPhone || undefined}
+            supportHours={(settings as any).supportHours || undefined}
           />
           <CookieConsent initialConsent={initialConsent} />
         </Providers>
