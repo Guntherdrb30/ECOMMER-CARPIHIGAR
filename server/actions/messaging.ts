@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { sendWhatsAppText, sendWhatsAppMedia } from '@/lib/whatsapp';
 import { redirect } from 'next/navigation';
 
-export async function getConversations(params?: { status?: 'OPEN'|'IN_PROGRESS'|'PENDING'|'RESOLVED'|'CLOSED'|string; mine?: boolean; unassigned?: boolean; q?: string }) {
+export async function getConversations(params?: { status?: 'OPEN'|'IN_PROGRESS'|'PENDING'|'RESOLVED'|'CLOSED'|string; mine?: boolean; unassigned?: boolean; q?: string; aiOnly?: boolean }) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;
   if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) throw new Error('Not authorized');
@@ -29,11 +29,23 @@ export async function getConversations(params?: { status?: 'OPEN'|'IN_PROGRESS'|
     }
   }
   try {
-    const convos = await prisma.conversation.findMany({ where, orderBy: { lastMessageAt: 'desc' }, include: { user: true, assignedTo: true }, take: 200 });
+    if (params?.aiOnly) {
+      try { (where.AND ||= []).push({ aiHandled: true } as any); } catch {}
+    }
+    const base = { where, orderBy: { lastMessageAt: 'desc' }, include: { user: true, assignedTo: true }, take: 200 } as any;
+    let convos = await prisma.conversation.findMany(base);
     return convos as any;
   } catch (err) {
     console.warn('[getConversations] DB error', err);
-    return [] as any[];
+    // retry without aiHandled filter if schema is not migrated
+    try {
+      const base = { where: { ...where, AND: undefined }, orderBy: { lastMessageAt: 'desc' }, include: { user: true, assignedTo: true }, take: 200 } as any;
+      const convos = await prisma.conversation.findMany(base);
+      return convos as any;
+    } catch (e) {
+      console.warn('[getConversations] fallback failed', e);
+      return [] as any[];
+    }
   }
 }
 
@@ -89,7 +101,11 @@ export async function sendMessageAction(_prev: any, form: FormData) {
   if (!toPhone || !text) return { ok: false, error: 'Falta teléfono o texto' };
   const convo = await ensureConversation(toPhone, userId);
   const res = await sendWhatsAppText(toPhone, text);
-  await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id } });
+  try {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id, actor: 'AGENT' as any, metadata: null as any } });
+  } catch {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id } });
+  }
   await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastOutboundAt: new Date(), unreadCustomer: { increment: 1 } as any } });
   revalidatePath('/dashboard/admin/mensajeria', 'page' as any);
   return res.ok ? { ok: true } : { ok: false, error: res.error };
@@ -109,7 +125,11 @@ export async function sendMessageActionSafe(_prev: any, form: FormData) {
 
 export async function ingestInboundMessage(phone: string, text: string, waMessageId?: string) {
   const convo = await ensureConversation(phone, undefined);
-  await prisma.message.create({ data: { conversationId: convo.id, direction: 'IN' as any, status: 'DELIVERED' as any, type: 'TEXT', text, waMessageId } });
+  try {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'IN' as any, status: 'DELIVERED' as any, type: 'TEXT', text, waMessageId, actor: 'CUSTOMER' as any, metadata: null as any } });
+  } catch {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'IN' as any, status: 'DELIVERED' as any, type: 'TEXT', text, waMessageId } });
+  }
   await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastInboundAt: new Date(), unreadAgent: { increment: 1 } as any } });
   try { revalidatePath('/dashboard/admin/mensajeria', 'page' as any); } catch {}
   return { ok: true } as any;
@@ -129,7 +149,11 @@ export async function sendBulkMessageAction(_prev: any, form: FormData) {
     try {
       const convo = await ensureConversation(p, undefined);
       const res = await sendWhatsAppText(p, text);
-      await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id } });
+      try {
+        await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id, actor: 'AGENT' as any, metadata: null as any } });
+      } catch {
+        await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id } });
+      }
       await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastOutboundAt: new Date(), unreadCustomer: { increment: 1 } as any } });
       results.push({ phone: p, ok: res.ok, error: res.ok ? undefined : res.error });
     } catch (e: any) {
@@ -153,7 +177,11 @@ export async function sendDirectMessageAction(_prev: any, form: FormData) {
   if (!user || !phone) return { ok: false, error: 'El usuario no tiene teléfono' };
   const convo = await ensureConversation(phone, user.id);
   const res = await sendWhatsAppText(phone, text);
-  await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id } });
+  try {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id, actor: 'AGENT' as any, metadata: null as any } });
+  } catch {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text, waMessageId: res.id } });
+  }
   await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastOutboundAt: new Date(), unreadCustomer: { increment: 1 } as any } });
   try { revalidatePath('/dashboard/admin/mensajeria', 'page' as any); } catch {}
   return res.ok ? { ok: true } : { ok: false, error: res.error };
@@ -251,12 +279,40 @@ export async function getConversationStats() {
     const unassigned = await prisma.conversation.count({ where: { assignedToId: null as any } });
     const mine = await prisma.conversation.count({ where: { assignedToId: (session?.user as any)?.id } });
     const unread = await prisma.conversation.aggregate({ _sum: { unreadAgent: true } });
-    return { counts, unassigned, mine, unread: Number((unread as any)?._sum?.unreadAgent || 0) } as any;
+    let ai = 0;
+    try { ai = await prisma.conversation.count({ where: { aiHandled: true } as any }); } catch {}
+    return { counts, unassigned, mine, unread: Number((unread as any)?._sum?.unreadAgent || 0), ai } as any;
   } catch (err) {
     console.warn('[getConversationStats] DB error', err);
     const counts = { OPEN: 0, IN_PROGRESS: 0, PENDING: 0, RESOLVED: 0, CLOSED: 0 } as any;
-    return { counts, unassigned: 0, mine: 0, unread: 0 } as any;
+    return { counts, unassigned: 0, mine: 0, unread: 0, ai: 0 } as any;
   }
+}
+
+export async function logAIMessage(params: { phone?: string; conversationId?: string; text: string; mediaUrl?: string | null; type?: 'TEXT'|'IMAGE'|'VIDEO' }) {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as any)?.role as string | undefined;
+  if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) throw new Error('Not authorized');
+  const { phone, conversationId, text, mediaUrl, type } = params;
+  if (!conversationId && !phone) throw new Error('Missing conversation or phone');
+  let convo = null as any;
+  if (conversationId) {
+    convo = await prisma.conversation.findUnique({ where: { id: conversationId } });
+  } else if (phone) {
+    convo = await ensureConversation(String(phone));
+  }
+  if (!convo) throw new Error('Conversation not found');
+  const t = (type || (mediaUrl ? 'IMAGE' : 'TEXT')) as any;
+  try {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: 'SENT' as any, type: t, text, mediaUrl: mediaUrl || undefined, actor: 'AI' as any, metadata: null as any } });
+  } catch {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: 'SENT' as any, type: t, text, mediaUrl: mediaUrl || undefined } });
+  }
+  try { await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastOutboundAt: new Date(), aiHandled: true as any, unreadCustomer: { increment: 1 } as any } }); } catch {
+    await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastOutboundAt: new Date(), unreadCustomer: { increment: 1 } as any } });
+  }
+  try { revalidatePath('/dashboard/admin/mensajeria', 'page' as any); } catch {}
+  return { ok: true } as any;
 }
 
 export async function getAgents() {
@@ -320,7 +376,11 @@ export async function sendAttachmentAction(_prev: any, form: FormData) {
   if (!toPhone || !mediaUrl) return { ok: false, error: 'Faltan teléfono o media' };
   const convo = await ensureConversation(toPhone, undefined);
   const res = await sendWhatsAppMedia(toPhone, mediaUrl, mediaType as any, caption);
-  await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: mediaType === 'video' ? 'VIDEO' : 'IMAGE', text: caption, mediaUrl, waMessageId: res.id } });
+  try {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: mediaType === 'video' ? 'VIDEO' : 'IMAGE', text: caption, mediaUrl, waMessageId: res.id, actor: 'AGENT' as any, metadata: null as any } });
+  } catch {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: mediaType === 'video' ? 'VIDEO' : 'IMAGE', text: caption, mediaUrl, waMessageId: res.id } });
+  }
   await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastOutboundAt: new Date(), unreadCustomer: { increment: 1 } as any } });
   try { revalidatePath('/dashboard/admin/mensajeria', 'page' as any); } catch {}
   return res.ok ? { ok: true } : { ok: false, error: res.error };
@@ -337,7 +397,11 @@ export async function sendProductLinkAction(_prev: any, form: FormData) {
   const message = `${text ? text + '\n' : ''}${productUrl}`;
   const convo = await ensureConversation(toPhone, undefined);
   const res = await sendWhatsAppText(toPhone, message);
-  await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text: message, waMessageId: res.id } });
+  try {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text: message, waMessageId: res.id, actor: 'AGENT' as any, metadata: null as any } });
+  } catch {
+    await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUT' as any, status: res.ok ? ('SENT' as any) : ('FAILED' as any), type: 'TEXT', text: message, waMessageId: res.id } });
+  }
   await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastOutboundAt: new Date(), unreadCustomer: { increment: 1 } as any } });
   try { revalidatePath('/dashboard/admin/mensajeria', 'page' as any); } catch {}
   return res.ok ? { ok: true } : { ok: false, error: res.error };

@@ -1,4 +1,4 @@
-import { getConversations, getConversationWithMessages, sendMessageActionSafe as sendMessageAction, assignConversation, setConversationStatus, getAgents, getConversationStats, sendBulkAdvancedAction, sendDirectMessageAction, searchUsersForCampaign, sendAttachmentAction, sendProductLinkAction, saveConversationAsCustomer } from '@/server/actions/messaging';
+﻿import { getConversations, getConversationWithMessages, sendMessageActionSafe as sendMessageAction, assignConversation, setConversationStatus, getAgents, getConversationStats, sendBulkAdvancedAction, sendDirectMessageAction, searchUsersForCampaign, sendAttachmentAction, sendProductLinkAction, saveConversationAsCustomer } from '@/server/actions/messaging';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PendingButton } from '@/components/pending-button';
@@ -6,6 +6,8 @@ import UnreadBeacon from '@/components/messaging/unread-beacon';
 import ChatMessages from '@/components/messaging/ChatMessages';
 import ProductSharePicker from '@/components/messaging/ProductSharePicker';
 import PhoneDisplay from '@/components/messaging/PhoneDisplay';
+import InboxFilters from '@/components/messaging/InboxFilters';
+import ConversationList from '@/components/messaging/ConversationList';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,9 +26,10 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
   const status = (sp?.status as string) || '';
   const mine = (sp?.mine as string) === '1';
   const unassigned = (sp?.unassigned as string) === '1';
+  const ai = (sp?.ai as string) === '1';
   const q = (sp?.q as string) || '';
 
-  const convos = await getConversations({ status: status || undefined, mine, unassigned, q: q || undefined });
+  const convos = await getConversations({ status: status || undefined, mine, unassigned, q: q || undefined, aiOnly: ai });
   const uq = (sp?.uq as string) || '';
   const userResults = uq ? await searchUsersForCampaign(uq) : ([] as any[]);
   const selectedId = (sp?.id as string) || (convos[0]?.id || '');
@@ -40,7 +43,7 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
     <div className="p-0">
       <UnreadBeacon />
       <div className="px-4 sm:px-6 md:px-8 pt-4">
-        <h1 className="text-2xl font-bold mb-2">Mensajería (WhatsApp)</h1>
+        <h1 className="text-2xl font-bold mb-2">Mensajer�a (WhatsApp)</h1>
       </div>
 
       {!(process.env.MANYCHAT_API_KEY) && (
@@ -112,7 +115,9 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
         <div className="border rounded p-2 bg-white"><div className="text-gray-500">No leidos</div><div className="text-xl font-semibold">{stats.unread}</div></div>
       </div>
 
-      {/* Filters */}
+      {/* Filters (legacy) hidden by new InboxFilters */}
+      {false && (
+      <>
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
         <a className="px-2 py-1 border rounded" href="/dashboard/admin/mensajeria">Todas</a>
         <a className="px-2 py-1 border rounded" href="/dashboard/admin/mensajeria?status=OPEN">Abiertas</a>
@@ -124,7 +129,7 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
         <a className="px-2 py-1 border rounded" href="/dashboard/admin/mensajeria?unassigned=1">Sin asignar</a>
       </div>
 
-      {/* Search */}
+      {/* Search (legacy) hidden by new InboxFilters) */}
       <form method="get" className="mb-4 flex items-center gap-2">
         <input name="q" defaultValue={q} placeholder="Buscar por nombre, email o telefono" className="border rounded px-3 py-2 flex-1" />
         {status && <input type="hidden" name="status" value={status} />}
@@ -133,9 +138,14 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
         <button className="px-3 py-2 bg-brand hover:bg-opacity-90 text-white rounded">Buscar</button>
         <a href="/dashboard/admin/mensajeria" className="px-3 py-2 border rounded">Limpiar</a>
       </form>
+      </>
+      )}
 
+      <div className="px-4 sm:px-6 md:px-8"><InboxFilters status={status} mine={!!mine} unassigned={!!unassigned} q={q} ai={ai} stats={stats as any} /></div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-4 px-4 sm:px-6 md:px-8 pb-4">
         {/* List */}
+        <ConversationList items={convos as any} selectedId={selectedId} filters={{ status, mine, unassigned, q } as any} />
+        {false && (
         <div className="bg-white rounded shadow divide-y max-h-[70vh] overflow-auto">
           {convos.length === 0 ? (
             <div className="p-4 text-gray-600">Aun no hay conversaciones.</div>
@@ -178,6 +188,7 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
               );
             })}
         </div>
+        )}
 
         {/* Detail */}
         <div className="md:col-span-2 bg-white rounded shadow flex flex-col max-h-[75vh] overflow-hidden">
@@ -209,6 +220,22 @@ export default async function MensajeriaPage(props: { searchParams?: SearchParam
                   </details>
                 </div>
                 <div className="flex items-center gap-2">
+                  <a
+                    className="px-2 py-1 border rounded text-sm"
+                    href={`/api/messaging/conversations/${selected.convo.id}/transcript`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Descargar transcript
+                  </a>
+                  <a
+                    className="px-2 py-1 border rounded text-sm"
+                    href={`/api/messaging/conversations/${selected.convo.id}/transcript.pdf`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    PDF
+                  </a>
                   {!selected.convo.user && (
                     <form action={saveConversationAsCustomer}>
                       <input type="hidden" name="id" value={selected.convo.id} />

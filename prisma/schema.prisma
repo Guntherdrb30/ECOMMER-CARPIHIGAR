@@ -603,6 +603,7 @@ model Conversation {
   updatedAt     DateTime  @updatedAt
   lastMessageAt DateTime?
   messages      Message[]
+  aiHandled     Boolean   @default(false)
 
   @@index([userId])
   @@index([phone])
@@ -619,9 +620,17 @@ model Message {
   text           String?
   mediaUrl       String?
   waMessageId    String?
+  actor          MessageActor?
+  metadata       Json?
   createdAt      DateTime         @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+enum MessageActor {
+  CUSTOMER
+  AGENT
+  AI
 }
 
 // Noticias generadas a partir de proyectos de aliados
