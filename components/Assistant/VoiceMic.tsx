@@ -1,16 +1,29 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAssistantCtx } from "./AssistantProvider";
 import { useVoiceSession } from "./hooks/useVoiceSession";
 import { speak, stopSpeaking } from "./hooks/speech";
 
 export default function VoiceMic() {
   const a = useAssistantCtx();
+  const bufferRef = useRef<string>("");
+  const timerRef = useRef<any>(null);
+  const [pending, setPending] = useState(false);
   const onFinal = async (text: string) => {
-    if (!text?.trim()) return;
-    await a.sendMessage(text);
-    // Enable TTS during a voice session
-    a.setTtsEnabled(true);
+    const t = String(text || '').trim();
+    if (!t) return;
+    bufferRef.current = bufferRef.current ? `${bufferRef.current} ${t}` : t;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setPending(true);
+    timerRef.current = setTimeout(async () => {
+      const finalText = bufferRef.current.trim();
+      bufferRef.current = "";
+      setPending(false);
+      if (finalText) {
+        await a.sendMessage(finalText);
+        a.setTtsEnabled(true);
+      }
+    }, 700);
   };
   const v = useVoiceSession(onFinal);
 
@@ -32,8 +45,7 @@ export default function VoiceMic() {
       aria-pressed={v.listening}
       aria-label="Hablar con el asistente"
     >
-      {v.listening ? '●' : '🎤'}
+      {pending ? '…' : (v.listening ? '●' : '🎤')}
     </button>
   );
 }
-

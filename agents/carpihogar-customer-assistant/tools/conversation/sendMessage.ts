@@ -1,5 +1,6 @@
 import { log } from '../../utils/logger';
 import { safeQuery } from '../../utils/db';
+import prisma from '@/lib/prisma';
 import { searchProducts } from '../products/searchProducts';
 import { getProductDetails } from '../products/getProductDetails';
 import { addToCart } from '../cart/addToCart';
@@ -41,15 +42,21 @@ export async function* sendMessage(input: { text: string; customerId?: string })
   const intent = detectIntent(text);
 
   async function resolveProductIdFromText(t: string): Promise<string | null> {
-    // Try to pick an id/slug/sku token (alnum or hyphen, 6+ chars)
     const token = (t.match(/[a-z0-9\-_]{4,}/i) || [])[0];
     if (!token) return null;
-    const like = `%${token}%`;
-    const r = await safeQuery(
-      'select id from products where lower(sku) = lower($1) or lower(slug) = lower($1) or id = $1 or name ilike $2 limit 1',
-      [token, like]
-    );
-    return (r.rows[0] as any)?.id || null;
+    const byId = await prisma.product.findUnique({ where: { id: token }, select: { id: true } });
+    if (byId?.id) return byId.id;
+    const found = await prisma.product.findFirst({
+      where: {
+        OR: [
+          { slug: { equals: token, mode: 'insensitive' } },
+          { sku: { equals: token, mode: 'insensitive' } },
+          { name: { contains: token, mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true },
+    });
+    return found?.id || null;
   }
 
   async function latestOrderId(customerId: string, statuses?: string[]): Promise<string | null> {
@@ -71,7 +78,6 @@ export async function* sendMessage(input: { text: string; customerId?: string })
   }
 
   if (intent === 'search_products') {
-    yield { type: 'text', message: 'Entendido. Estoy buscando opciones…' };
     const products = await searchProducts(text);
     if (products.length) {
       yield { type: 'rich', message: 'Te recomiendo estos productos:', products };
