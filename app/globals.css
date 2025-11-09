@@ -14,3 +14,6 @@
   .form-textarea { @apply w-full border rounded px-2 py-1 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500; }
   .form-actions { @apply flex flex-wrap items-center gap-2; }
 }
+
+/* Assistant styles */
+@import url("../components/Assistant/styles.css");

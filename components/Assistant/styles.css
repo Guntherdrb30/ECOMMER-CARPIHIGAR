@@ -1,0 +1,10 @@
+/* Atlas Assistant styles */
+.atlas-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.atlas-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.atlas-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 8px; }
+.atlas-shadow { box-shadow: 0 10px 30px rgba(0,0,0,0.12), 0 6px 10px rgba(0,0,0,0.08); }
+.atlas-panel { background: #fff; border-radius: 16px 0 0 16px; }
+.atlas-brand { color: #E62C1A; }
+.atlas-button { background: #E62C1A; color: #fff; }
+.atlas-button:hover { filter: brightness(0.95); }
+

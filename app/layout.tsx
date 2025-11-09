@@ -7,6 +7,7 @@ import { Inter } from "next/font/google";
 import { getSettings } from "@/server/actions/settings";
 import Providers from "@/components/providers";
 import CookieConsent from "@/components/cookie-consent";
+import AssistantRoot from "@/components/Assistant/AssistantRoot";
 import { cookies } from "next/headers";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -83,6 +84,7 @@ export default async function RootLayout({
             supportHours={(settings as any).supportHours || undefined}
           />
           <CookieConsent initialConsent={initialConsent} />
+          <AssistantRoot />
         </Providers>
       </body>
     </html>
