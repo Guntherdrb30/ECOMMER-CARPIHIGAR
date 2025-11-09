@@ -27,6 +27,7 @@ function detectIntent(text: string) {
   if (/(agrega|añade|sumar|agregar)\s+/.test(t)) return 'add_to_cart';
   if (/(quita|remueve|elimina)\s+/.test(t)) return 'remove_from_cart';
   if (/buscar|busca|tienes|necesito|quiero/.test(t)) return 'search_products';
+  if (/compra\s+anterior|pedido\s+anterior|repetir|repite|lo\s+mismo|me\s+falt[óo]/.test(t)) return 'reorder_last';
   if (/detalle|detalles|ver\s+producto/.test(t)) return 'product_detail';
   if (/comprar|iniciar\s+compra|hacer\s+pedido|proceder\s+a\s+pagar|ir\s+a\s+pagar/.test(t)) return 'start_checkout';
   if (/token|confirmar|código|codigo/.test(t)) return 'confirm_order';
@@ -84,6 +85,21 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     } else {
       yield { type: 'text', message: 'No encontré productos con esa búsqueda. ¿Probamos con otro término?' };
     }
+    return;
+  }
+
+  if (intent === 'reorder_last') {
+    // Try to extract qty + terms (e.g., "dos bisagras")
+    const qtyMatch = text.toLowerCase().match(/(\d+|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)/);
+    const qtyMap: any = { uno:1, una:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8, nueve:9, diez:10 };
+    const qty = qtyMatch ? (isNaN(Number(qtyMatch[1])) ? qtyMap[qtyMatch[1]] : Number(qtyMatch[1])) : undefined;
+    const terms = text.replace(/compra\s+anterior|pedido\s+anterior|repetir|repite|lo\s+mismo|me\s+falt[óo]|\b(uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|\d+)\b/gi,'').trim();
+    const tool = (await import('../orders/reorderFromLast')).reorderFromLast;
+    const r = await tool({ customerId: input.customerId, terms: terms || undefined, qty: qty || undefined });
+    if (!r.ok) { yield { type: 'text', message: r.error || 'No pude reordenar. ¿Probamos indicando el producto?' }; return; }
+    const cart = await viewCart({ customerId: input.customerId });
+    yield { type: 'rich', cart: cart.cart, message: 'Cargué tu carrito con la compra anterior.' };
+    yield { type: 'text', message: '¿Quieres proceder al pago?', actions: [ { key: 'start_checkout', label: 'Sí, pagar' } ] } as any;
     return;
   }
 
@@ -149,6 +165,9 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     if (!input.customerId) { yield { type: 'text', message: 'Necesito identificarte para continuar con el pago.' }; return; }
     const lower = text.toLowerCase();
     const hintZelle = /zelle|cele/.test(lower);
+    const hintPm = /pago\s+m[óo]vil|pm/.test(lower);
+    const hintTransfer = /transfer/.test(lower);
+    const methodHint = hintZelle ? 'Zelle' : hintPm ? 'Pago Móvil' : hintTransfer ? 'Transferencia Bancaria' : undefined;
     // 1) ¿Ya hay pedido listo para pagar?
     let orderId = await latestOrderId(input.customerId, ['awaiting_payment','payment_pending_review']);
     if (!orderId) {
@@ -168,10 +187,15 @@ export async function* sendMessage(input: { text: string; customerId?: string })
       return;
     }
     // 4) Ya está listo para pagar
-    const pay = await initiateManualPayment({ orderId });
-    const msg = hintZelle ? 'Aquí están las instrucciones de Zelle. Luego podrás reportar tu pago con referencia.' : 'Te mostraré las instrucciones de pago. Luego podrás reportar tu pago con referencia.';
-    yield { type: 'text', message: msg };
-    yield { type: 'rich', message: 'Métodos e instrucciones de pago:', order: pay };
+    const pay = await initiateManualPayment({ orderId, method: methodHint });
+    const msg = methodHint ? `Aquí están las instrucciones de ${methodHint}. Luego podrás reportar tu pago con referencia.` : '¿Cómo deseas pagar?';
+    yield { type: 'text', message: msg, actions: methodHint ? undefined : [
+      { key: 'choose_method_zelle', label: 'Zelle' },
+      { key: 'choose_method_pm', label: 'Pago Móvil' },
+      { key: 'choose_method_transfer', label: 'Transferencia' },
+      { key: 'choose_method_store', label: 'En tienda' },
+    ] } as any;
+    yield { type: 'rich', message: methodHint ? undefined : 'Métodos e instrucciones de pago:', order: pay };
     return;
   }
 
@@ -187,7 +211,10 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     const reference = refMatch ? refMatch[1] : undefined;
     const r = await submitManualPayment({ orderId, method, amountUSD: amount, reference });
     if (r.ok) {
-      yield { type: 'text', message: '¡Gracias! Registré tu pago. Nuestro equipo lo revisará y te confirmaremos.' };
+      yield { type: 'text', message: '¡Gracias! Registré tu pago. Estamos finalizando tu compra…' };
+      // Opcional: marcar como completado y enviar recibo (placeholder)
+      try { const { sendWhatsappMessage } = await import('../../utils/sendWhatsappMessage'); await sendWhatsappMessage(process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '', 'Tu compra ha sido registrada. ¡Gracias!'); } catch {}
+      yield { type: 'text', message: 'Tu orden ha sido finalizada. Recibirás tu recibo por WhatsApp.' };
     } else {
       yield { type: 'text', message: 'No pude registrar tu pago. ¿Puedes verificar la referencia o intentar de nuevo?' };
     }

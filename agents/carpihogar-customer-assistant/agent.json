@@ -17,5 +17,6 @@
     "./tools/orders/validateConfirmationToken.ts",
     "./tools/orders/initiateManualPayment.ts",
     "./tools/orders/submitManualPayment.ts"
+    ,"./tools/orders/reorderFromLast.ts"
   ]
 }

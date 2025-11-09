@@ -15,3 +15,4 @@ export * as OrdersGenerateToken from './tools/orders/generateConfirmationToken';
 export * as OrdersValidateToken from './tools/orders/validateConfirmationToken';
 export * as OrdersInitiatePayment from './tools/orders/initiateManualPayment';
 export * as OrdersSubmitPayment from './tools/orders/submitManualPayment';
+export * as OrdersReorderFromLast from './tools/orders/reorderFromLast';

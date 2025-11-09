@@ -3,6 +3,7 @@ import React from "react";
 import { useCartStore } from "@/store/cart";
 import { useRouter } from "next/navigation";
 import { useAssistantCtx } from "./AssistantProvider";
+import { toast } from "sonner";
 
 type Product = { id: string; name: string; slug: string; images?: string[]; priceUSD?: number };
 
@@ -21,6 +22,7 @@ export default function ProductCard({ p, onAdd }: { p: Product; onAdd?: (p: Prod
         body: JSON.stringify({ key: 'add_to_cart', productId: p.id, qty: 1 })
       });
     } catch {}
+    try { toast.success(`Se agregó "${p.name}" al carrito`); } catch {}
     try {
       a.append({
         id: crypto.randomUUID(),

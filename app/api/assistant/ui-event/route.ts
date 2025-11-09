@@ -28,6 +28,18 @@ export async function POST(req: Request) {
       }
       return NextResponse.json({ ok: false });
     }
+    if (key === 'choose_payment_method') {
+      const method = String(body?.method || '');
+      const latest = (Agent as any).OrdersCreateDraft?.createOrderDraft; // fallback if no order exists
+      const pay = (Agent as any).OrdersInitiatePayment?.initiateManualPayment;
+      // find latest order awaiting payment, otherwise create
+      // We don't have a tool to fetch latest order id here; rely on initiateManualPayment without order
+      if (typeof pay === 'function') {
+        const r = await pay({ orderId: 'latest', method });
+        return NextResponse.json({ ok: true, order: r });
+      }
+      return NextResponse.json({ ok: false });
+    }
     if (key === 'view_cart') {
       const view = (Agent as any).CartView?.viewCart;
       const cart = typeof view === 'function' ? await view({ customerId }) : undefined;

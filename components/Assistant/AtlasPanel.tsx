@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import ChatWindow from "./ChatWindow";
 import { useAssistantCtx } from "./AssistantProvider";
 import { ShoppingCart } from "lucide-react";
+import { useCartStore } from "@/store/cart";
 import VoiceMic from "./VoiceMic";
 
 export default function AtlasPanel() {
@@ -54,11 +55,14 @@ export default function AtlasPanel() {
                       }
                     } catch {}
                   }}
-                  className="p-2 rounded border text-sm"
+                  className="relative p-2 rounded border text-sm"
                   title="Ver carrito"
                   aria-label="Ver carrito"
                 >
                   <ShoppingCart size={16} />
+                  {(() => { try { const n = useCartStore.getState().getTotalItems(); return n > 0 ? (
+                    <span className="absolute -top-1 -right-1 bg-[var(--color-brand)] text-white text-[10px] rounded-full px-1.5 py-[1px]">{n}</span>
+                  ) : null; } catch { return null; } })()}
                 </button>
                 <button onClick={() => a.reset()} className="px-2 py-1 rounded border text-sm" title="Vaciar conversación">Vaciar</button>
                 <button onClick={close} className="px-2 py-1 rounded border text-sm">Cerrar</button>
@@ -72,6 +76,21 @@ export default function AtlasPanel() {
                   const r = await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'view_cart' }) });
                   const j = await r.json();
                   if (j?.cart) a.append({ id: crypto.randomUUID(), from: 'agent', at: Date.now(), content: { type: 'rich', message: 'Tu carrito', cart: j.cart } } as any);
+                } catch {}
+                return;
+              }
+              if (key === 'choose_method_zelle' || key === 'choose_method_pm' || key === 'choose_method_transfer' || key === 'choose_method_store') {
+                const method = key === 'choose_method_zelle' ? 'Zelle' : key === 'choose_method_pm' ? 'Pago Móvil' : key === 'choose_method_transfer' ? 'Transferencia Bancaria' : 'Pago en Tienda';
+                try {
+                  // cache in localStorage to prefill checkout later
+                  try { localStorage.setItem('assistant:paymentMethod', method); } catch {}
+                  const r = await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'choose_payment_method', method }) });
+                  const j = await r.json();
+                  if (j?.order) {
+                    a.append({ id: crypto.randomUUID(), from: 'agent', at: Date.now(), content: { type: 'rich', message: `Instrucciones de ${method}:`, order: j.order } } as any);
+                  } else {
+                    a.append({ id: crypto.randomUUID(), from: 'agent', at: Date.now(), content: { type: 'text', message: `Usaremos ${method}.` } } as any);
+                  }
                 } catch {}
                 return;
               }
