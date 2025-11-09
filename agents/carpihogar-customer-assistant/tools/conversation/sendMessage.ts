@@ -1,6 +1,9 @@
 import { log } from '../../utils/logger';
 import { safeQuery } from '../../utils/db';
 import prisma from '@/lib/prisma';
+import OpenAI from 'openai';
+import fs from 'fs';
+import path from 'path';
 import { searchProducts } from '../products/searchProducts';
 import { getProductDetails } from '../products/getProductDetails';
 import { addToCart } from '../cart/addToCart';
@@ -221,14 +224,29 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     return;
   }
 
+import OpenAI from 'openai';
+import fs from 'fs';
+import path from 'path';
+
+// ... (existing code)
+
   // Smalltalk / fallback
-  // As fallback, attempt a search if seems like a product phrase
-  if (text.length >= 3) {
-    const products = await searchProducts(text);
-    if (products.length) {
-      yield { type: 'rich', message: 'Esto podría interesarte:', products };
-      return;
-    }
+  try {
+    const persona = fs.readFileSync(path.join(__dirname, '../../persona.md'), 'utf-8');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const chatCompletion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: persona },
+        { role: 'user', content: text },
+      ],
+    });
+    const message = chatCompletion.choices[0].message.content;
+    yield { type: 'text', message: message || 'No sé qué decir a eso. ¿Puedes intentar de otra forma?' };
+    return;
+  } catch (error) {
+    log('assistant.error.smalltalk', { error });
+    // If LLM fails, provide a very basic fallback
+    yield { type: 'text', message: 'Lo siento, estoy teniendo problemas para procesar tu solicitud. ¿Puedes intentar con una búsqueda de producto?' };
   }
-  yield { type: 'text', message: 'Claro, ¿qué producto buscas o qué necesitas hacer? Puedo ayudarte a encontrar, agregar al carrito y completar tu compra.' };
 }

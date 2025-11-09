@@ -24,21 +24,19 @@ function normalizeTerms(q: string): string[] {
 export async function searchProducts(queryText: string) {
   const q = String(queryText || '').trim();
   const terms = normalizeTerms(q);
-  if (!q) return [] as any[];
+  if (!q || terms.length === 0) return [] as any[];
   try {
-    const or: any[] = [];
-    if (terms.length) {
-      for (const t of terms) {
-        or.push({ name: { contains: t, mode: 'insensitive' } });
-        or.push({ description: { contains: t, mode: 'insensitive' } });
-        or.push({ sku: { contains: t, mode: 'insensitive' } });
-        or.push({ code: { contains: t, mode: 'insensitive' } });
-      }
-    } else {
-      or.push({ name: { contains: q, mode: 'insensitive' } });
-    }
     const items = await prisma.product.findMany({
-      where: { OR: or },
+      where: {
+        AND: terms.map(t => ({
+          OR: [
+            { name: { contains: t, mode: 'insensitive' } },
+            { description: { contains: t, mode: 'insensitive' } },
+            { sku: { contains: t, mode: 'insensitive' } },
+            { code: { contains: t, mode: 'insensitive' } },
+          ],
+        })),
+      },
       select: { id: true, name: true, slug: true, images: true, priceClientUSD: true, priceUSD: true },
       orderBy: { createdAt: 'desc' },
       take: 20,
