@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { useSession, signOut } from 'next-auth/react';
-import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X, Minus, Plus, Trash2 } from 'lucide-react';
+import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X, Minus, Plus, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import ProductLiveSearch from '@/components/product-live-search';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -20,6 +20,10 @@ import {
   Card,
   CardBody,
   Divider,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
 } from '@heroui/react';
 
 type HeaderProps = {
@@ -39,6 +43,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartVisible, setCartVisible] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const cartRef = useRef<HTMLDivElement | null>(null);
   const { data: session, status } = useSession();
 
@@ -114,7 +119,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
       <Navbar
         isBordered
         isBlurred
-        maxWidth="2xl"
+        maxWidth="full"
         className="bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-md"
         isMenuOpen={isOpen}
         onMenuOpenChange={setIsOpen}
@@ -135,10 +140,17 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
           </Link>
         </NavbarBrand>
 
-        <NavbarContent className="hidden md:flex w-full justify-center">
+        <NavbarContent className="hidden xl:flex flex-1 justify-center min-w-0">
           <div className="w-full max-w-xl">
             <ProductLiveSearch placeholder="Buscar productos..." />
           </div>
+        </NavbarContent>
+
+        {/* Compact search (lg only) */}
+        <NavbarContent className="hidden lg:flex xl:hidden" justify="center">
+          <Button isIconOnly variant="light" aria-label="Buscar" onPress={() => setSearchOpen(true)}>
+            <Search size={18} />
+          </Button>
         </NavbarContent>
 
         <NavbarContent justify="end" className="hidden lg:flex items-center gap-1">
@@ -322,6 +334,20 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
         </NavbarMenu>
       </Navbar>
 
+      {/* Quick search modal for compact layouts */}
+      <Modal isOpen={searchOpen} onOpenChange={setSearchOpen} placement="top-center">
+        <ModalContent>
+          {() => (
+            <>
+              <ModalHeader>Buscar productos</ModalHeader>
+              <ModalBody>
+                <ProductLiveSearch placeholder="Buscar productos..." />
+              </ModalBody>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
       {/* Mobile cart drawer */}
       {cartVisible && (
         <div className="md:hidden fixed inset-0 z-[60]">
@@ -435,4 +461,3 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
     </header>
   );
 }
-
