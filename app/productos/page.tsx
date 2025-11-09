@@ -27,7 +27,11 @@ export default async function ProductosPage({
     getProducts({ categorySlug, q: q || undefined }),
     getSettings(),
     getCategoriesFlattened(),
-    userId ? prisma.wishlistItem.findMany({ where: { userId } }) : Promise.resolve([]),
+    userId
+      ? prisma.wishlistItem
+          .findMany({ where: { userId } })
+          .catch(() => [] as any[])
+      : Promise.resolve([] as any[]),
   ]);
 
   const wishlistedProductIds = new Set(wishlistItems.map(item => item.productId));
@@ -103,5 +107,4 @@ export default async function ProductosPage({
     </div>
   );
 }
-
 

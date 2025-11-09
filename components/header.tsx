@@ -122,6 +122,11 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
         maxWidth="full"
         height={72}
         className="bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-md"
+        classNames={{
+          menu: 'bg-white shadow-xl border',
+          menuItem: 'bg-white',
+          wrapper: 'h-[72px]'
+        }}
         isMenuOpen={isOpen}
         onMenuOpenChange={setIsOpen}
       >
@@ -175,7 +180,8 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                 color="danger"
                 isInvisible={!isClient || totalItems === 0}
                 placement="top-right"
-                classNames={{ badge: 'bg-[var(--color-brand)] text-white' }}
+                size="lg"
+                classNames={{ badge: 'bg-[var(--color-brand)] text-white ring-2 ring-white' }}
               >
                 <Button variant="light" size="sm" onPress={() => setCartOpen((v) => !v)} startContent={<ShoppingCart size={18} />}>
                   Carrito
@@ -299,7 +305,8 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
               content={isClient && totalItems > 0 ? totalItems : null}
               color="danger"
               isInvisible={!isClient || totalItems === 0}
-              classNames={{ badge: 'bg-[var(--color-brand)] text-white' }}
+              size="lg"
+              classNames={{ badge: 'bg-[var(--color-brand)] text-white ring-2 ring-white' }}
             >
               <Button isIconOnly variant="light" aria-label="Carrito" onPress={openCart}>
                 <ShoppingCart size={20} />
