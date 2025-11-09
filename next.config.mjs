@@ -21,6 +21,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'picsum.photos', pathname: '/**' },
     ],
   },
+  transpilePackages: ['agents'],
 };
 
 export default nextConfig;
