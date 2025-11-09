@@ -300,6 +300,12 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
 
         {/* Mobile actions */}
         <NavbarContent className="md:hidden" justify="end">
+          {/* Mobile search trigger (between logo and cart) */}
+          <NavbarItem>
+            <Button isIconOnly variant="light" aria-label="Buscar" onPress={() => setSearchOpen(true)}>
+              <Search size={20} />
+            </Button>
+          </NavbarItem>
           <NavbarItem>
             <Badge
               content={isClient && totalItems > 0 ? totalItems : null}
