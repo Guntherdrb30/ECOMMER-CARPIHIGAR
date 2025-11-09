@@ -372,7 +372,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
             <>
               <ModalHeader>Buscar productos</ModalHeader>
               <ModalBody>
-                <ProductLiveSearch placeholder="Buscar productos..." />
+                <ProductLiveSearch placeholder="Buscar productos..." onDone={() => setSearchOpen(false)} />
               </ModalBody>
             </>
           )}

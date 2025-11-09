@@ -17,9 +17,11 @@ type Item = {
 export default function ProductLiveSearch({
   placeholder = "Buscar productos...",
   defaultQuery = "",
+  onDone,
 }: {
   placeholder?: string;
   defaultQuery?: string;
+  onDone?: () => void;
 }) {
   const router = useRouter();
   const [q, setQ] = useState(defaultQuery || "");
@@ -80,6 +82,7 @@ export default function ProductLiveSearch({
     else params.delete("q");
     router.push(`/productos?${params.toString()}`);
     setOpen(false);
+    try { onDone?.(); } catch {}
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -190,7 +193,7 @@ export default function ProductLiveSearch({
               aria-selected={idx === active}
               onMouseEnter={() => setActive(idx)}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => router.push(`/productos/${it.slug}`)}
+              onClick={() => { router.push(`/productos/${it.slug}`); try { onDone?.(); } catch {} }}
               className={`w-full text-left px-3 py-2 flex gap-3 items-center ${
                 idx === active ? "bg-gray-100" : "hover:bg-gray-50"
               }`}
@@ -216,6 +219,16 @@ export default function ProductLiveSearch({
             </button>
           ))}
         </div>
+      )}
+      {open && q.trim() && (
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { router.push(`/productos?q=${encodeURIComponent(q.trim())}`); setOpen(false); try { onDone?.(); } catch {} }}
+          className="mt-1 w-full text-center text-sm bg-white border rounded-md py-2 hover:bg-gray-50 shadow-sm"
+        >
+          Ver todos los resultados
+        </button>
       )}
     </div>
   );
