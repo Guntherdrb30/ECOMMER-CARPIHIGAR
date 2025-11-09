@@ -1,27 +1,34 @@
-import { safeQuery } from '../../utils/db';
+import prisma from '@/lib/prisma';
 import { log } from '../../utils/logger';
 
 export async function searchProducts(queryText: string) {
-  const q = `%${queryText}%`;
-  const sql = `
-    select id, name, slug,
-      coalesce(cast(priceclientusd as text), cast(priceusd as text)) as price_usd,
-      images
-    from products
-    where name ilike $1
-    order by createdat desc
-    limit 20
-  `;
-  const r = await safeQuery(sql, [q]);
-  if (r.error) log('products.search.error', { error: r.error, q: queryText });
-  const items = (r.rows || []).map((row: any) => ({
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    images: row.images || [],
-    priceUSD: row.price_usd ? Number(row.price_usd) : undefined,
-  }));
-  log('products.search', { q: queryText, count: items.length });
-  return items;
+  const q = String(queryText || '').trim();
+  if (!q) return [] as any[];
+  try {
+    const items = await prisma.product.findMany({
+      where: {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+          { sku: { contains: q, mode: 'insensitive' } },
+          { code: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true, name: true, slug: true, images: true, priceClientUSD: true, priceUSD: true },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+    const mapped = items.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      images: p.images || [],
+      priceUSD: typeof p.priceClientUSD === 'object' && p.priceClientUSD !== null ? Number(p.priceClientUSD) : (typeof p.priceUSD === 'object' && p.priceUSD !== null ? Number(p.priceUSD) : undefined),
+    }));
+    log('products.search', { q, count: mapped.length });
+    return mapped;
+  } catch (e: any) {
+    log('products.search.error', { q, error: String(e?.message || e) });
+    return [] as any[];
+  }
 }
-

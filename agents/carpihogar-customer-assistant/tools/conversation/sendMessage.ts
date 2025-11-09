@@ -160,5 +160,13 @@ export async function* sendMessage(input: { text: string; customerId?: string })
   }
 
   // Smalltalk / fallback
+  // As fallback, attempt a search if seems like a product phrase
+  if (text.length >= 3) {
+    const products = await searchProducts(text);
+    if (products.length) {
+      yield { type: 'rich', message: 'Esto podría interesarte:', products };
+      return;
+    }
+  }
   yield { type: 'text', message: 'Claro, ¿qué producto buscas o qué necesitas hacer? Puedo ayudarte a encontrar, agregar al carrito y completar tu compra.' };
 }
