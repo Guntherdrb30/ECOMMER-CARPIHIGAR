@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { speak } from "./speech";
 
 export type AssistantContent = {
   type: "text" | "voice" | "rich";
@@ -89,6 +90,9 @@ export function useAssistant() {
             try {
               const payload = JSON.parse(t) as AssistantContent;
               append({ id: crypto.randomUUID(), from: "agent", at: Date.now(), content: payload });
+              if (payload.type === 'text' && payload.message) {
+                try { speak(payload.message); } catch {}
+              }
             } catch {}
           }
         }
@@ -116,12 +120,19 @@ export function useAssistant() {
           buffer = parts.pop() || "";
           for (const p of parts) {
             const t = p.trim(); if (!t) continue;
-            try { append({ id: crypto.randomUUID(), from: "agent", at: Date.now(), content: JSON.parse(t) as AssistantContent }); } catch {}
+            try {
+              const payload = JSON.parse(t) as AssistantContent;
+              append({ id: crypto.randomUUID(), from: "agent", at: Date.now(), content: payload });
+              if (payload.type === 'text' && payload.message) {
+                try { speak(payload.message); } catch {}
+              }
+            } catch {}
           }
         }
       } else {
         const json = await res.json().catch(() => ({}));
         append({ id: crypto.randomUUID(), from: "agent", at: Date.now(), content: json as any });
+        if ((json as any)?.message) try { speak((json as any).message); } catch {}
       }
     } catch {
       append({ id: crypto.randomUUID(), from: "agent", at: Date.now(), content: { type: "text", message: "No pude procesar el audio." } });
@@ -145,4 +156,3 @@ export function useAssistant() {
     append,
   }), [state, setOpen, sendMessage, sendAudio, reset, append]);
 }
-

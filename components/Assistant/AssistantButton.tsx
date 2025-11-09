@@ -1,9 +1,9 @@
 "use client";
 import React from "react";
-import { useAssistant } from "./hooks/useAssistant";
+import { useAssistantCtx } from "./AssistantProvider";
 
 export default function AssistantButton() {
-  const a = useAssistant();
+  const a = useAssistantCtx();
   const open = () => a.setOpen(true);
   // Hide on admin/dashboard
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) return null;
@@ -17,4 +17,3 @@ export default function AssistantButton() {
     </button>
   );
 }
-

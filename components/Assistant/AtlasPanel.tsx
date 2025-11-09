@@ -2,11 +2,11 @@
 import React, { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ChatWindow from "./ChatWindow";
-import { useAssistant } from "./hooks/useAssistant";
-import AudioRecorder from "./AudioRecorder";
+import { useAssistantCtx } from "./AssistantProvider";
+import VoiceMic from "./VoiceMic";
 
 export default function AtlasPanel() {
-  const a = useAssistant();
+  const a = useAssistantCtx();
   const [text, setText] = useState("");
   const close = () => a.setOpen(false);
   const send = async () => { if (!text.trim()) return; const t = text; setText(""); await a.sendMessage(t); };
@@ -57,7 +57,7 @@ export default function AtlasPanel() {
                 className="flex-1 border rounded-full px-4 py-2 text-sm"
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
               />
-              <AudioRecorder onSend={(b64) => a.sendAudio(b64)} />
+              <VoiceMic />
               <button className="px-3 py-2 rounded-full atlas-button" onClick={send} disabled={a.loading}>Enviar</button>
             </div>
           </motion.div>
