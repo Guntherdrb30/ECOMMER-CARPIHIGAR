@@ -28,6 +28,11 @@ export async function POST(req: Request) {
       }
       return NextResponse.json({ ok: false });
     }
+    if (key === 'view_cart') {
+      const view = (Agent as any).CartView?.viewCart;
+      const cart = typeof view === 'function' ? await view({ customerId }) : undefined;
+      return NextResponse.json({ ok: true, cart: cart?.cart });
+    }
     // Extend with more actions (remove_from_cart, start_checkout, etc.)
     return NextResponse.json({ ok: true, key });
   } catch (e: any) {

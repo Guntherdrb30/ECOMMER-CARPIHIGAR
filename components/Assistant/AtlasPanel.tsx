@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ChatWindow from "./ChatWindow";
 import { useAssistantCtx } from "./AssistantProvider";
+import { ShoppingCart } from "lucide-react";
 import VoiceMic from "./VoiceMic";
 
 export default function AtlasPanel() {
@@ -43,13 +44,39 @@ export default function AtlasPanel() {
                 <span className="font-semibold">Asistente</span>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      const r = await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'view_cart' }) });
+                      const j = await r.json();
+                      if (j?.cart) {
+                        a.append({ id: crypto.randomUUID(), from: 'agent', at: Date.now(), content: { type: 'rich', message: 'Tu carrito', cart: j.cart } } as any);
+                      }
+                    } catch {}
+                  }}
+                  className="p-2 rounded border text-sm"
+                  title="Ver carrito"
+                  aria-label="Ver carrito"
+                >
+                  <ShoppingCart size={16} />
+                </button>
                 <button onClick={() => a.reset()} className="px-2 py-1 rounded border text-sm" title="Vaciar conversación">Vaciar</button>
                 <button onClick={close} className="px-2 py-1 rounded border text-sm">Cerrar</button>
               </div>
             </div>
 
             {/* Chat */}
-            <ChatWindow messages={a.messages} onAction={onAction} />
+            <ChatWindow messages={a.messages} onAction={async (key) => {
+              if (key === 'view_cart') {
+                try {
+                  const r = await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'view_cart' }) });
+                  const j = await r.json();
+                  if (j?.cart) a.append({ id: crypto.randomUUID(), from: 'agent', at: Date.now(), content: { type: 'rich', message: 'Tu carrito', cart: j.cart } } as any);
+                } catch {}
+                return;
+              }
+              try { await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }); } catch {}
+            }} />
 
             {/* Footer */}
             <div className="p-3 border-t bg-white flex items-center gap-2">

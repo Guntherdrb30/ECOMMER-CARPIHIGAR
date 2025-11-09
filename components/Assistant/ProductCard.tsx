@@ -2,6 +2,7 @@
 import React from "react";
 import { useCartStore } from "@/store/cart";
 import { useRouter } from "next/navigation";
+import { useAssistantCtx } from "./AssistantProvider";
 
 type Product = { id: string; name: string; slug: string; images?: string[]; priceUSD?: number };
 
@@ -10,6 +11,7 @@ export default function ProductCard({ p, onAdd }: { p: Product; onAdd?: (p: Prod
   const img = (p.images && p.images[0]) || '';
   const price = typeof p.priceUSD === 'number' ? p.priceUSD : undefined;
   const router = useRouter();
+  const a = useAssistantCtx();
 
   const addToCart = async () => {
     try { addItem({ id: p.id, name: p.name, priceUSD: price || 0, image: img, sku: p.slug }, 1); } catch {}
@@ -18,6 +20,18 @@ export default function ProductCard({ p, onAdd }: { p: Product; onAdd?: (p: Prod
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: 'add_to_cart', productId: p.id, qty: 1 })
       });
+    } catch {}
+    try {
+      a.append({
+        id: crypto.randomUUID(),
+        from: 'agent',
+        at: Date.now(),
+        content: {
+          type: 'text',
+          message: `Se agregó "${p.name}" al carrito.`,
+          actions: [{ key: 'view_cart', label: 'Ver carrito' }]
+        }
+      } as any);
     } catch {}
     onAdd?.(p);
   };
