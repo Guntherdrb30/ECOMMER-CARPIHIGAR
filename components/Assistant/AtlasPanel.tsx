@@ -42,7 +42,10 @@ export default function AtlasPanel() {
                 <img src="/logo-default.svg" className="h-6 w-auto" alt="Carpihogar" />
                 <span className="font-semibold">Asistente</span>
               </div>
-              <button onClick={close} className="px-2 py-1 rounded border text-sm">Cerrar</button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => a.reset()} className="px-2 py-1 rounded border text-sm" title="Vaciar conversación">Vaciar</button>
+                <button onClick={close} className="px-2 py-1 rounded border text-sm">Cerrar</button>
+              </div>
             </div>
 
             {/* Chat */}
