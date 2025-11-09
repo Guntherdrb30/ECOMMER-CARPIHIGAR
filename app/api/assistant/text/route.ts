@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { sendMessage } from '@/server/assistant/agent';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
