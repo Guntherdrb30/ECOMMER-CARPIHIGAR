@@ -178,7 +178,7 @@ export default function ProductLiveSearch({
       </form>
       {open && items.length > 0 && (
         <div
-          className="absolute z-20 mt-1 w-full bg-white border rounded shadow"
+          className="absolute z-[1200] mt-1 w-full bg-white border rounded-lg shadow-xl"
           role="listbox"
           aria-expanded={open}
         >

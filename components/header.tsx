@@ -351,7 +351,22 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
       </Navbar>
 
       {/* Quick search modal for compact layouts */}
-      <Modal isOpen={searchOpen} onOpenChange={setSearchOpen} placement="top-center">
+      <Modal
+        isOpen={searchOpen}
+        onOpenChange={setSearchOpen}
+        placement="top-center"
+        backdrop="opaque"
+        size="md"
+        radius="lg"
+        shadow="lg"
+        scrollBehavior="inside"
+        classNames={{
+          wrapper: 'w-full max-w-md mx-auto p-2',
+          base: 'bg-white',
+          header: 'bg-white border-b px-4 py-3',
+          body: 'bg-white p-4',
+        }}
+      >
         <ModalContent>
           {() => (
             <>
