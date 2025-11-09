@@ -23,11 +23,31 @@ export default function CartView({ onRelated }: { onRelated?: () => void }) {
               <div className="text-xs text-gray-600">${(it.priceUSD || 0).toFixed(2)}</div>
             </div>
             <div className="flex items-center gap-1">
-              <button className="px-2 py-1 border rounded text-xs" onClick={() => updateQty(it.id, Math.max(1, it.quantity - 1))}>-</button>
+              <button
+                className="px-2 py-1 border rounded text-xs"
+                onClick={async () => {
+                  const next = Math.max(0, it.quantity - 1);
+                  if (next === 0) removeItem(it.id); else updateQty(it.id, next);
+                  try { await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'update_qty', productId: it.id, qty: next }) }); } catch {}
+                }}
+              >-</button>
               <span className="text-sm w-6 text-center">{it.quantity}</span>
-              <button className="px-2 py-1 border rounded text-xs" onClick={() => updateQty(it.id, it.quantity + 1)}>+</button>
+              <button
+                className="px-2 py-1 border rounded text-xs"
+                onClick={async () => {
+                  const next = it.quantity + 1;
+                  updateQty(it.id, next);
+                  try { await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'update_qty', productId: it.id, qty: next }) }); } catch {}
+                }}
+              >+</button>
             </div>
-            <button className="px-2 py-1 border rounded text-xs" onClick={() => removeItem(it.id)}>Eliminar</button>
+            <button
+              className="px-2 py-1 border rounded text-xs"
+              onClick={async () => {
+                removeItem(it.id);
+                try { await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'remove_from_cart', productId: it.id }) }); } catch {}
+              }}
+            >Eliminar</button>
           </div>
         ))}
       </div>

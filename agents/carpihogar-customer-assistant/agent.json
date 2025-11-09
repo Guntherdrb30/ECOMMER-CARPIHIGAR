@@ -11,6 +11,7 @@
     "./tools/cart/addToCart.ts",
     "./tools/cart/removeFromCart.ts",
     "./tools/cart/viewCart.ts",
+    "./tools/cart/updateCartQty.ts",
     "./tools/orders/createOrderDraft.ts",
     "./tools/orders/generateConfirmationToken.ts",
     "./tools/orders/validateConfirmationToken.ts",
@@ -18,4 +19,3 @@
     "./tools/orders/submitManualPayment.ts"
   ]
 }
-

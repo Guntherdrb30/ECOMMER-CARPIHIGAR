@@ -33,6 +33,23 @@ export async function POST(req: Request) {
       const cart = typeof view === 'function' ? await view({ customerId }) : undefined;
       return NextResponse.json({ ok: true, cart: cart?.cart });
     }
+    if (key === 'remove_from_cart') {
+      const productId = String(body?.productId || '');
+      const remove = (Agent as any).CartRemove?.removeFromCart;
+      const view = (Agent as any).CartView?.viewCart;
+      if (typeof remove === 'function') await remove({ customerId, productId });
+      const cart = typeof view === 'function' ? await view({ customerId }) : undefined;
+      return NextResponse.json({ ok: true, cart: cart?.cart });
+    }
+    if (key === 'update_qty') {
+      const productId = String(body?.productId || '');
+      const qty = Number(body?.qty || 0);
+      const upd = (Agent as any).CartUpdateQty?.updateCartQty;
+      const view = (Agent as any).CartView?.viewCart;
+      if (typeof upd === 'function') await upd({ customerId, productId, qty });
+      const cart = typeof view === 'function' ? await view({ customerId }) : undefined;
+      return NextResponse.json({ ok: true, cart: cart?.cart });
+    }
     // Extend with more actions (remove_from_cart, start_checkout, etc.)
     return NextResponse.json({ ok: true, key });
   } catch (e: any) {
