@@ -1,0 +1,21 @@
+{
+  "name": "carpihogar-customer-assistant",
+  "description": "Agente MCP de asistencia al cliente Carpihogar con voz, carrito, búsqueda de productos, confirmación por token y pagos manuales.",
+  "entrypoint": "index.ts",
+  "tools": [
+    "./tools/conversation/sendMessage.ts",
+    "./tools/conversation/processIncomingAudio.ts",
+    "./tools/conversation/generateVoiceReply.ts",
+    "./tools/products/searchProducts.ts",
+    "./tools/products/getProductDetails.ts",
+    "./tools/cart/addToCart.ts",
+    "./tools/cart/removeFromCart.ts",
+    "./tools/cart/viewCart.ts",
+    "./tools/orders/createOrderDraft.ts",
+    "./tools/orders/generateConfirmationToken.ts",
+    "./tools/orders/validateConfirmationToken.ts",
+    "./tools/orders/initiateManualPayment.ts",
+    "./tools/orders/submitManualPayment.ts"
+  ]
+}
+

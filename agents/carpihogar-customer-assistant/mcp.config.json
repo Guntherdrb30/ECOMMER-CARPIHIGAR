@@ -1,0 +1,14 @@
+{
+  "agent": "carpihogar-customer-assistant",
+  "env": {
+    "DATABASE_URL": "${DATABASE_URL}",
+    "MANYCHAT_API_KEY": "${MANYCHAT_API_KEY}",
+    "MANYCHAT_BASE_URL": "${MANYCHAT_BASE_URL:-https://api.manychat.com}",
+    "MANYCHAT_SEND_PATH": "${MANYCHAT_SEND_PATH:-/whatsapp/sendMessage}"
+  },
+  "logging": {
+    "level": "info",
+    "json": true
+  }
+}
+
