@@ -175,6 +175,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                 color="danger"
                 isInvisible={!isClient || totalItems === 0}
                 placement="top-right"
+                classNames={{ badge: 'bg-[var(--color-brand)] text-white' }}
               >
                 <Button variant="light" size="sm" onPress={() => setCartOpen((v) => !v)} startContent={<ShoppingCart size={18} />}>
                   Carrito
@@ -298,6 +299,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
               content={isClient && totalItems > 0 ? totalItems : null}
               color="danger"
               isInvisible={!isClient || totalItems === 0}
+              classNames={{ badge: 'bg-[var(--color-brand)] text-white' }}
             >
               <Button isIconOnly variant="light" aria-label="Carrito" onPress={openCart}>
                 <ShoppingCart size={20} />
