@@ -1,7 +1,6 @@
 import { log } from '../../utils/logger';
 import { safeQuery } from '../../utils/db';
 import prisma from '@/lib/prisma';
-import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import { searchProducts } from '../products/searchProducts';
@@ -227,15 +226,31 @@ export async function* sendMessage(input: { text: string; customerId?: string })
   // Smalltalk / fallback
   try {
     const persona = fs.readFileSync(path.join(__dirname, '../../persona.md'), 'utf-8');
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const chatCompletion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: persona },
-        { role: 'user', content: text },
-      ],
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      yield { type: 'text', message: 'Por ahora no puedo conversar, pero puedo ayudarte a buscar productos o gestionar tu carrito.' } as any;
+      return;
+    }
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: persona },
+          { role: 'user', content: text },
+        ],
+        temperature: 0.7,
+      }),
     });
-    const message = chatCompletion.choices[0].message.content;
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+    const data: any = await response.json();
+    const message = data?.choices?.[0]?.message?.content as string | undefined;
     yield { type: 'text', message: message || 'No sé qué decir a eso. ¿Puedes intentar de otra forma?' };
     return;
   } catch (error) {
