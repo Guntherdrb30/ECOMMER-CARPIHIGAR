@@ -1,4 +1,4 @@
-﻿'use client';
+﻿﻿'use client';
 
 import React from 'react';
 import Link from 'next/link';
@@ -14,6 +14,7 @@ export default function AdminSidebar() {
   const rootEmail = String(process.env.NEXT_PUBLIC_ROOT_EMAIL || process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
   const isRoot = role === 'ADMIN' && email === rootEmail;
   const [allyPending, setAllyPending] = React.useState(0);
+  const [unreadMsgs, setUnreadMsgs] = React.useState(0);
 
   React.useEffect(() => {
     let active = true;
@@ -26,6 +27,24 @@ export default function AdminSidebar() {
     return () => {
       active = false;
     };
+  }, []);
+
+  // Poll unread messages for Mensajería
+  React.useEffect(() => {
+    let alive = true;
+    let t: any;
+    const tick = async () => {
+      try {
+        const r = await fetch('/api/messaging/unread', { cache: 'no-store' });
+        const j = await r.json();
+        if (!alive) return;
+        const n = Number(j?.unread || 0);
+        setUnreadMsgs(isNaN(n) ? 0 : n);
+      } catch {}
+      t = setTimeout(tick, 15000);
+    };
+    tick();
+    return () => { alive = false; if (t) clearTimeout(t); };
   }, []);
 
   const links = [
@@ -74,6 +93,11 @@ export default function AdminSidebar() {
                 {l.href === '/dashboard/admin/ventas/aliados' && allyPending > 0 && (
                   <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[11px] px-1.5 min-w-[1.25rem]">
                     {allyPending}
+                  </span>
+                )}
+                {l.href === '/dashboard/admin/mensajeria' && unreadMsgs > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[11px] px-1.5 min-w-[1.25rem]">
+                    {unreadMsgs}
                   </span>
                 )}
               </span>

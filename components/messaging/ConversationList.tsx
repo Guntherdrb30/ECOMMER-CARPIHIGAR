@@ -60,6 +60,7 @@ export default function ConversationList({
             const name = c.user?.name || c.phone;
             const sub = c.assignedTo?.name || c.assignedTo?.email || "Sin asignar";
             const ts = timeText(c.lastMessageAt || c.createdAt || null);
+            const isNew = (c.unreadAgent || 0) > 0;
             return (
               <ListboxItem
                 key={c.id}
@@ -79,13 +80,18 @@ export default function ConversationList({
               >
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <div className="truncate font-medium text-sm">{name}</div>
+                    <div className={`truncate text-sm ${isNew ? 'font-semibold' : 'font-medium'}`}>{name}</div>
                     <div className="text-xs text-default-500 truncate">
                       {sub}
                     </div>
                   </div>
                   <div className="text-[10px] text-default-400 ml-2">{ts}</div>
                 </div>
+                {isNew && (
+                  <div className="mt-1">
+                    <Chip size="sm" color="primary" variant="flat">Nuevo</Chip>
+                  </div>
+                )}
               </ListboxItem>
             );
           })}
@@ -94,4 +100,3 @@ export default function ConversationList({
     </div>
   );
 }
-
