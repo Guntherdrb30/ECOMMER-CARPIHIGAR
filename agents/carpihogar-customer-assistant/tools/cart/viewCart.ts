@@ -1,5 +1,4 @@
 import { safeQuery } from '../../utils/db';
-import { ensureCustomerId } from '../../utils/customer';
 
 export async function viewCart(input: { customerId?: string }) {
   const cid = String(input.customerId || '');
@@ -14,8 +13,6 @@ export async function viewCart(input: { customerId?: string }) {
       cartId = (c.rows[0] as any)?.id || null;
     }
   }
-  if (!cartId) return { cart: { id: null, items: [], totalUSD: 0 } };
-  const cartId = (c.rows[0] as any)?.id;
   if (!cartId) return { cart: { id: null, items: [], totalUSD: 0 } };
   const itemsSql = `
     select ci.product_id, ci.quantity, ci.price_usd,
