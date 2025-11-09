@@ -120,6 +120,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
         isBordered
         isBlurred
         maxWidth="full"
+        height={72}
         className="bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-md"
         isMenuOpen={isOpen}
         onMenuOpenChange={setIsOpen}
@@ -180,8 +181,8 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                 </Button>
               </Badge>
               {cartOpen && (
-                <div className="absolute right-0 mt-2 w-80 z-50">
-                  <Card className="shadow-xl">
+                <div className="absolute right-0 mt-2 w-80 z-[1000]">
+                  <Card className="shadow-xl bg-white border">
                     <CardBody className="p-0">
                       <div className="p-3 font-semibold">Tu Carrito</div>
                       <Divider />
