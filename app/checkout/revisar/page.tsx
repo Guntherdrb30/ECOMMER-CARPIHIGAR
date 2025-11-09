@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -91,7 +91,10 @@ export default function RevisarPage() {
   const subtotal = useMemo(() => getTotalUSD(), [getTotalUSD, items]);
   const iva = useMemo(() => subtotal * (ivaPercent / 100), [subtotal, ivaPercent]);
   const totalUSD = useMemo(() => subtotal + iva, [subtotal, iva]);
-  const totalVES = useMemo(() => totalUSD * tasaVES, [totalUSD, tasaVES]);
+  const discountPct = useMemo(() => paymentCurrency === 'USD' ? 0.20 : 0, [paymentCurrency]);
+  const discountUSD = useMemo(() => totalUSD * discountPct, [totalUSD, discountPct]);
+  const payableUSD = useMemo(() => totalUSD - discountUSD, [totalUSD, discountUSD]);
+  const totalVES = useMemo(() => payableUSD * tasaVES, [payableUSD, tasaVES]);
 
   const initialState = { ok: false as boolean, error: '' as string };
   const [state, formAction] = useFormState(confirmOrderAction as any, initialState);
@@ -213,7 +216,7 @@ export default function RevisarPage() {
           </div>
           {paymentCurrency === 'USD' && (
             <div className="mt-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded p-3">
-              Pagando en dólares obtienes un 25% de descuento.
+              Pagando en d�lares obtienes un 20% de descuento.
             </div>
           )}
         </div>
