@@ -28,9 +28,9 @@ function detectIntent(text: string) {
   if (/(quita|remueve|elimina)\s+/.test(t)) return 'remove_from_cart';
   if (/buscar|busca|tienes|necesito|quiero/.test(t)) return 'search_products';
   if (/detalle|detalles|ver\s+producto/.test(t)) return 'product_detail';
-  if (/comprar|iniciar\s+compra|hacer\s+pedido/.test(t)) return 'start_checkout';
-  if (/token|confirmar|código/.test(t)) return 'confirm_order';
-  if (/pago|pagar|transferencia|zelle|pago móvil|pago movil|punto/.test(t)) return 'init_payment';
+  if (/comprar|iniciar\s+compra|hacer\s+pedido|proceder\s+a\s+pagar|ir\s+a\s+pagar/.test(t)) return 'start_checkout';
+  if (/token|confirmar|código|codigo/.test(t)) return 'confirm_order';
+  if (/pago|pagar|transferencia|zelle|cele|pago móvil|pago movil|punto/.test(t)) return 'init_payment';
   if (/(reportar|subir)\s+pago|comprobante|referencia/.test(t)) return 'report_payment';
   return 'smalltalk';
 }
@@ -147,10 +147,30 @@ export async function* sendMessage(input: { text: string; customerId?: string })
 
   if (intent === 'init_payment') {
     if (!input.customerId) { yield { type: 'text', message: 'Necesito identificarte para continuar con el pago.' }; return; }
-    const orderId = await latestOrderId(input.customerId, ['awaiting_payment','payment_pending_review']);
-    if (!orderId) { yield { type: 'text', message: 'No encuentro un pedido listo para pago. ¿Creamos uno?' }; return; }
-    yield { type: 'text', message: 'Te mostraré las instrucciones de pago. Luego podrás reportar tu pago con referencia.' };
+    const lower = text.toLowerCase();
+    const hintZelle = /zelle|cele/.test(lower);
+    // 1) ¿Ya hay pedido listo para pagar?
+    let orderId = await latestOrderId(input.customerId, ['awaiting_payment','payment_pending_review']);
+    if (!orderId) {
+      // 2) ¿Hay pedido pendiente de confirmación? reenvía token
+      const pendingId = await latestOrderId(input.customerId, ['pending_confirmation']);
+      if (pendingId) {
+        await generateConfirmationToken({ orderId: pendingId });
+        yield { type: 'text', message: 'Reenvié el código de confirmación por WhatsApp. Dímelo aquí para continuar.' };
+        return;
+      }
+      // 3) Crea pedido desde el carrito y envía token
+      const draft = await createOrderDraft({ customerId: input.customerId });
+      if (!draft.ok) { yield { type: 'text', message: draft.error || 'No pude crear tu pedido. ¿Tienes productos en el carrito?' }; return; }
+      await generateConfirmationToken({ orderId: draft.order.id });
+      yield { type: 'text', message: 'Te envié un código de confirmación por WhatsApp. Dímelo aquí para continuar con el pago.' };
+      if (hintZelle) yield { type: 'text', message: 'Anotaré que deseas pagar por Zelle.' };
+      return;
+    }
+    // 4) Ya está listo para pagar
     const pay = await initiateManualPayment({ orderId });
+    const msg = hintZelle ? 'Aquí están las instrucciones de Zelle. Luego podrás reportar tu pago con referencia.' : 'Te mostraré las instrucciones de pago. Luego podrás reportar tu pago con referencia.';
+    yield { type: 'text', message: msg };
     yield { type: 'rich', message: 'Métodos e instrucciones de pago:', order: pay };
     return;
   }

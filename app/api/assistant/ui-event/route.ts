@@ -18,6 +18,16 @@ export async function POST(req: Request) {
       const cart = typeof view === 'function' ? await view({ customerId }) : undefined;
       return NextResponse.json({ ok: true, cart: cart?.cart });
     }
+    if (key === 'start_checkout') {
+      const create = (Agent as any).OrdersCreateDraft?.createOrderDraft;
+      const token = (Agent as any).OrdersGenerateToken?.generateConfirmationToken;
+      if (typeof create === 'function') {
+        const r = await create({ customerId });
+        if (r?.ok && typeof token === 'function') await token({ orderId: r.order.id });
+        return NextResponse.json({ ok: !!r?.ok, order: r?.order || null });
+      }
+      return NextResponse.json({ ok: false });
+    }
     // Extend with more actions (remove_from_cart, start_checkout, etc.)
     return NextResponse.json({ ok: true, key });
   } catch (e: any) {

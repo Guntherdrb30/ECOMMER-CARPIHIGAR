@@ -36,10 +36,21 @@ export default function CartView({ onRelated }: { onRelated?: () => void }) {
         <div className="font-semibold">${totalUSD.toFixed(2)}</div>
       </div>
       <div className="mt-3 flex items-center gap-2">
-        <a href="/checkout/revisar" className="flex-1 text-center atlas-button rounded py-2">Proceder a pagar</a>
+        <a
+          href="/checkout/revisar"
+          className="flex-1 text-center atlas-button rounded py-2"
+          onClick={async (e) => {
+            try {
+              e.preventDefault();
+              await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'start_checkout' }) });
+            } catch {}
+            window.location.href = '/checkout/revisar';
+          }}
+        >
+          Proceder a pagar
+        </a>
         <button className="px-3 py-2 border rounded text-sm" onClick={onRelated}>Ver relacionados</button>
       </div>
     </div>
   );
 }
-
