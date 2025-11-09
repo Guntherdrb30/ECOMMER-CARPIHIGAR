@@ -75,7 +75,12 @@ export default async function RootLayout({
             {children}
           </main>
           <Toaster richColors />
-          <Footer />
+          <Footer
+            brandName={(settings as any).brandName || undefined}
+            contactEmail={(settings as any).contactEmail || 'root@carpihogar.com'}
+            contactPhone={(settings as any).contactPhone || undefined}
+            whatsappPhone={(settings as any).whatsappPhone || undefined}
+          />
           <CookieConsent initialConsent={initialConsent} />
         </Providers>
       </body>
