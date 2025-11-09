@@ -30,6 +30,7 @@ export default function ProductLiveSearch({
   const [active, setActive] = useState<number>(-1);
   const tRef = useRef<number | undefined>(undefined);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (tRef.current) window.clearTimeout(tRef.current);
@@ -82,6 +83,7 @@ export default function ProductLiveSearch({
     else params.delete("q");
     router.push(`/productos?${params.toString()}`);
     setOpen(false);
+    try { inputRef.current?.blur(); } catch {}
     try { onDone?.(); } catch {}
   };
 
@@ -169,6 +171,7 @@ export default function ProductLiveSearch({
     <div className="relative" ref={rootRef}>
       <form onSubmit={onSubmit} className="flex gap-2">
         <input
+          ref={inputRef}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={onKeyDown}
@@ -193,7 +196,12 @@ export default function ProductLiveSearch({
               aria-selected={idx === active}
               onMouseEnter={() => setActive(idx)}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { router.push(`/productos/${it.slug}`); try { onDone?.(); } catch {} }}
+              onClick={() => {
+                router.push(`/productos/${it.slug}`);
+                setOpen(false);
+                try { inputRef.current?.blur(); } catch {}
+                try { onDone?.(); } catch {}
+              }}
               className={`w-full text-left px-3 py-2 flex gap-3 items-center ${
                 idx === active ? "bg-gray-100" : "hover:bg-gray-50"
               }`}
