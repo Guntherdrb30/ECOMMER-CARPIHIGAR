@@ -1,8 +1,10 @@
-import type { Pool, QueryResult } from 'pg';
+// Avoid hard dependency on 'pg' types during build to prevent bundler errors
+type PgPoolType = any;
+type QueryResult<T = any> = { rows: T[]; rowCount: number };
 
-let pool: Pool | null = null;
+let pool: PgPoolType | null = null;
 
-async function getPool(): Promise<Pool> {
+async function getPool(): Promise<PgPoolType> {
   if (pool) return pool;
   // Lazy import to avoid forcing dependency unless used
   const { Pool: PgPool } = await import('pg');
@@ -40,4 +42,3 @@ export async function transaction<T>(fn: (client: any) => Promise<T>): Promise<T
     client.release();
   }
 }
-
