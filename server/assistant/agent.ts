@@ -9,16 +9,16 @@ export type AgentChunk = {
 
 import * as Agent from '@/agents/carpihogar-customer-assistant';
 
-export async function* sendMessage(text: string): AsyncGenerator<AgentChunk> {
+export async function* sendMessage(params: { text: string; customerId?: string }): AsyncGenerator<AgentChunk> {
   const gen: any = (Agent as any).ConversationSendMessage?.sendMessage;
-  if (typeof gen !== 'function') { yield { type: 'text', message: `Entendido: ${text}` }; return; }
-  for await (const c of gen({ text })) yield c as AgentChunk;
+  if (typeof gen !== 'function') { yield { type: 'text', message: `Entendido: ${params.text}` }; return; }
+  for await (const c of gen({ text: params.text, customerId: params.customerId })) yield c as AgentChunk;
 }
 
-export async function* processIncomingAudio(base64: string): AsyncGenerator<AgentChunk> {
+export async function* processIncomingAudio(params: { audioBase64: string; customerId?: string }): AsyncGenerator<AgentChunk> {
   const gen: any = (Agent as any).ConversationProcessAudio?.processIncomingAudio;
   if (typeof gen !== 'function') { yield { type: 'text', message: 'He recibido tu audio.' }; return; }
-  for await (const c of gen({ audioBase64: base64 })) yield c as AgentChunk;
+  for await (const c of gen({ audioBase64: params.audioBase64, customerId: params.customerId })) yield c as AgentChunk;
 }
 
 export async function uiEvent(_body: any): Promise<{ ok: boolean }>{

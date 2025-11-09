@@ -53,10 +53,19 @@ export async function* sendMessage(input: { text: string; customerId?: string })
   }
 
   async function latestOrderId(customerId: string, statuses?: string[]): Promise<string | null> {
-    const where = statuses && statuses.length ? 'and status = any($2)' : '';
-    const params: any[] = [customerId];
-    if (where) params.push(statuses);
-    const sql = `select id from orders where customer_id = $1 ${where} order by created_at desc limit 1`;
+    const isUuid = /^[0-9a-fA-F-]{36}$/.test(customerId);
+    const statusCond = statuses && statuses.length ? 'and o.status = any($2)' : '';
+    let sql: string;
+    let params: any[];
+    if (isUuid) {
+      sql = `select o.id from orders o where o.customer_id = $1 ${statusCond} order by o.created_at desc limit 1`;
+      params = [customerId];
+      if (statusCond) params.push(statuses);
+    } else {
+      sql = `select o.id from orders o join customers c on c.id = o.customer_id where c.external_id = $1 ${statusCond} order by o.created_at desc limit 1`;
+      params = [customerId];
+      if (statusCond) params.push(statuses);
+    }
     const r = await safeQuery(sql, params);
     return (r.rows[0] as any)?.id || null;
   }

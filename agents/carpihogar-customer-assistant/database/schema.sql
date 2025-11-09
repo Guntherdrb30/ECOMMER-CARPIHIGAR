@@ -9,6 +9,9 @@ create table if not exists customers (
   created_at timestamptz not null default now()
 );
 
+-- Map external app user id to agent customer
+alter table customers add column if not exists external_id text unique;
+
 create table if not exists carts (
   id uuid primary key default gen_random_uuid(),
   customer_id uuid references customers(id) on delete cascade,
@@ -72,4 +75,3 @@ create table if not exists order_pending_payments (
   status text not null default 'submitted',
   created_at timestamptz not null default now()
 );
-
