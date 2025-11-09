@@ -224,12 +224,6 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     return;
   }
 
-import OpenAI from 'openai';
-import fs from 'fs';
-import path from 'path';
-
-// ... (existing code)
-
   // Smalltalk / fallback
   try {
     const persona = fs.readFileSync(path.join(__dirname, '../../persona.md'), 'utf-8');
