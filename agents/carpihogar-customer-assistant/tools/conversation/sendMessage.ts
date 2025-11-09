@@ -83,7 +83,35 @@ export async function* sendMessage(input: { text: string; customerId?: string })
   if (intent === 'search_products') {
     const products = await searchProducts(text);
     if (products.length) {
-      yield { type: 'rich', message: 'Te recomiendo estos productos:', products };
+      yield { type: 'rich', message: 'Te recomiendo estos productos:', products } as any;
+      try {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (apiKey) {
+          const personaPath1 = path.join(__dirname, '../../persona.md');
+          const personaPath2 = path.join(process.cwd(), 'agents/carpihogar-customer-assistant/persona.md');
+          const persona = fs.existsSync(personaPath1)
+            ? fs.readFileSync(personaPath1, 'utf-8')
+            : (fs.existsSync(personaPath2) ? fs.readFileSync(personaPath2, 'utf-8') : 'Eres Carpihogar Asistente, asesora de ventas. Responde siempre en español con tono cálido, útil y profesional.');
+          const names = products.slice(0, 6).map(p => ({ nombre: p.name, precioUSD: p.priceUSD })).filter(Boolean);
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              temperature: 0.7,
+              messages: [
+                { role: 'system', content: persona },
+                { role: 'user', content: 'Redacta un breve mensaje de asesoría de ventas (1-3 frases) para ayudar a elegir entre los productos listados. No inventes precios ni stock; usa solo el contexto y haz una pregunta para clarificar necesidad o cantidad.\n\nContexto (JSON): ' + JSON.stringify({ consulta: text, productos: names }).slice(0,4000) }
+              ],
+            }),
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const pitch = (data as any)?.choices?.[0]?.message?.content as string | undefined;
+            if (pitch) yield { type: 'text', message: pitch } as any;
+          }
+        }
+      } catch {}
     } else {
       yield { type: 'text', message: 'No encontré productos con esa búsqueda. ¿Probamos con otro término?' };
     }

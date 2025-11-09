@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import * as Agent from '@/agents/carpihogar-customer-assistant';
