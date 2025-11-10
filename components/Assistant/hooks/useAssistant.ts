@@ -66,6 +66,20 @@ export function useAssistant() {
   const append = useCallback((m: AssistantMessage) => setState((s) => ({ ...s, messages: [...s.messages, m] })), []);
 
   const sendMessage = useCallback(async (text: string) => {
+    const sanitize = (s: string) => {
+      try {
+        const t = String(s).replace(/\s+/g,' ').trim();
+        if (!t) return t;
+        const out: string[] = [];
+        for (const w of t.split(' ')) {
+          const last = out[out.length-1];
+          if (last && last.toLowerCase() === w.toLowerCase()) continue;
+          out.push(w);
+        }
+        return out.join(' ');
+      } catch { return s; }
+    };
+    text = sanitize(text);
     const userMsg: AssistantMessage = { id: crypto.randomUUID(), from: "user", at: Date.now(), content: { type: "text", message: text } };
     setState((s) => ({ ...s, messages: [...s.messages, userMsg], loading: true }));
     try {

@@ -3,10 +3,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type Recog = any;
 
+function dedupeWords(text: string): string {
+  try {
+    const t = String(text).replace(/\s+/g, ' ').trim();
+    if (!t) return t;
+    const parts = t.split(' ');
+    const out: string[] = [];
+    for (const w of parts) {
+      const last = out[out.length - 1];
+      if (last && last.toLowerCase() === w.toLowerCase()) continue;
+      out.push(w);
+    }
+    return out.join(' ');
+  } catch { return text; }
+}
+
 export function useVoiceSession(onFinal: (text: string) => void) {
   const [listening, setListening] = useState(false);
   const [interimText, setInterim] = useState("");
   const recogRef = useRef<Recog | null>(null);
+  const lastFinalRef = useRef<string>("");
 
   useEffect(() => {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -21,8 +37,12 @@ export function useVoiceSession(onFinal: (text: string) => void) {
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const res = e.results[i];
         if (res.isFinal) {
-          const text = res[0].transcript;
-          onFinal(text);
+          const raw = res[0].transcript;
+          const cleaned = dedupeWords(raw);
+          if (cleaned && cleaned !== lastFinalRef.current) {
+            lastFinalRef.current = cleaned;
+            onFinal(cleaned);
+          }
           setInterim("");
         } else {
           interim += res[0].transcript;
@@ -49,4 +69,3 @@ export function useVoiceSession(onFinal: (text: string) => void) {
 
   return { listening, interimText, start, stop };
 }
-

@@ -353,6 +353,31 @@ export async function* sendMessage(input: { text: string; customerId?: string })
           const r = await submitManualPayment({ orderId, method: String(args?.method || ''), amountUSD: amount || 0, reference: args?.reference });
           return { ok: !!r.ok };
         }
+        case 'create_shipping_address': {
+          if (!input.customerId) return { ok: false, error: 'Se requiere identificación para guardar direcciones.' };
+          const data: any = {
+            userId: input.customerId,
+            fullname: String(args?.fullname || '').slice(0, 120),
+            phone: String(args?.phone || '').slice(0, 40),
+            state: String(args?.state || '').slice(0, 80),
+            city: String(args?.city || '').slice(0, 80),
+            zone: args?.zone ? String(args.zone).slice(0, 120) : null,
+            address1: String(args?.address1 || '').slice(0, 240),
+            address2: args?.address2 ? String(args.address2).slice(0, 240) : null,
+            notes: args?.notes ? String(args.notes).slice(0, 240) : null,
+          };
+          const addr = await prisma.address.create({ data });
+          return { ok: true, addressId: addr.id };
+        }
+        case 'set_order_shipping_address': {
+          if (!input.customerId) return { ok: false, error: 'Se requiere identificación.' };
+          const orderId = await latestOrderId(input.customerId, ['awaiting_payment','payment_pending_review','pending_confirmation','PENDIENTE']);
+          if (!orderId) return { ok: false, error: 'No hay orden activa.' };
+          const addressId = String(args?.addressId || '');
+          if (!addressId) return { ok: false, error: 'addressId requerido' };
+          try { await prisma.order.update({ where: { id: orderId }, data: { shippingAddressId: addressId } }); } catch {}
+          return { ok: true };
+        }
         default:
           return { ok: false, error: `Herramienta desconocida: ${name}` };
       }
