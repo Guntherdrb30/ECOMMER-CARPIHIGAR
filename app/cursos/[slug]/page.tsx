@@ -15,6 +15,8 @@ function Countdown({ to }: { to?: Date | null }) {
 export default async function CursoDetailPage({ params }: { params: { slug: string }}) {
   const course = await prisma.course.findUnique({ where: { slug: params.slug } })
   if (!course) return <div className="p-4">Curso no encontrado</div>
+  // Buscar producto virtual asociado
+  const product = await prisma.product.findFirst({ where: { OR: [ { slug: `curso-${course.slug}` }, { code: `course:${course.id}` } ] } as any })
   const curriculum = (course.curriculum as any) || []
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -33,7 +35,13 @@ export default async function CursoDetailPage({ params }: { params: { slug: stri
         <div className="text-xl font-bold">${Number(course.priceUSD as any).toFixed(2)}</div>
         <Countdown to={course.saleStartAt} />
       </div>
-      <div className="mb-4"><EnrollButton id={course.id} title={course.title} priceUSD={Number(course.priceUSD as any) || 0} image={course.heroImageUrl} /></div>
+      <div className="mb-4">
+        {product ? (
+          <EnrollButton id={product.id} title={course.title} priceUSD={Number(course.priceUSD as any) || 0} image={course.heroImageUrl} />
+        ) : (
+          <div className="text-sm text-red-600">Producto del curso no disponible para checkout.</div>
+        )}
+      </div>
       <h2 className="text-lg font-semibold mb-2">Contenido del curso</h2>
       <div className="space-y-2">
         {Array.isArray(curriculum) ? curriculum.map((m: any, i: number) => (

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export default function CoursesSettingsPage() {
   const [topic, setTopic] = useState("");
@@ -10,6 +10,7 @@ export default function CoursesSettingsPage() {
   const [video, setVideo] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string>("");
+  const [list, setList] = useState<any[]>([]);
 
   const submit = async () => {
     setBusy(true); setMsg("");
@@ -24,6 +25,16 @@ export default function CoursesSettingsPage() {
     } catch (e: any) { setMsg(String(e?.message||e)); }
     finally { setBusy(false); }
   }
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/courses');
+        const j = await r.json();
+        if (j?.ok) setList(j.courses || []);
+      } catch {}
+    })();
+  }, []);
 
   return (
     <div className="max-w-3xl mx-auto p-4">
@@ -40,8 +51,37 @@ export default function CoursesSettingsPage() {
         <input value={video} onChange={e=>setVideo(e.target.value)} placeholder="URL video (opcional)" className="w-full border rounded px-3 py-2 text-sm" />
         <button onClick={submit} disabled={busy} className="atlas-button rounded px-4 py-2 text-sm">{busy ? 'Creando...' : 'Crear curso con IA'}</button>
         {msg && <div className="text-sm mt-2">{msg}</div>}
-      </div>
     </div>
+      <div className="mt-10">
+        <h2 className="text-lg font-semibold mb-2">Cursos existentes</h2>
+        <div className="border rounded">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="text-left p-2">Título</th>
+                <th className="text-left p-2">Estado</th>
+                <th className="text-left p-2">Precio</th>
+                <th className="text-left p-2">Creado</th>
+                <th className="text-left p-2">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((c) => (
+                <tr key={c.id} className="border-t">
+                  <td className="p-2">{c.title}</td>
+                  <td className="p-2">{c.status}</td>
+                  <td className="p-2">${Number(c.priceUSD as any).toFixed(2)}</td>
+                  <td className="p-2">{new Date(c.createdAt).toLocaleDateString()}</td>
+                  <td className="p-2">
+                    <a href={`/dashboard/settings/courses/${c.id}`} className="underline">Editar</a>
+                    <a href={`/cursos/${c.slug}`} className="ml-3 underline">Ver</a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+  </div>
   )
 }
-

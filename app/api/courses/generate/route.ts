@@ -84,6 +84,30 @@ export async function POST(req: Request) {
       },
     })
 
+    // Crear producto virtual para permitir carrito/checkout
+    try {
+      const pslug = `curso-${slug}`.slice(0, 80)
+      const pname = `Curso: ${title}`.slice(0, 160)
+      await prisma.product.create({
+        data: {
+          name: pname,
+          slug: pslug,
+          brand: 'Carpihogar Cursos',
+          description: summary || `Curso sobre ${topic}`,
+          images: heroImageUrl ? [heroImageUrl] : [],
+          videoUrl: videoUrl || undefined,
+          sku: `CUR-${course.id.slice(0,6)}`,
+          code: `course:${course.id}`,
+          priceUSD: (priceUSD || 0) as any,
+          priceClientUSD: (priceUSD || 0) as any,
+          stock: 999,
+          isNew: true,
+        } as any,
+      })
+    } catch (e) {
+      console.warn('[courses.generate] no se pudo crear el producto virtual', e)
+    }
+
     // Anuncio en Novedades (News)
     try {
       await prisma.news.create({
@@ -91,7 +115,8 @@ export async function POST(req: Request) {
           authorId: (session?.user as any)?.id,
           imageUrl: heroImageUrl || '/logo-default.svg',
           title: `Nuevo curso: ${title}`,
-          excerpt: `Inscripciones abiertas. Inicia: ${saleStartAt ? saleStartAt.toISOString().slice(0,10) : 'pronto'}.`,
+          // Incluye un token de enlace parseable para CTA directo en Novedades
+          excerpt: `Inscripciones abiertas. Inicia: ${saleStartAt ? saleStartAt.toISOString().slice(0,10) : 'pronto'}. Más info: curso:/cursos/${slug}`,
         },
       })
     } catch {}
@@ -101,4 +126,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 })
   }
 }
-
