@@ -647,6 +647,31 @@ model News {
   @@index([authorId, createdAt])
 }
 
+// Cursos (creación y monetización)
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Course {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  title        String
+  topic        String
+  summary      String?
+  curriculum   Json?
+  priceUSD     Decimal      @db.Decimal(10, 2)
+  status       CourseStatus @default(DRAFT)
+  heroImageUrl String?
+  videoUrl     String?
+  saleStartAt  DateTime?
+  saleEndAt    DateTime?
+  createdAt    DateTime     @default(now())
+
+  @@index([status, createdAt])
+}
+
 // Proyectos de aliados: se guardan solo los 2 m├ís recientes
 model AllyProject {
   id        String   @id @default(cuid())

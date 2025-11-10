@@ -1,0 +1,47 @@
+"use client";
+import React, { useState } from "react";
+
+export default function CoursesSettingsPage() {
+  const [topic, setTopic] = useState("");
+  const [price, setPrice] = useState<string>("0");
+  const [startAt, setStartAt] = useState<string>("");
+  const [endAt, setEndAt] = useState<string>("");
+  const [hero, setHero] = useState<string>("");
+  const [video, setVideo] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string>("");
+
+  const submit = async () => {
+    setBusy(true); setMsg("");
+    try {
+      const res = await fetch('/api/courses/generate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, priceUSD: Number(price||0), saleStartAt: startAt || undefined, saleEndAt: endAt || undefined, heroImageUrl: hero || undefined, videoUrl: video || undefined })
+      });
+      const j = await res.json();
+      if (j?.ok) setMsg('Curso generado: ' + j.course?.title);
+      else setMsg(j?.error || 'No se pudo generar el curso');
+    } catch (e: any) { setMsg(String(e?.message||e)); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto p-4">
+      <h1 className="text-xl font-semibold mb-2">Cursos: Generador con IA</h1>
+      <p className="text-sm text-gray-600 mb-4">Crea cursos sobre herrajes, carpintería, revestimientos o diseño de cocinas. Los cursos se anuncian en Novedades con cuenta regresiva y certificados avalados por <strong>Trends172</strong> (17+ años, 1000+ proyectos).</p>
+      <div className="space-y-2">
+        <input value={topic} onChange={e=>setTopic(e.target.value)} placeholder="Tema del curso (ej: Técnicas de instalación de bisagras oculta)" className="w-full border rounded px-3 py-2 text-sm" />
+        <div className="flex gap-2">
+          <input value={price} onChange={e=>setPrice(e.target.value)} placeholder="Precio USD" className="w-32 border rounded px-3 py-2 text-sm" />
+          <input type="datetime-local" value={startAt} onChange={e=>setStartAt(e.target.value)} className="border rounded px-3 py-2 text-sm" />
+          <input type="datetime-local" value={endAt} onChange={e=>setEndAt(e.target.value)} className="border rounded px-3 py-2 text-sm" />
+        </div>
+        <input value={hero} onChange={e=>setHero(e.target.value)} placeholder="URL imagen destacada (opcional)" className="w-full border rounded px-3 py-2 text-sm" />
+        <input value={video} onChange={e=>setVideo(e.target.value)} placeholder="URL video (opcional)" className="w-full border rounded px-3 py-2 text-sm" />
+        <button onClick={submit} disabled={busy} className="atlas-button rounded px-4 py-2 text-sm">{busy ? 'Creando...' : 'Crear curso con IA'}</button>
+        {msg && <div className="text-sm mt-2">{msg}</div>}
+      </div>
+    </div>
+  )
+}
+

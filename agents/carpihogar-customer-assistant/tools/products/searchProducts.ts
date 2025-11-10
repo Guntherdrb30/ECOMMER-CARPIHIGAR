@@ -1,12 +1,47 @@
 import prisma from '@/lib/prisma';
 import { log } from '../../utils/logger';
 
+const STOPWORDS = new Set([
+  'hola','tienes','tiene','quiero','buscar','busca','necesito','que','de','la','el','los','las','para','por','un','una','unos','unas','en','con','me','ayuda','asesores','ver','producto','productos','hay','alguno','alguna'
+]);
 
-\nfunction stripDiacritics(s: string): string { try { return s.normalize('NFD').replace(/[\\u0300-\\u036f]/g, ''); } catch { return s; } }\n
+function stripDiacritics(s: string): string {
+  try {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  } catch {
+    return s;
+  }
+}
+
+function normalizeTerms(q: string): string[] {
+  const base = q
+    .toLowerCase()
+    .replace(/[\u00BF\?\u00A1\!\.,;:]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((t) => !STOPWORDS.has(t))
+    .map((t) => (t.length > 2 ? t : ''))
+    .filter(Boolean);
+
+  const extras = base.map((t) => (t.endsWith('s') ? t.slice(0, -1) : '')).filter(Boolean);
+  const nodiac = base.map((t) => stripDiacritics(t));
+
+  const synonyms: string[] = [];
+  const joined = base.join(' ');
+  if (/peinadora/.test(joined)) synonyms.push('tocador', 'vanity', 'mueble', 'banio', 'bano');
+  if (/(mueble|vanity).*(ba(ñ|n)o)|ba(ñ|n)o.*(mueble|vanity)/.test(joined)) synonyms.push('vanity', 'mueble', 'bano', 'banio');
+
+  return Array.from(new Set([...base, ...extras, ...nodiac, ...synonyms]));
+}
+
+export async function searchProducts(queryText: string) {
+  const q = String(queryText || '').trim();
+  const terms = normalizeTerms(q);
+  if (!q || terms.length === 0) return [] as any[];
   try {
     const items = await prisma.product.findMany({
       where: {
-        AND: terms.map(t => ({
+        AND: terms.map((t) => ({
           OR: [
             { name: { contains: t, mode: 'insensitive' } },
             { description: { contains: t, mode: 'insensitive' } },
