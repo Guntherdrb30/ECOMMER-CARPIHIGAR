@@ -143,6 +143,20 @@ export async function createOfflineSale(formData: FormData) {
   const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
   const ivaPercent = ivaPercentForm !== null ? Number(ivaPercentForm) : Number(settings?.ivaPercent || 16);
   const tasaVES = tasaVESForm !== null ? Number(tasaVESForm) : Number(settings?.tasaVES || 40);
+  // Enforce credit sales: only ADMIN by default; VENDEDOR requires deleteSecret approval
+  const deleteSecretInput = String(formData.get('deleteSecret') || '');
+  if (role === 'VENDEDOR' && saleType === 'CREDITO') {
+    const configuredSecret = String(settings?.deleteSecret || '');
+    if (!configuredSecret) {
+      try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_CREDIT_DENIED', details: 'No deleteSecret configured' } }); } catch {}
+      redirect(`${backNewSale}?error=${encodeURIComponent('Clave de eliminación no configurada. Contacta al admin.')}`);
+    }
+    if (deleteSecretInput !== configuredSecret) {
+      try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_CREDIT_DENIED', details: 'Clave inválida' } }); } catch {}
+      redirect(`${backNewSale}?error=${encodeURIComponent('Clave de eliminación inválida para venta a crédito')}`);
+    }
+    try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_CREDIT_APPROVED', details: 'Vendor credit authorized via deleteSecret' } }); } catch {}
+  }
   let commissionPercent = Number((settings as any)?.sellerCommissionPercent || 5);
   let sellerRole: string | null = null;
   if (sellerId) {

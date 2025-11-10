@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { venezuelaData } from "@/lib/venezuela-data";
@@ -6,7 +6,7 @@ import { venezuelaData } from "@/lib/venezuela-data";
 type Prod = { id: string; name: string; sku: string | null; priceUSD: number; priceAllyUSD?: number | null };
 type Line = { productId: string; name: string; p1: number; p2?: number | null; priceUSD: number; quantity: number };
 
-export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent, tasaVES, action, initialItems, fixedSellerId, initialShippingLocalOption, originQuoteId, initialPriceMode = 'P1', allowCredit = true }: { sellers: Array<{ id: string; name?: string; email: string }>, commissionPercent: number, ivaPercent: number, tasaVES: number, action: (formData: FormData) => void, initialItems?: Line[], fixedSellerId?: string, initialShippingLocalOption?: 'RETIRO_TIENDA' | 'DELIVERY' | '', originQuoteId?: string, initialPriceMode?: 'P1' | 'P2', allowCredit?: boolean }) {
+export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent, tasaVES, action, initialItems, fixedSellerId, initialShippingLocalOption, originQuoteId, initialPriceMode = 'P1', allowCredit = true, unlockCreditWithDeleteSecret = false }: { sellers: Array<{ id: string; name?: string; email: string }>, commissionPercent: number, ivaPercent: number, tasaVES: number, action: (formData: FormData) => void, initialItems?: Line[], fixedSellerId?: string, initialShippingLocalOption?: 'RETIRO_TIENDA' | 'DELIVERY' | '', originQuoteId?: string, initialPriceMode?: 'P1' | 'P2', allowCredit?: boolean, unlockCreditWithDeleteSecret?: boolean }) {
   const [q, setQ] = useState("");
   const [found, setFound] = useState<Prod[]>([]);
   const [items, setItems] = useState<Line[]>(() => initialItems || []);
@@ -29,7 +29,9 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
   const [docType, setDocType] = useState<'recibo' | 'nota' | 'factura'>('factura');
   const [shippingLocalOption, setShippingLocalOption] = useState<'RETIRO_TIENDA' | 'DELIVERY' | ''>(initialShippingLocalOption || '');
   const [saleType, setSaleType] = useState<'CONTADO' | 'CREDITO'>('CONTADO');
-  useEffect(() => { if (!allowCredit && saleType !== 'CONTADO') setSaleType('CONTADO'); }, [allowCredit]);
+  const [allowCreditUi, setAllowCreditUi] = useState<boolean>(!!allowCredit);
+  const [deleteSecret, setDeleteSecret] = useState<string>("");
+  useEffect(() => { if (!allowCreditUi && saleType !== 'CONTADO') setSaleType('CONTADO'); }, [allowCreditUi, saleType]);
   const [creditDueDate, setCreditDueDate] = useState<string>("");
   // Direcciones
   type Address = { id: string; fullname: string; phone: string; state: string; city: string; zone?: string | null; address1: string; address2?: string | null; notes?: string | null };
@@ -140,25 +142,25 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
     }
     if (!customerPhone.trim()) {
       e.preventDefault();
-      setError('El teléfono del cliente es obligatorio.');
+      setError('El telÃ©fono del cliente es obligatorio.');
       return;
     }
     if (addrMode === 'saved') {
       if (!selectedAddressId) {
         e.preventDefault();
-        setError('Selecciona una dirección guardada o crea una nueva.');
+        setError('Selecciona una direcciÃ³n guardada o crea una nueva.');
         return;
       }
     } else {
       if (!addrState || !addrCity || !addr1.trim()) {
         e.preventDefault();
-        setError('Completa Estado, Ciudad y Dirección.');
+        setError('Completa Estado, Ciudad y DirecciÃ³n.');
         return;
       }
     }
     if (!customerTaxId.trim() || !customerFiscalAddress.trim()) {
       e.preventDefault();
-      setError('Cédula/RIF y dirección fiscal son obligatorias.');
+      setError('CÃ©dula/RIF y direcciÃ³n fiscal son obligatorias.');
       return;
     }
     if (saleType === 'CREDITO') {
@@ -173,7 +175,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
     if (paymentMethod === 'PAGO_MOVIL') {
       if (!pmPayerName.trim() || !pmPayerPhone.trim() || !pmBank.trim()) {
         e.preventDefault();
-        setError('Para Pago Móvil completa nombre, teléfono y banco.');
+        setError('Para Pago MÃ³vil completa nombre, telÃ©fono y banco.');
         return;
       }
     }
@@ -196,7 +198,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
             </select>
           ) : (
             <>
-              <div className="border rounded px-2 py-1 w-full bg-gray-50 text-gray-700">{(sellers.find(s => s.id === sellerId)?.name) || (sellers.find(s => s.id === sellerId)?.email) || '—'}</div>
+              <div className="border rounded px-2 py-1 w-full bg-gray-50 text-gray-700">{(sellers.find(s => s.id === sellerId)?.name) || (sellers.find(s => s.id === sellerId)?.email) || 'â€”'}</div>
               <input type="hidden" name="sellerId" value={sellerId} />
             </>
           )}
@@ -210,28 +212,38 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
           <input type="email" name="customerEmail" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} className="border rounded px-2 py-1 w-full" />
         </div>
         <div>
-          <label className="block text-sm text-gray-700">Teléfono</label>
+          <label className="block text-sm text-gray-700">TelÃ©fono</label>
           <input name="customerPhone" required inputMode="tel" pattern="[0-9+()\s-]{10,}" title="Ej: +58 412 1234567 o 0412-1234567" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="04xx-xxxxxxx" />
         </div>
         <div>
           <label className="block text-sm text-gray-700">Tipo de venta</label>
           <select name="saleType" value={saleType} onChange={(e) => setSaleType(e.target.value as any)} className="border rounded px-2 py-1 w-full">
             <option value="CONTADO">Contado</option>
-            <option value="CREDITO">Crédito</option>
+            {allowCreditUi && (<option value="CREDITO">Crédito</option>)}
           </select>
+          {!allowCreditUi && unlockCreditWithDeleteSecret && (
+            <div className="mt-2 space-y-2">
+              <label className="block text-xs text-gray-600">Clave de eliminación (admin) para habilitar crédito</label>
+              <div className="flex gap-2 items-center">
+                <input type="password" value={deleteSecret} onChange={(e) => setDeleteSecret(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="Ingrese clave admin" />
+                <button type="button" disabled={!deleteSecret.trim()} onClick={() => setAllowCreditUi(true)} className="px-2 py-1 rounded border text-gray-700 disabled:opacity-50">Habilitar</button>
+              </div>
+              <div className="text-xs text-gray-500">La clave se validará al crear la venta.</div>
+            </div>
+          )}
         </div>
-        {allowCredit && saleType === 'CREDITO' && (
+        {allowCreditUi && saleType === 'CREDITO' && (
           <div>
             <label className="block text-sm text-gray-700">Fecha de vencimiento (opcional)</label>
             <input type="date" name="creditDueDate" value={creditDueDate} onChange={(e) => setCreditDueDate(e.target.value)} className="border rounded px-2 py-1 w-full" />
           </div>
         )}
         <div>
-          <label className="block text-sm text-gray-700">Cédula / RIF</label>
-          <input name="customerTaxId" required value={customerTaxId} onChange={(e) => setCustomerTaxId(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="V-12345678 ó J-12345678-9" />
+          <label className="block text-sm text-gray-700">CÃ©dula / RIF</label>
+          <input name="customerTaxId" required value={customerTaxId} onChange={(e) => setCustomerTaxId(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="V-12345678 Ã³ J-12345678-9" />
         </div>
         <div className="md:col-span-3">
-          <label className="block text-sm text-gray-700">Dirección fiscal</label>
+          <label className="block text-sm text-gray-700">DirecciÃ³n fiscal</label>
           <textarea name="customerFiscalAddress" required value={customerFiscalAddress} onChange={(e) => setCustomerFiscalAddress(e.target.value)} className="border rounded px-2 py-1 w-full min-h-[60px]" placeholder="Calle, edificio, piso, municipio, estado" />
         </div>
       </div>
@@ -244,7 +256,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
             <label className="text-sm flex items-center gap-1"><input type="radio" name="_priceMode" checked={globalMode==='P2'} onChange={() => setGlobalMode('P2')} /> P2 (Aliado)</label>
           </div>
         </div>
-        <h3 className="font-semibold mb-2">Dirección de envío</h3>
+        <h3 className="font-semibold mb-2">DirecciÃ³n de envÃ­o</h3>
         {savedAddresses.length > 0 && (
           <div className="mb-3">
             <div className="text-sm text-gray-700 mb-1">Direcciones guardadas</div>
@@ -252,12 +264,12 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
               {savedAddresses.map((a) => (
                 <label key={a.id} className="flex items-start gap-2">
                   <input type="radio" name="addressRadio" checked={addrMode === 'saved' && selectedAddressId === a.id} onChange={() => { setAddrMode('saved'); setSelectedAddressId(a.id); setAddrState(a.state||''); setAddrCity(a.city||''); setAddrZone(a.zone||''); setAddr1(a.address1||''); setAddr2(a.address2||''); setAddrNotes(a.notes||''); }} />
-                  <span className="text-sm text-gray-800">{a.address1}{a.address2 ? `, ${a.address2}` : ''} — {a.city}, {a.state} ({a.phone})</span>
+                  <span className="text-sm text-gray-800">{a.address1}{a.address2 ? `, ${a.address2}` : ''} â€” {a.city}, {a.state} ({a.phone})</span>
                 </label>
               ))}
               <label className="flex items-center gap-2">
                 <input type="radio" name="addressRadio" checked={addrMode === 'new'} onChange={() => { setAddrMode('new'); setSelectedAddressId(''); }} />
-                <span className="text-sm text-gray-800">Nueva dirección</span>
+                <span className="text-sm text-gray-800">Nueva direcciÃ³n</span>
               </label>
             </div>
           </div>
@@ -283,7 +295,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
             <input name="addr_zone" value={addrZone} onChange={(e) => setAddrZone(e.target.value)} className="border rounded px-2 py-1 w-full" />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm text-gray-700">Dirección</label>
+            <label className="block text-sm text-gray-700">DirecciÃ³n</label>
             <input name="addr_address1" value={addr1} onChange={(e) => setAddr1(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="Calle o avenida, casa o edificio" />
           </div>
           <div>
@@ -299,14 +311,14 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
 
       <div>
         <label className="block text-sm text-gray-700">Buscar productos</label>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre, SKU o código de barras" className="border rounded px-2 py-1 w-full" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre, SKU o cÃ³digo de barras" className="border rounded px-2 py-1 w-full" />
         {found.length > 0 && (
           <div className="mt-2 border rounded divide-y">
             {found.map((p) => (
               <div key={p.id} className="flex items-center justify-between px-2 py-1 hover:bg-gray-50 gap-2">
                 <div className="flex-1 min-w-0 truncate">
                   <div className="truncate">{p.name}</div>
-                  <div className="text-xs text-gray-500">P1: ${Number(p.priceUSD).toFixed(2)}{p.priceAllyUSD != null ? ` · P2: $${Number(p.priceAllyUSD).toFixed(2)}` : ''}</div>
+                  <div className="text-xs text-gray-500">P1: ${Number(p.priceUSD).toFixed(2)}{p.priceAllyUSD != null ? ` Â· P2: $${Number(p.priceAllyUSD).toFixed(2)}` : ''}</div>
                 </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => addItem(p, 'P1')} className="px-2 py-0.5 border rounded text-sm">P1</button>
@@ -368,15 +380,16 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
       <input type="hidden" name="sendEmail" value={sendEmail ? 'true' : 'false'} />
       <input type="hidden" name="docType" value={docType} />
       <input type="hidden" name="saleType" value={saleType} />
+      {(allowCreditUi && unlockCreditWithDeleteSecret && deleteSecret.trim()) ? (<input type="hidden" name="deleteSecret" value={deleteSecret} />) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
-        <div className="text-sm text-gray-600">Comisión vendedor estimada: {commissionPercent.toFixed(2)}%</div>
+        <div className="text-sm text-gray-600">ComisiÃ³n vendedor estimada: {commissionPercent.toFixed(2)}%</div>
         <div>
-          <label className="block text-sm text-gray-700">Método de pago</label>
+          <label className="block text-sm text-gray-700">MÃ©todo de pago</label>
           <select name="paymentMethod" disabled={saleType === 'CREDITO'} value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as any)} className="border rounded px-2 py-1 w-full disabled:opacity-50">
             <option value="ZELLE">Zelle</option>
             <option value="TRANSFERENCIA">Transferencia</option>
-            <option value="PAGO_MOVIL">Pago Móvil</option>
+            <option value="PAGO_MOVIL">Pago MÃ³vil</option>
           </select>
         </div>
         <div>
@@ -393,18 +406,18 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
               <input name="pm_payer_name" value={pmPayerName} onChange={(e) => setPmPayerName(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="Nombre y apellido" />
             </div>
             <div>
-              <label className="block text-sm text-gray-700">Teléfono del titular</label>
+              <label className="block text-sm text-gray-700">TelÃ©fono del titular</label>
               <input name="pm_payer_phone" value={pmPayerPhone} onChange={(e) => setPmPayerPhone(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="04xx-xxxxxxx" />
             </div>
             <div>
               <label className="block text-sm text-gray-700">Banco emisor</label>
-              <input name="pm_bank" value={pmBank} onChange={(e) => setPmBank(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="Banco del pago móvil" />
+              <input name="pm_bank" value={pmBank} onChange={(e) => setPmBank(e.target.value)} className="border rounded px-2 py-1 w-full" placeholder="Banco del pago mÃ³vil" />
             </div>
           </div>
         )}
         <div className="md:col-span-3">
           <label className="block text-sm text-gray-700">Referencia</label>
-          <input name="paymentReference" required value={paymentReference} onChange={(e) => setPaymentReference(e.target.value)} className={`rounded px-2 py-1 w-full border ${error && !paymentReference.trim() ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} placeholder="Nº ref, comentario, etc" />
+          <input name="paymentReference" required value={paymentReference} onChange={(e) => setPaymentReference(e.target.value)} className={`rounded px-2 py-1 w-full border ${error && !paymentReference.trim() ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}`} placeholder="NÂº ref, comentario, etc" />
           {error && !paymentReference.trim() && (
             <div className="text-xs text-red-600 mt-1">La referencia de pago es obligatoria.</div>
           )}
@@ -441,7 +454,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
       <div>
         <label className="block text-sm text-gray-700">Entrega local (Barinas)</label>
         <select name="shippingLocalOption" value={shippingLocalOption} onChange={(e) => setShippingLocalOption(e.target.value as any)} className="border rounded px-2 py-1 w-full">
-          <option value="">Automática</option>
+          <option value="">AutomÃ¡tica</option>
           <option value="RETIRO_TIENDA">Retiro en tienda</option>
           <option value="DELIVERY">Delivery (incluido)</option>
         </select>
@@ -449,7 +462,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
       </div>
 
       <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">IVA: {Number(ivaPercent).toFixed(2)}% {paymentCurrency === "VES" && `· Tasa: ${Number(tasaVES).toFixed(2)}`}</div>
+        <div className="text-sm text-gray-600">IVA: {Number(ivaPercent).toFixed(2)}% {paymentCurrency === "VES" && `Â· Tasa: ${Number(tasaVES).toFixed(2)}`}</div>
         <div className="text-right">
           <div>Subtotal: ${totals.subtotal.toFixed(2)}</div>
           <div>IVA: ${totals.iva.toFixed(2)}</div>
@@ -465,4 +478,5 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
     </form>
   );
 }
+
 
