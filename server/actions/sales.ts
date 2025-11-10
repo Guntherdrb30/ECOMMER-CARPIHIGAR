@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 import prisma from '@/lib/prisma';
 import { normalizeVePhone } from '@/lib/phone';
@@ -112,7 +112,7 @@ export async function createOfflineSale(formData: FormData) {
     redirect(`${backNewSale}?error=El%20tel%C3%A9fono%20del%20cliente%20es%20obligatorio%20y%20debe%20ser%20v%C3%A1lido`);
   }
   if (saleType === 'CONTADO' && !['PAGO_MOVIL','TRANSFERENCIA','ZELLE'].includes(paymentMethod)) {
-    try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_VALIDATION_FAILED', details: 'MÃ©todo de pago invÃ¡lido' } }); } catch {}
+    try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_VALIDATION_FAILED', details: 'Método de pago inválido' } }); } catch {}
     redirect(`${backNewSale}?error=M%C3%A9todo%20de%20pago%20inv%C3%A1lido`);
   }
   if (saleType === 'CONTADO' && !paymentReference.trim()) {
@@ -124,7 +124,7 @@ export async function createOfflineSale(formData: FormData) {
     redirect(`${backNewSale}?error=Para%20Pago%20M%C3%B3vil%20completa%20titular%2C%20tel%C3%A9fono%20y%20banco`);
   }
   if (!customerTaxId || !customerFiscalAddress) {
-    try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_VALIDATION_FAILED', details: 'Faltan datos fiscales (RIF/DirecciÃ³n)' } }); } catch {}
+    try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_VALIDATION_FAILED', details: 'Faltan datos fiscales (RIF/Dirección)' } }); } catch {}
     redirect(`${backNewSale}?error=C%C3%A9dula%2FRIF%20y%20direcci%C3%B3n%20fiscal%20son%20obligatorias`);
   }
 
@@ -235,7 +235,7 @@ export async function createOfflineSale(formData: FormData) {
     await prisma.shipping.create({ data: { orderId: order.id, carrier, tracking: '', status: 'PENDIENTE' as any, channel: 'TIENDA' as any, observations } });
   } catch {}
   // send receipt email to customer if email present and prepare success message
-  let successMessage = saleType === 'CREDITO' ? 'Venta a crÃ©dito creada' : 'Venta creada';
+  let successMessage = saleType === 'CREDITO' ? 'Venta a crédito creada' : 'Venta creada';
   // Also send WhatsApp receipt summary if phone provided and messaging configured
   try {
     if (normalizedPhone) {
@@ -246,7 +246,7 @@ export async function createOfflineSale(formData: FormData) {
       const body = `Hola ${user.name || 'cliente'}!
 Tu ${docType} ${code} ha sido generado.
 Total: ${totalTxt}.
-Â¡Gracias por tu compra en ${brand}!`;
+¡Gracias por tu compra en ${brand}!`;
       const res = await sendWhatsAppText(normalizedPhone, body);
       try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'WHATSAPP_RECEIPT_SENT', details: `${order.id}:${customerPhone}:${res.ok ? 'OK' : ('ERR ' + (res.error || ''))}` } }); } catch {}
       if (res.ok) successMessage += ' - WhatsApp enviado';
@@ -294,7 +294,7 @@ export async function sendOrderWhatsAppByForm(formData: FormData) {
     if (String(order.sellerId || '') !== myId) throw new Error('Not authorized');
   }
   const phone = String((order.user as any)?.phone || '') || '';
-  if (!phone) redirect(`${backTo}?message=${encodeURIComponent('El cliente no tiene telÃ©fono registrado')}`);
+  if (!phone) redirect(`${backTo}?message=${encodeURIComponent('El cliente no tiene teléfono registrado')}`);
   let msg = 'WhatsApp enviado';
   try {
     const { sendWhatsAppText } = await import('@/lib/whatsapp');
@@ -330,7 +330,7 @@ export async function sendOrderWhatsAppPdfByForm(formData: FormData) {
     if (String(order!.sellerId || '') !== myId) throw new Error('Not authorized');
   }
   const phone = String((order!.user as any)?.phone || '') || '';
-  if (!phone) redirect(`${backTo}?message=${encodeURIComponent('El cliente no tiene telÃ©fono registrado')}`);
+  if (!phone) redirect(`${backTo}?message=${encodeURIComponent('El cliente no tiene teléfono registrado')}`);
   const code = order!.id.slice(-6);
   const pdf = `${process.env.NEXT_PUBLIC_URL || ''}/api/orders/${order!.id}/pdf?tipo=${encodeURIComponent(tipo)}&moneda=${encodeURIComponent(moneda)}`;
   let msg = 'PDF enviado por WhatsApp';
