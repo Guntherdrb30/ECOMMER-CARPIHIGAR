@@ -12,7 +12,8 @@ export default function AdminSidebar() {
   const email = String((session?.user as any)?.email || '').toLowerCase();
   const role = String((session?.user as any)?.role || '');
   const rootEmail = String(process.env.NEXT_PUBLIC_ROOT_EMAIL || process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase();
-  const isRoot = role === 'ADMIN' && email === rootEmail;
+  const isAdmin = role === 'ADMIN';
+  const isRoot = isAdmin && email === rootEmail;
   const [allyPending, setAllyPending] = React.useState(0);
   const [unreadMsgs, setUnreadMsgs] = React.useState(0);
 
@@ -69,6 +70,8 @@ export default function AdminSidebar() {
     { href: '/dashboard/admin/envios/online', label: 'Envíos Online' },
     { href: '/dashboard/admin/envios/tienda', label: 'Envíos en Tienda' },
     { href: '/dashboard/admin/ajustes', label: 'Ajustes' },
+    // Cursos (IA) — sólo visible para ADMIN/ROOT
+    ...(isAdmin ? [{ href: '/dashboard/settings/courses', label: 'Cursos (IA)' }] : []),
     { href: '/dashboard/admin/envios/logs', label: 'Logs de Envios' },
     ...(isRoot ? [{ href: '/dashboard/admin/ajustes/sistema', label: 'Ajustes del Sistema (Root)' }] : []),
     { href: '/dashboard/admin/reportes', label: 'Reportes' },

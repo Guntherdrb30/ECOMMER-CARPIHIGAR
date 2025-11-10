@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from '../../utils/logger';
 
+// Palabras comunes que no aportan al match
 const STOPWORDS = new Set([
   'hola','tienes','tiene','quiero','buscar','busca','necesito','que','de','la','el','los','las','para','por','un','una','unos','unas','en','con','me','ayuda','asesores','ver','producto','productos','hay','alguno','alguna'
 ]);
@@ -27,9 +28,22 @@ function normalizeTerms(q: string): string[] {
   const nodiac = base.map((t) => stripDiacritics(t));
 
   const synonyms: string[] = [];
-  const joined = base.join(' ');
-  if (/peinadora/.test(joined)) synonyms.push('tocador', 'vanity', 'mueble', 'banio', 'bano');
-  if (/(mueble|vanity).*(ba(ñ|n)o)|ba(ñ|n)o.*(mueble|vanity)/.test(joined)) synonyms.push('vanity', 'mueble', 'bano', 'banio');
+  const joined = stripDiacritics(base.join(' '));
+
+  // Peinadora / tocador / vanity / mueble de baño
+  if (/\bpeinadora\b/.test(joined) || /\btocador\b/.test(joined) || /\bvanity\b/.test(joined)) {
+    synonyms.push('tocador','vanity','mueble','bano','banio','peinadora');
+  }
+  if ((/mueble/.test(joined) || /vanity/.test(joined)) && /bano|banio/.test(joined)) {
+    synonyms.push('vanity','mueble','bano','banio');
+  }
+  // Bisagras
+  if (/\bbisagra(s)?\b/.test(joined)) {
+    synonyms.push('bisagra','bisagras','hinge');
+  }
+  // Marcas frecuentes
+  if (/\bsamet\b/.test(joined)) synonyms.push('samet');
+  if (/\bmaster\b/.test(joined)) synonyms.push('master');
 
   return Array.from(new Set([...base, ...extras, ...nodiac, ...synonyms]));
 }
@@ -39,7 +53,7 @@ export async function searchProducts(queryText: string) {
   const terms = normalizeTerms(q);
   if (!q || terms.length === 0) return [] as any[];
   try {
-    const items = await prisma.product.findMany({
+    let items = await prisma.product.findMany({
       where: {
         AND: terms.map((t) => ({
           OR: [
@@ -54,6 +68,23 @@ export async function searchProducts(queryText: string) {
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
+    // Fallback: si no hay resultados con AND, prueba un OR más la consulta cruda
+    if (!items.length) {
+      items = await prisma.product.findMany({
+        where: {
+          OR: [
+            { name: { contains: q, mode: 'insensitive' } },
+            { description: { contains: q, mode: 'insensitive' } },
+            { sku: { contains: q, mode: 'insensitive' } },
+            { code: { contains: q, mode: 'insensitive' } },
+            ...terms.map((t) => ({ name: { contains: t, mode: 'insensitive' } })),
+          ],
+        },
+        select: { id: true, name: true, slug: true, images: true, priceClientUSD: true, priceUSD: true },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+    }
     const mapped = items.map((p: any) => ({
       id: p.id,
       name: p.name,
@@ -68,5 +99,4 @@ export async function searchProducts(queryText: string) {
     return [] as any[];
   }
 }
-
 
