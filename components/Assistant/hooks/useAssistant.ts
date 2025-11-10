@@ -153,3 +153,4 @@ export function useAssistant() {
   }), [state, setOpen, sendMessage, sendAudio, reset, append]);
 }
 
+

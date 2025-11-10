@@ -347,14 +347,21 @@ export async function* sendMessage(input: { text: string; customerId?: string })
       }
       // Sin herramientas: devolver respuesta final
       const content: string = String(msg?.content || '').trim();
+      const hasProducts = pendingChunks.some((c: any) => Array.isArray((c as any)?.products) && (c as any).products.length > 0);
+      const hasCartOrOrder = pendingChunks.some((c: any) => (c as any)?.cart || (c as any)?.order);
       for (const ch of pendingChunks) yield ch;
-      if (content) yield { type: 'text', message: content };
-      else yield { type: 'text', message: '¿Te ayudo a buscar un producto o gestionar tu carrito?' };
+      if (!hasProducts && !hasCartOrOrder) {
+        if (content) yield { type: 'text', message: content };
+        else yield { type: 'text', message: '¿Te ayudo a buscar un producto o gestionar tu carrito?' };
+      }
       return;
     }
     // Si excede el máximo de pasos
+    const hasProducts = pendingChunks.some((c: any) => Array.isArray((c as any)?.products) && (c as any).products.length > 0);
     for (const ch of pendingChunks) yield ch;
-    yield { type: 'text', message: 'Puedo ayudarte a buscar productos o avanzar con tu compra. ¿Qué necesitas?' };
+    if (!hasProducts) {
+      yield { type: 'text', message: 'Puedo ayudarte a buscar productos o avanzar con tu compra. ¿Qué necesitas?' };
+    }
   } catch (error) {
     log('assistant.error', { error: String(error) });
     yield { type: 'text', message: 'Lo siento, tuve un problema al procesar tu solicitud. ¿Probamos buscando un producto?' };
