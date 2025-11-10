@@ -12,8 +12,8 @@ export default function MessageBubble({ from, content, onAction }: { from: "user
       {content.type === 'text' && (
         <div className="text-[15px] leading-5 whitespace-pre-wrap text-gray-900">{content.message}</div>
       )}
-      {(content.type === 'voice' || !!content.audioBase64) && content.audioBase64 && (
-        <audio controls autoPlay={ttsEnabled} className="w-full">
+      {ttsEnabled && (content.type === 'voice' || !!content.audioBase64) && content.audioBase64 && (
+        <audio controls autoPlay className="w-full">
           <source src={`data:audio/webm;base64,${content.audioBase64}`} />
         </audio>
       )}
