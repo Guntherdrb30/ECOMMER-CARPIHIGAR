@@ -261,6 +261,25 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     ].join('\n') },
     ...priorMessages,    { role: 'user', content: userText }
   ];
+  // Contexto de productos recientes para referencias como “agrégala”
+  try {
+    if (conversationId) {
+      const recent = await prisma.message.findMany({ where: { conversationId }, orderBy: { createdAt: 'desc' }, take: 10, select: { metadata: true } });
+      const seen: Record<string, boolean> = {};
+      const recentProducts: Array<{ id: string; name?: string }> = [];
+      for (const m of recent) {
+        const meta: any = (m as any)?.metadata;
+        const arr = Array.isArray(meta?.products) ? meta.products : [];
+        for (const it of arr) {
+          const id = String((it as any)?.id || '');
+          if (id && !seen[id]) { seen[id] = true; recentProducts.push({ id, name: (it as any)?.name }); }
+        }
+      }
+      if (recentProducts.length) {
+        messages.push({ role: 'system', content: 'Contexto productos recientes (JSON): ' + JSON.stringify(recentProducts).slice(0, 4000) });
+      }
+    }
+  } catch {}
   // Refuerzo para activar bÃƒÂºsqueda ante marcas o tipos de producto
   messages.push({ role: 'system', content: 'Si el texto parece marca o tipo de producto ("samet", "bisagras", "bisagra cierre lento"), usa search_products con ese texto.' });
 
@@ -407,6 +426,27 @@ export async function* sendMessage(input: { text: string; customerId?: string })
       const content: string = String(msg?.content || '').trim();
       const hasProducts = pendingChunks.some((c: any) => Array.isArray((c as any)?.products) && (c as any).products.length > 0);
       const hasCartOrOrder = pendingChunks.some((c: any) => (c as any)?.cart || (c as any)?.order);
+      // Persistir contexto de productos mostrados (para referencias posteriores)
+      try {
+        if (conversationId) {
+          for (const ch of pendingChunks) {
+            const prods: any[] = Array.isArray((ch as any)?.products) ? (ch as any).products : [];
+            if (prods.length) {
+              await prisma.message.create({
+                data: {
+                  conversationId,
+                  direction: 'OUT' as any,
+                  status: 'SENT' as any,
+                  type: 'TEXT',
+                  text: 'Productos mostrados',
+                  actor: 'AI' as any,
+                  metadata: { products: prods.slice(0, 10).map((p: any) => ({ id: p.id, name: p.name })) } as any,
+                },
+              });
+            }
+          }
+        }
+      } catch {}
       for (const ch of pendingChunks) yield ch;
       if (!hasProducts && !hasCartOrOrder) {
         if (content) yield { type: 'text', message: content };
@@ -416,6 +456,26 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     }
     // Si excede el mÃƒÂ¡ximo de pasos
     const hasProducts = pendingChunks.some((c: any) => Array.isArray((c as any)?.products) && (c as any).products.length > 0);
+    try {
+      if (conversationId) {
+        for (const ch of pendingChunks) {
+          const prods: any[] = Array.isArray((ch as any)?.products) ? (ch as any).products : [];
+          if (prods.length) {
+            await prisma.message.create({
+              data: {
+                conversationId,
+                direction: 'OUT' as any,
+                status: 'SENT' as any,
+                type: 'TEXT',
+                text: 'Productos mostrados',
+                actor: 'AI' as any,
+                metadata: { products: prods.slice(0, 10).map((p: any) => ({ id: p.id, name: p.name })) } as any,
+              },
+            });
+          }
+        }
+      }
+    } catch {}
     for (const ch of pendingChunks) yield ch;
     if (!hasProducts) {
       yield { type: 'text', message: 'Puedo ayudarte a buscar productos o avanzar con tu compra. Ã‚Â¿QuÃƒÂ© necesitas?' };
