@@ -194,6 +194,25 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     return;
   }
 
+  // Memoria por cliente (si hay sesión)
+  let conversationId: string | null = null;
+  let priorMessages: Array<{ role: 'user'|'assistant'; content: string }> = [];
+  try {
+    if (input.customerId) {
+      const phoneKey = `web:${input.customerId}`.slice(0, 50);
+      let convo = await prisma.conversation.findFirst({ where: { phone: phoneKey } });
+      if (!convo) {
+        convo = await prisma.conversation.create({ data: { phone: phoneKey, userId: input.customerId, aiHandled: true, lastMessageAt: new Date() } });
+      }
+      conversationId = convo.id;
+      const recent = await prisma.message.findMany({ where: { conversationId: convo.id }, orderBy: { createdAt: 'asc' }, take: 30 });
+      priorMessages = recent.map((m: any) => ({ role: (m.direction === 'IN' ? 'user' : 'assistant') as ('user'|'assistant'), content: String(m.text || '') })).filter(m => !!m.content);
+      await prisma.message.create({ data: { conversationId: convo.id, direction: 'IN' as any, status: 'SENT' as any, type: 'TEXT', text: userText, actor: 'CUSTOMER' as any } });
+      try { await prisma.conversation.update({ where: { id: convo.id }, data: { lastMessageAt: new Date(), lastInboundAt: new Date(), aiHandled: true } }); } catch {}
+    }
+  } catch (e) {
+    log('assistant.memory_init.error', { error: String(e) });
+  }
   const tools = toolSpecs();
   const sys = await personaText();
 
@@ -207,7 +226,7 @@ export async function* sendMessage(input: { text: string; customerId?: string })
       '- Antes de usar herramientas que requieren identificación, verifica si hay clienteId; si falta, pide identificación de forma amable.',
       '- Tras usar herramientas, explica el siguiente paso (p. ej., “¿Deseas agregar X al carrito?”).'
     ].join('\n') },
-    { role: 'user', content: userText }
+    ...priorMessages,    { role: 'user', content: userText }
   ];
   // Refuerzo para activar búsqueda ante marcas o tipos de producto
   messages.push({ role: 'system', content: 'Si el texto parece marca o tipo de producto ("samet", "bisagras", "bisagra cierre lento"), usa search_products con ese texto.' });
@@ -341,3 +360,4 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     yield { type: 'text', message: 'Lo siento, tuve un problema al procesar tu solicitud. ¿Probamos buscando un producto?' };
   }
 }
+
