@@ -13,7 +13,12 @@ export default function AtlasPanel() {
   const close = () => a.setOpen(false);
   const send = async () => { if (!text.trim()) return; const t = text; setText(""); await a.sendMessage(t); };
   const onAction = async (key: string) => {
-    try { await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }); } catch {}
+    try {
+      const r = await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) });
+      if (key === 'start_checkout') {
+        try { window.location.href = '/checkout/revisar'; } catch {}
+      }
+    } catch {}
   };
 
   const width = typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '420px';
@@ -94,7 +99,12 @@ export default function AtlasPanel() {
                 } catch {}
                 return;
               }
-              try { await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }); } catch {}
+              try {
+                const r = await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) });
+                if (key === 'start_checkout') {
+                  try { window.location.href = '/checkout/revisar'; } catch {}
+                }
+              } catch {}
             }} />
 
             {/* Footer */}

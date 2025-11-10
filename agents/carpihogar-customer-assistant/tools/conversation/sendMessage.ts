@@ -175,6 +175,39 @@ function toolSpecs() {
           required: ['method']
         }
       }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'create_shipping_address',
+        description: 'Crear una dirección de envío para el cliente actual.',
+        parameters: {
+          type: 'object',
+          properties: {
+            fullname: { type: 'string' },
+            phone: { type: 'string' },
+            state: { type: 'string' },
+            city: { type: 'string' },
+            zone: { type: 'string' },
+            address1: { type: 'string' },
+            address2: { type: 'string' },
+            notes: { type: 'string' }
+          },
+          required: ['fullname','phone','state','city','address1']
+        }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'set_order_shipping_address',
+        description: 'Asociar una dirección a la orden más reciente en checkout.',
+        parameters: {
+          type: 'object',
+          properties: { addressId: { type: 'string' } },
+          required: ['addressId']
+        }
+      }
     }
   ];
 }
