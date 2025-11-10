@@ -190,12 +190,7 @@ export async function* sendMessage(input: { text: string; customerId?: string })
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    // Sin API Key, intenta un saludo básico en vez del fallback de error pasado
-    if (/hola|buenas|buenos|buenas tardes|buenas noches/i.test(userText)) {
-      yield { type: 'text', message: '¡Hola! Puedo ayudarte a buscar productos, ver tu carrito o iniciar tu compra. ¿Qué estás buscando?' };
-      return;
-    }
-    yield { type: 'text', message: 'Por ahora no puedo conversar con IA. Puedo ayudarte a buscar productos si me indicas qué necesitas.' };
+    yield { type: 'text', message: '¡Hola! Para una asistencia más humana con IA necesito la clave OPENAI_API_KEY configurada. Mientras tanto, dime qué producto buscas y trataré de ayudarte.' };
     return;
   }
 
@@ -214,6 +209,8 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     ].join('\n') },
     { role: 'user', content: userText }
   ];
+  // Refuerzo para activar búsqueda ante marcas o tipos de producto
+  messages.push({ role: 'system', content: 'Si el texto parece marca o tipo de producto ("samet", "bisagras", "bisagra cierre lento"), usa search_products con ese texto.' });
 
   const callOpenAI = async () => {
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -317,6 +314,8 @@ export async function* sendMessage(input: { text: string; customerId?: string })
     for (let step = 0; step < 6; step++) {
       const msg: any = await callOpenAI();
       if (msg?.tool_calls && Array.isArray(msg.tool_calls) && msg.tool_calls.length) {
+        // Incluye el mensaje del asistente con tool_calls en el historial
+        messages.push({ role: 'assistant', content: msg.content ?? '', tool_calls: msg.tool_calls });
         for (const tc of msg.tool_calls) {
           const name = tc?.function?.name as string;
           let args: any = {};
@@ -329,11 +328,13 @@ export async function* sendMessage(input: { text: string; customerId?: string })
       }
       // Sin herramientas: devolver respuesta final
       const content: string = String(msg?.content || '').trim();
+      for (const ch of pendingChunks) yield ch;
       if (content) yield { type: 'text', message: content };
       else yield { type: 'text', message: '¿Te ayudo a buscar un producto o gestionar tu carrito?' };
       return;
     }
     // Si excede el máximo de pasos
+    for (const ch of pendingChunks) yield ch;
     yield { type: 'text', message: 'Puedo ayudarte a buscar productos o avanzar con tu compra. ¿Qué necesitas?' };
   } catch (error) {
     log('assistant.error', { error: String(error) });
