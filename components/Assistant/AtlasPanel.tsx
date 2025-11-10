@@ -22,6 +22,8 @@ export default function AtlasPanel() {
   };
 
   const width = typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '420px';
+  const [uploading, setUploading] = useState(false);
+  const fileInputId = 'assistant-proof-file';
 
   return (
     <AnimatePresence>
@@ -109,6 +111,28 @@ export default function AtlasPanel() {
 
             {/* Footer */}
             <div className="p-3 border-t bg-white flex items-center gap-2">
+              <input id={fileInputId} type="file" accept="image/*" hidden onChange={async (e) => {
+                const f = e.currentTarget.files?.[0];
+                if (!f) return;
+                setUploading(true);
+                try {
+                  const fd = new FormData();
+                  fd.append('file', f);
+                  const r = await fetch('/api/assistant/upload-proof', { method: 'POST', body: fd });
+                  const j = await r.json();
+                  if (j?.ok) {
+                    const { parsed, submitted } = j;
+                    a.append({ id: crypto.randomUUID(), from: 'agent', at: Date.now(), content: { type: 'text', message: submitted?.ok ? 'Recibí tu comprobante y registré el pago. ¿A dónde deseas que enviemos tu compra? Por favor, indícame tu dirección.' : 'Recibí tu comprobante. ¿A dónde deseas que enviemos tu compra? Por favor, indícame tu dirección.' } });
+                  } else {
+                    a.append({ id: crypto.randomUUID(), from: 'agent', at: Date.now(), content: { type: 'text', message: 'No pude leer el soporte de pago. ¿Puedes intentar con una imagen más clara o ingresar el monto y la referencia?' } });
+                  }
+                } catch {
+                  a.append({ id: crypto.randomUUID(), from: 'agent', at: Date.now(), content: { type: 'text', message: 'Hubo un problema al subir tu soporte. Intenta nuevamente.' } });
+                } finally {
+                  setUploading(false);
+                  try { (e.currentTarget as any).value = ''; } catch {}
+                }
+              }} />
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -116,6 +140,9 @@ export default function AtlasPanel() {
                 className="flex-1 border rounded-full px-4 py-2 text-sm"
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
               />
+              <button className={`px-3 py-2 rounded-full ${uploading ? 'opacity-60' : 'atlas-button-alt'}`} onClick={() => { try { (document.getElementById(fileInputId) as HTMLInputElement)?.click(); } catch {} }} disabled={uploading} title="Adjuntar soporte">
+                {uploading ? 'Subiendo…' : 'Adjuntar'}
+              </button>
               <VoiceMic />
               <button className="px-3 py-2 rounded-full atlas-button" onClick={send} disabled={a.loading}>Enviar</button>
             </div>

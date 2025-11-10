@@ -34,9 +34,9 @@ async function personaText(): Promise<string> {
     if (fs.existsSync(p2)) return fs.readFileSync(p2, 'utf-8');
   } catch {}
   return [
-    'Eres Carpihogar Asistente, asesora de ventas. Responde siempre en español con tono cálido, útil y profesional.',
-    'No inventes precios ni stock. Si algo no está claro, pide una aclaración breve.',
-    'Usa las herramientas disponibles para buscar productos, gestionar el carrito y pagos; mantén las respuestas en 1–3 frases, con pregunta de seguimiento cuando aporte valor.'
+    'Eres Carpihogar Asistente, asesora de ventas. Responde siempre en espaÃƒÂ±ol con tono cÃƒÂ¡lido, ÃƒÂºtil y profesional.',
+    'No inventes precios ni stock. Si algo no estÃƒÂ¡ claro, pide una aclaraciÃƒÂ³n breve.',
+    'Usa las herramientas disponibles para buscar productos, gestionar el carrito y pagos; mantÃƒÂ©n las respuestas en 1Ã¢â‚¬â€œ3 frases, con pregunta de seguimiento cuando aporte valor.'
   ].join('\n');
 }
 
@@ -64,7 +64,7 @@ function toolSpecs() {
       type: 'function',
       function: {
         name: 'search_products',
-        description: 'Buscar productos en el catálogo por términos de consulta.',
+        description: 'Buscar productos en el catÃƒÂ¡logo por tÃƒÂ©rminos de consulta.',
         parameters: {
           type: 'object',
           properties: { query: { type: 'string' } },
@@ -128,7 +128,7 @@ function toolSpecs() {
       type: 'function',
       function: {
         name: 'generate_confirmation_token',
-        description: 'Generar y enviar token de confirmación para un pedido.',
+        description: 'Generar y enviar token de confirmaciÃƒÂ³n para un pedido.',
         parameters: {
           type: 'object',
           properties: { orderId: { type: 'string' } },
@@ -140,7 +140,7 @@ function toolSpecs() {
       type: 'function',
       function: {
         name: 'validate_confirmation_token',
-        description: 'Validar token de confirmación del pedido más reciente en estado pendiente.',
+        description: 'Validar token de confirmaciÃƒÂ³n del pedido mÃƒÂ¡s reciente en estado pendiente.',
         parameters: {
           type: 'object',
           properties: { token: { type: 'string' } },
@@ -152,7 +152,7 @@ function toolSpecs() {
       type: 'function',
       function: {
         name: 'initiate_payment',
-        description: 'Iniciar proceso de pago para el pedido más reciente o uno específico.',
+        description: 'Iniciar proceso de pago para el pedido mÃƒÂ¡s reciente o uno especÃƒÂ­fico.',
         parameters: {
           type: 'object',
           properties: { orderId: { type: 'string' }, method: { type: 'string' } },
@@ -164,7 +164,7 @@ function toolSpecs() {
       type: 'function',
       function: {
         name: 'submit_payment',
-        description: 'Registrar/Reportar un pago con método, monto y referencia.',
+        description: 'Registrar/Reportar un pago con mÃƒÂ©todo, monto y referencia.',
         parameters: {
           type: 'object',
           properties: {
@@ -180,7 +180,7 @@ function toolSpecs() {
       type: 'function',
       function: {
         name: 'create_shipping_address',
-        description: 'Crear una dirección de envío para el cliente actual.',
+        description: 'Crear una direcciÃƒÂ³n de envÃƒÂ­o para el cliente actual.',
         parameters: {
           type: 'object',
           properties: {
@@ -201,7 +201,7 @@ function toolSpecs() {
       type: 'function',
       function: {
         name: 'set_order_shipping_address',
-        description: 'Asociar una dirección a la orden más reciente en checkout.',
+        description: 'Asociar una direcciÃƒÂ³n a la orden mÃƒÂ¡s reciente en checkout.',
         parameters: {
           type: 'object',
           properties: { addressId: { type: 'string' } },
@@ -217,17 +217,17 @@ export async function* sendMessage(input: { text: string; customerId?: string })
   log('assistant.intent', { text: userText });
 
   if (!userText) {
-    yield { type: 'text', message: '¡Hola! Soy tu asistente de Carpihogar. ¿En qué puedo ayudarte hoy?' };
+    yield { type: 'text', message: 'Ã‚Â¡Hola! Soy tu asistente de Carpihogar. Ã‚Â¿En quÃƒÂ© puedo ayudarte hoy?' };
     return;
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    yield { type: 'text', message: '¡Hola! Para una asistencia más humana con IA necesito la clave OPENAI_API_KEY configurada. Mientras tanto, dime qué producto buscas y trataré de ayudarte.' };
+    yield { type: 'text', message: 'Ã‚Â¡Hola! Para una asistencia mÃƒÂ¡s humana con IA necesito la clave OPENAI_API_KEY configurada. Mientras tanto, dime quÃƒÂ© producto buscas y tratarÃƒÂ© de ayudarte.' };
     return;
   }
 
-  // Memoria por cliente (si hay sesión)
+  // Memoria por cliente (si hay sesiÃƒÂ³n)
   let conversationId: string | null = null;
   let priorMessages: Array<{ role: 'user'|'assistant'; content: string }> = [];
   try {
@@ -255,13 +255,13 @@ export async function* sendMessage(input: { text: string; customerId?: string })
       'Estrategia:',
       '- Usa herramientas para operaciones de ecommerce (buscar, carrito, pedido, pagos).',
       '- Si el usuario solo saluda, responde con un saludo corto y una pregunta de descubrimiento.',
-      '- Mantén respuestas en 1–3 frases, en español, con un tono cálido y útil.',
-      '- Antes de usar herramientas que requieren identificación, verifica si hay clienteId; si falta, pide identificación de forma amable.',
-      '- Tras usar herramientas, explica el siguiente paso (p. ej., “¿Deseas agregar X al carrito?”).'
+      '- MantÃƒÂ©n respuestas en 1Ã¢â‚¬â€œ3 frases, en espaÃƒÂ±ol, con un tono cÃƒÂ¡lido y ÃƒÂºtil.',
+      '- Antes de usar herramientas que requieren identificaciÃƒÂ³n, verifica si hay clienteId; si falta, pide identificaciÃƒÂ³n de forma amable.',
+      '- Tras usar herramientas, explica el siguiente paso (p. ej., Ã¢â‚¬Å“Ã‚Â¿Deseas agregar X al carrito?Ã¢â‚¬Â).'
     ].join('\n') },
     ...priorMessages,    { role: 'user', content: userText }
   ];
-  // Refuerzo para activar búsqueda ante marcas o tipos de producto
+  // Refuerzo para activar bÃƒÂºsqueda ante marcas o tipos de producto
   messages.push({ role: 'system', content: 'Si el texto parece marca o tipo de producto ("samet", "bisagras", "bisagra cierre lento"), usa search_products con ese texto.' });
 
   const callOpenAI = async () => {
@@ -283,34 +283,34 @@ export async function* sendMessage(input: { text: string; customerId?: string })
         case 'search_products': {
           const list = await searchProducts(String(args?.query || ''));
           if (Array.isArray(list) && list.length) {
-            pendingChunks.push({ type: 'rich', message: 'Estos productos podrían interesarte:', products: list } as any);
+            pendingChunks.push({ type: 'rich', message: 'Estos productos podrÃƒÂ­an interesarte:', products: list } as any);
           }
           return { ok: true, products: list };
         }
         case 'get_product_details': {
           const detail = await getProductDetails(String(args?.productId || ''));
           if (detail) {
-            pendingChunks.push({ type: 'rich', message: 'Aquí tienes los detalles:', products: [detail] } as any);
+            pendingChunks.push({ type: 'rich', message: 'AquÃƒÂ­ tienes los detalles:', products: [detail] } as any);
           }
           return { ok: !!detail, product: detail };
         }
         case 'view_cart': {
-          if (!input.customerId) return { ok: false, error: 'Se requiere identificación para ver el carrito.' };
+          if (!input.customerId) return { ok: false, error: 'Se requiere identificaciÃƒÂ³n para ver el carrito.' };
           const cart = await viewCart({ customerId: input.customerId });
           pendingChunks.push({ type: 'rich', message: 'Tu carrito actual:', cart: cart.cart } as any);
           return { ok: true, cart: cart.cart };
         }
         case 'add_to_cart': {
-          if (!input.customerId) return { ok: false, error: 'Se requiere identificación para agregar al carrito.' };
+          if (!input.customerId) return { ok: false, error: 'Se requiere identificaciÃƒÂ³n para agregar al carrito.' };
           const pid = String(args?.productId || '');
-          const qty = Math.max(1, Number(args?.qty || 1));
+          const qtyNum = Number(args?.qty || 0); if (!qtyNum || qtyNum <= 0) { pendingChunks.push({ type: 'text', message: 'Â¿CuÃ¡ntas unidades deseas agregar al carrito?' } as any); return { ok: false, error: 'Cantidad requerida', needs: 'qty' }; } const qty = Math.max(1, qtyNum);
           await addToCart({ customerId: input.customerId, productId: pid, qty });
           const cart = await viewCart({ customerId: input.customerId });
-          pendingChunks.push({ type: 'rich', message: 'Producto agregado. Así va tu carrito:', cart: cart.cart } as any);
+          pendingChunks.push({ type: 'rich', message: 'Producto agregado. AsÃƒÂ­ va tu carrito:', cart: cart.cart } as any);
           return { ok: true, cart: cart.cart };
         }
         case 'remove_from_cart': {
-          if (!input.customerId) return { ok: false, error: 'Se requiere identificación para quitar del carrito.' };
+          if (!input.customerId) return { ok: false, error: 'Se requiere identificaciÃƒÂ³n para quitar del carrito.' };
           const pid = String(args?.productId || '');
           await removeFromCart({ customerId: input.customerId, productId: pid });
           const cart = await viewCart({ customerId: input.customerId });
@@ -318,7 +318,7 @@ export async function* sendMessage(input: { text: string; customerId?: string })
           return { ok: true, cart: cart.cart };
         }
         case 'create_order_draft': {
-          if (!input.customerId) return { ok: false, error: 'Se requiere identificación para crear pedido.' };
+          if (!input.customerId) return { ok: false, error: 'Se requiere identificaciÃƒÂ³n para crear pedido.' };
           const r = await createOrderDraft({ customerId: input.customerId });
           if (!r.ok) return { ok: false, error: r.error };
           return { ok: true, order: r.order };
@@ -330,23 +330,23 @@ export async function* sendMessage(input: { text: string; customerId?: string })
           return { ok: !!(r as any)?.ok };
         }
         case 'validate_confirmation_token': {
-          if (!input.customerId) return { ok: false, error: 'Se requiere identificación para validar token.' };
+          if (!input.customerId) return { ok: false, error: 'Se requiere identificaciÃƒÂ³n para validar token.' };
           const token = String(args?.token || '');
           const orderId = await latestOrderId(input.customerId, ['pending_confirmation']);
-          if (!orderId) return { ok: false, error: 'No hay pedido pendiente de confirmación.' };
+          if (!orderId) return { ok: false, error: 'No hay pedido pendiente de confirmaciÃƒÂ³n.' };
           const r = await validateConfirmationToken({ orderId, token });
           return { ok: !!(r as any)?.ok };
         }
         case 'initiate_payment': {
-          if (!input.customerId) return { ok: false, error: 'Se requiere identificación para iniciar pago.' };
+          if (!input.customerId) return { ok: false, error: 'Se requiere identificaciÃƒÂ³n para iniciar pago.' };
           const orderId = String(args?.orderId || '') || await latestOrderId(input.customerId, ['awaiting_payment', 'payment_pending_review']) || '';
           if (!orderId) return { ok: false, error: 'No hay pedido listo para pago.' };
           const pay = await initiateManualPayment({ orderId, method: args?.method });
-          pendingChunks.push({ type: 'rich', message: 'Métodos e instrucciones de pago:', order: pay } as any);
+          pendingChunks.push({ type: 'rich', message: 'MÃƒÂ©todos e instrucciones de pago:', order: pay } as any);
           return { ok: true, order: pay };
         }
         case 'submit_payment': {
-          if (!input.customerId) return { ok: false, error: 'Se requiere identificación para reportar pago.' };
+          if (!input.customerId) return { ok: false, error: 'Se requiere identificaciÃƒÂ³n para reportar pago.' };
           const orderId = await latestOrderId(input.customerId, ['awaiting_payment', 'payment_pending_review']);
           if (!orderId) return { ok: false, error: 'No encuentro un pedido para registrar pago.' };
           const amount = args?.amountUSD != null ? Number(args.amountUSD) : undefined;
@@ -385,19 +385,19 @@ export async function* sendMessage(input: { text: string; customerId?: string })
       for (const ch of pendingChunks) yield ch;
       if (!hasProducts && !hasCartOrOrder) {
         if (content) yield { type: 'text', message: content };
-        else yield { type: 'text', message: '¿Te ayudo a buscar un producto o gestionar tu carrito?' };
+        else yield { type: 'text', message: 'Ã‚Â¿Te ayudo a buscar un producto o gestionar tu carrito?' };
       }
       return;
     }
-    // Si excede el máximo de pasos
+    // Si excede el mÃƒÂ¡ximo de pasos
     const hasProducts = pendingChunks.some((c: any) => Array.isArray((c as any)?.products) && (c as any).products.length > 0);
     for (const ch of pendingChunks) yield ch;
     if (!hasProducts) {
-      yield { type: 'text', message: 'Puedo ayudarte a buscar productos o avanzar con tu compra. ¿Qué necesitas?' };
+      yield { type: 'text', message: 'Puedo ayudarte a buscar productos o avanzar con tu compra. Ã‚Â¿QuÃƒÂ© necesitas?' };
     }
   } catch (error) {
     log('assistant.error', { error: String(error) });
-    yield { type: 'text', message: 'Lo siento, tuve un problema al procesar tu solicitud. ¿Probamos buscando un producto?' };
+    yield { type: 'text', message: 'Lo siento, tuve un problema al procesar tu solicitud. Ã‚Â¿Probamos buscando un producto?' };
   }
 }
 
