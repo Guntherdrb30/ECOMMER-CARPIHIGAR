@@ -8,7 +8,10 @@ export const runtime = 'nodejs'
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
   const role = (session?.user as any)?.role as string | undefined
-  if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 401 })
+  const email = (session?.user as any)?.email as string | undefined
+  const ROOT_EMAIL = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase()
+  const isRoot = email && email.toLowerCase() === ROOT_EMAIL
+  if (!session || !role || !(role === 'ADMIN' || isRoot)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 401 })
   const c = await prisma.course.findUnique({ where: { id: params.id } })
   return NextResponse.json({ ok: !!c, course: c })
 }
@@ -16,7 +19,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
   const role = (session?.user as any)?.role as string | undefined
-  if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 401 })
+  const email = (session?.user as any)?.email as string | undefined
+  const ROOT_EMAIL = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase()
+  const isRoot = email && email.toLowerCase() === ROOT_EMAIL
+  if (!session || !role || !(role === 'ADMIN' || isRoot)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 401 })
   const body = await req.json().catch(() => ({})) as any
   const data: any = {}
   if (body.title != null) data.title = String(body.title).slice(0,160)
@@ -43,4 +49,3 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   } catch {}
   return NextResponse.json({ ok: true, course: c })
 }
-

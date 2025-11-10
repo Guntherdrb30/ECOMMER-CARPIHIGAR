@@ -18,7 +18,10 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
     const role = (session?.user as any)?.role as string | undefined
-    if (!session || !role || (role !== 'ADMIN' && role !== 'VENDEDOR')) {
+    const email = (session?.user as any)?.email as string | undefined
+    const ROOT_EMAIL = String(process.env.ROOT_EMAIL || 'root@carpihogar.com').toLowerCase()
+    const isRoot = email && email.toLowerCase() === ROOT_EMAIL
+    if (!session || !role || !(role === 'ADMIN' || isRoot)) {
       return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 401 })
     }
     const body = (await req.json().catch(() => ({}))) as GenerateBody
