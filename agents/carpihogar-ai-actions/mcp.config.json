@@ -1,0 +1,13 @@
+{
+  "agent": "carpihogar-ai-actions",
+  "env": {
+    "DATABASE_URL": "${DATABASE_URL}",
+    "WHATSAPP_API_URL": "${WHATSAPP_API_URL:-https://api.example-whatsapp.com}",
+    "WHATSAPP_API_KEY": "${WHATSAPP_API_KEY:-}"
+  },
+  "logging": {
+    "level": "info",
+    "json": true
+  }
+}
+

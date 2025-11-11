@@ -1,4 +1,4 @@
-datasource db {
+﻿datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
@@ -161,18 +161,18 @@ model Product {
   // Show Instagram/TikTok buttons in PDP
   showSocialButtons Boolean @default(false)
   sku          String?         @unique
-  // C├│digo interno opcional (puede venir de proveedor)
+  // Câ”œâ”‚digo interno opcional (puede venir de proveedor)
   code         String?         @unique
   priceUSD     Decimal         @db.Decimal(10, 2)
   priceAllyUSD Decimal?        @db.Decimal(10, 2)
   // Nuevo: Precio mayorista (calculado)
   priceWholesaleUSD Decimal?   @db.Decimal(10, 2)
-  // Nuevo: costos y m├írgenes de referencia
+  // Nuevo: costos y mâ”œÃ­rgenes de referencia
   costUSD      Decimal?        @db.Decimal(10, 2)
   marginClientPct   Decimal?   @db.Decimal(5, 2)
   marginAllyPct     Decimal?   @db.Decimal(5, 2)
   marginWholesalePct Decimal?  @db.Decimal(5, 2)
-  // Nuevo: precios calculados expl├¡citos (el priceUSD existente se usa como Cliente)
+  // Nuevo: precios calculados explâ”œÂ¡citos (el priceUSD existente se usa como Cliente)
   priceClientUSD    Decimal?   @db.Decimal(10, 2)
   stock        Int             @default(0)
   supplierId   String?
@@ -398,6 +398,29 @@ model AuditLog {
   action    String
   details   String?
   createdAt DateTime @default(now())
+}
+
+// Evidencias de envíos (fotos y firma)
+model ShipmentPhoto {
+  id          String   @id @default(cuid())
+  shipmentId  String
+  shipment    Shipping @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  // package | delivered | signature
+  type        String
+  url         String
+  createdAt   DateTime @default(now())
+  @@index([shipmentId])
+}
+
+// Ubicaciones de repartidores (última posición conocida)
+model DriverLocation {
+  id        String   @id @default(cuid())
+  driverId  String
+  driver    User     @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  lat       Decimal  @db.Decimal(10, 7)
+  lng       Decimal  @db.Decimal(10, 7)
+  updatedAt DateTime @default(now())
+  @@index([driverId])
 }
 
 model Supplier {
@@ -647,7 +670,7 @@ model News {
   @@index([authorId, createdAt])
 }
 
-// Cursos (creación y monetización)
+// Cursos (creaciÃ³n y monetizaciÃ³n)
 enum CourseStatus {
   DRAFT
   PUBLISHED
@@ -672,7 +695,7 @@ model Course {
   @@index([status, createdAt])
 }
 
-// Proyectos de aliados: se guardan solo los 2 m├ís recientes
+// Proyectos de aliados: se guardan solo los 2 mâ”œÃ­s recientes
 model AllyProject {
   id        String   @id @default(cuid())
   userId    String
@@ -691,3 +714,63 @@ model AllyProject {
 
 
 
+
+// Assistant cart (AI concierge controlled)
+model AssistantCart {
+  id        String   @id @default(cuid())
+  ownerKey  String   // sessionId or customerId
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  items     AssistantCartItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  @@index([ownerKey])
+}
+
+model AssistantCartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      AssistantCart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  name      String
+  priceUSD  Decimal  @db.Decimal(10, 2)
+  quantity  Int
+  createdAt DateTime @default(now())
+  @@unique([cartId, productId])
+}
+
+// Token para confirmar órdenes por WhatsApp
+model OrderAuthToken {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  token       String
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime @default(now())
+  channel     String?
+  destination String?
+  @@unique([orderId, token])
+}
+
+model OrdersTemp {
+  id          String   @id @default(cuid())
+  customerId  String
+  items       Json
+  totalUSD    Decimal  @db.Decimal(10, 2)
+  shippingData Json?
+  createdAt   DateTime @default(now())
+}
+
+model PurchaseToken {
+  id          String   @id @default(cuid())
+  customerId  String
+  orderTempId String
+  token       String
+  expiresAt   DateTime
+  used        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  @@index([customerId])
+  @@index([orderTempId, token])
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Carpihogar AI Concierge",
+  "description": "Asistente de compras conversacional para Carpihogar.com con acciones reales vía MCP",
+  "persona": "./persona.md",
+  "externalMcpServers": [
+    "mcp://carpihogar-ai-actions"
+  ],
+  "features": {
+    "voice": true,
+    "images": true,
+    "shortMemory": true,
+    "conversational": true,
+    "autoToolUse": true
+  }
+}
+

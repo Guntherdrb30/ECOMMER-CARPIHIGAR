@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import prisma from "@/lib/prisma";
 import { getDeleteSecret } from "@/server/actions/settings";
@@ -14,9 +14,7 @@ async function recalcReceivable(orderId: string) {
   else if (abonadoUSD > 0) status = 'PARCIAL';
   await prisma.receivable.update({ where: { id: order.receivable.id }, data: { status } });
   if (status === 'PAGADO') {
-    try { await prisma.order.update({ where: { id: orderId }, data: { status: 'PAGADO' as any } }); } catch {}
-  }
-}
+    try { await prisma.order.update({ where: { id: orderId }, data: { status: 'PAGADO' as any } }); } catch {}\n  }\n  \n  try { const { emit } = await import('@/server/events/bus'); await emit('order.paid' as any, { orderId }); } catch {}\n\n}
 
 async function generateReceivablePdf(order: any): Promise<Buffer> {
   const PDFDocument = (await import('pdfkit/js/pdfkit.standalone.js')).default as any;
@@ -64,7 +62,7 @@ async function generateReceivablePdf(order: any): Promise<Buffer> {
   doc.fontSize(11).text(`Fecha: ${new Date(order.createdAt as any).toLocaleString()}`);
   doc.text(`Cliente: ${order.user?.name || order.user?.email || ''}`);
   doc.text(`Email: ${order.user?.email || ''}`);
-  doc.text(`Teléfono: ${String((order.user as any)?.phone || '')}`);
+  doc.text(`TelÃ©fono: ${String((order.user as any)?.phone || '')}`);
   doc.text(`Vendedor: ${order.seller?.name || order.seller?.email || ''}`);
   if (vence) doc.text(`Vence: ${new Date(vence as any).toLocaleDateString()}`);
   doc.moveDown(0.5);
@@ -103,7 +101,7 @@ export async function addReceivablePayment(formData: FormData) {
   const paidAtStr = String(formData.get('paidAt') || '').trim();
   const createdAt = paidAtStr ? new Date(paidAtStr) : undefined;
   if (!orderId || !amount || amount <= 0) {
-    return { ok: false, error: 'Datos inválidos' };
+    return { ok: false, error: 'Datos invÃ¡lidos' };
   }
 
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { receivable: { include: { entries: true } } } });
@@ -140,7 +138,7 @@ export async function addReceivablePayment(formData: FormData) {
 
 export async function markReceivablePaid(formData: FormData) {
   const orderId = String(formData.get('orderId') || '');
-  if (!orderId) return { ok: false, error: 'Orden inválida' };
+  if (!orderId) return { ok: false, error: 'Orden invÃ¡lida' };
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { receivable: { include: { entries: true } } } });
   if (!order) return { ok: false, error: 'Orden no encontrada' };
   if (!order.receivable) {
@@ -158,7 +156,7 @@ export async function updateReceivableDueDate(formData: FormData) {
   const orderId = String(formData.get('orderId') || '');
   const dueDateStr = String(formData.get('dueDate') || '');
   const dueDate = dueDateStr ? new Date(dueDateStr) : null;
-  if (!orderId) return { ok: false, error: 'Orden inválida' };
+  if (!orderId) return { ok: false, error: 'Orden invÃ¡lida' };
   let receivable = await prisma.receivable.findUnique({ where: { orderId } });
   if (!receivable) {
     receivable = await prisma.receivable.create({ data: { orderId, status: 'PENDIENTE' as any, dueDate } });
@@ -179,7 +177,7 @@ export async function updateReceivableEntry(formData: FormData) {
   const notes = String(formData.get('notes') || '') || null;
   const paidAtStr = String(formData.get('paidAt') || '').trim();
   const createdAt = paidAtStr ? new Date(paidAtStr) : undefined;
-  if (!entryId) return { ok: false, error: 'Entrada inválida' } as any;
+  if (!entryId) return { ok: false, error: 'Entrada invÃ¡lida' } as any;
   const entry = await prisma.receivableEntry.findUnique({ where: { id: entryId }, include: { receivable: { include: { order: true } } } });
   if (!entry) return { ok: false, error: 'Entrada no encontrada' } as any;
   const order = entry.receivable?.order;
@@ -198,12 +196,12 @@ export async function deleteReceivableEntry(formData: FormData) {
   const secret = String(formData.get('secret') || '');
   const configured = await getDeleteSecret();
   if (!configured) {
-    return { ok: false, error: 'Falta configurar la clave de eliminación (RECEIVABLE_DELETE_SECRET o ADMIN_DELETE_SECRET)'} as any;
+    return { ok: false, error: 'Falta configurar la clave de eliminaciÃ³n (RECEIVABLE_DELETE_SECRET o ADMIN_DELETE_SECRET)'} as any;
   }
   if (secret !== configured) {
-    return { ok: false, error: 'Clave secreta inválida' } as any;
+    return { ok: false, error: 'Clave secreta invÃ¡lida' } as any;
   }
-  if (!entryId) return { ok: false, error: 'Entrada inválida' } as any;
+  if (!entryId) return { ok: false, error: 'Entrada invÃ¡lida' } as any;
   const entry = await prisma.receivableEntry.findUnique({ where: { id: entryId }, include: { receivable: true } });
   if (entry?.receivable?.id) {
     const rec = await prisma.receivable.findUnique({ where: { id: entry.receivable.id }, include: { order: true } });
@@ -218,7 +216,7 @@ export async function deleteReceivableEntry(formData: FormData) {
 
 export async function sendReceivableReminder(formData: FormData) {
   const orderId = String(formData.get('orderId') || '');
-  if (!orderId) return { ok: false, error: 'Orden inválida' };
+  if (!orderId) return { ok: false, error: 'Orden invÃ¡lida' };
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { receivable: { include: { entries: true } }, user: true } });
   if (!order) return { ok: false, error: 'Orden no encontrada' };
   const to = (order.user as any)?.email as string | undefined;
@@ -246,7 +244,7 @@ export async function sendReceivableReminder(formData: FormData) {
       lines.push(`- ${d.toLocaleDateString()} $${Number((e as any).amountUSD).toFixed(2)} ${String((e as any).currency)} ${String((e as any).method || '')} ${String((e as any).reference || '')}`.trim());
     }
   }
-  lines.push(`\nPuede realizar su abono vía Zelle, Transferencia o Pago Móvil y responder a este correo con el comprobante o referencia.`);
+  lines.push(`\nPuede realizar su abono vÃ­a Zelle, Transferencia o Pago MÃ³vil y responder a este correo con el comprobante o referencia.`);
   lines.push(`Gracias por su preferencia.`);
   const text = lines.join('\n');
   const html = text.replace(/\n/g, '<br/>');
@@ -293,7 +291,7 @@ export async function sendReceivableReminder(formData: FormData) {
 }
 
 export async function runReceivablesReminderJob() {
-  // Find open receivables (PENDIENTE, PARCIAL) with bucket VENCIDA (>30 días)
+  // Find open receivables (PENDIENTE, PARCIAL) with bucket VENCIDA (>30 dÃ­as)
   const open = await prisma.receivable.findMany({
     where: { OR: [ { status: 'PENDIENTE' as any }, { status: 'PARCIAL' as any } ] },
     include: { order: { include: { user: true } }, entries: true },
@@ -332,7 +330,7 @@ export async function recordReceivableShare(formData: FormData) {
   const orderId = String(formData.get('orderId') || '');
   const viaRaw = String(formData.get('via') || '').toUpperCase();
   const via = (viaRaw === 'WHATSAPP' || viaRaw === 'EMAIL') ? viaRaw : 'WHATSAPP';
-  if (!orderId) return { ok: false, error: 'Orden inválida' };
+  if (!orderId) return { ok: false, error: 'Orden invÃ¡lida' };
   const stamp = new Date().toISOString().slice(0,10);
   try { await prisma.auditLog.create({ data: { userId: undefined, action: 'RECEIVABLE_SHARED', details: `order:${orderId} via:${via} date:${stamp}` } }); } catch {}
   try {
@@ -361,3 +359,6 @@ export async function updateReceivableNotes(formData: FormData) {
   revalidatePath(`/dashboard/admin/cuentas-por-cobrar/${orderId}`);
   return { ok: true };
 }
+
+
+

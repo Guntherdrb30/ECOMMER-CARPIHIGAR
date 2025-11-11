@@ -1,55 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ingestInboundMessage } from '@/server/actions/messaging';
+﻿import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { verifyToken } from '@/server/integrations/whatsapp/verifyToken';
 
-// ManyChat inbound webhook -> Ingest into internal messaging
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    // Auth: support Bearer token header or `?token=` query param
-    const url = new URL(req.url);
-    const headerAuth = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
-    const queryToken = url.searchParams.get('token') || '';
-    const provided = headerAuth || queryToken;
-    const expected = process.env.MANYCHAT_WEBHOOK_TOKEN || process.env.MANYCHAT_VERIFY_TOKEN || '';
-    if (expected && provided !== expected) {
-      console.warn('[ManyChat Webhook] Unauthorized request: missing/invalid token');
-      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await req.json().catch(() => ({}));
-
-    // Attempt to extract phone and text from a few possible shapes
-    const subscriber = (body?.subscriber || body?.contact || {}) as any;
-    const fromObj = (body?.from || {}) as any;
-    const messages = (body?.messages || []) as any[];
-
-    const phone = String(
-      subscriber?.phone || fromObj?.phone || body?.from || body?.phone || ''
-    );
-
-    const text = String(
-      body?.message?.text || body?.text || body?.message_text || body?.data?.text || messages?.[0]?.text || ''
-    ).trim();
-
-    if (!phone || !text) {
-      console.log('[ManyChat Webhook] Skipping payload (no phone/text)', { phone, hasText: Boolean(text) });
-      // Return 200 so ManyChat doesn’t retry forever
-      return NextResponse.json({ ok: true, skipped: true });
+    const phone = String(body?.phone || body?.from || '').trim();
+    const message = String(body?.message || body?.text || '').trim();
+    if (!phone || !message) return NextResponse.json({ ok: false });
+    const customer = await prisma.user.findFirst({ where: { phone } });
+    if (!customer) return NextResponse.json({ ok: true });
+    if (/^\d{4,8}$/.test(message)) {
+      const r = await verifyToken(customer.id, message);
+      if (r.ok) return NextResponse.json({ ok: true, reply: '¡Listo! Tu compra fue confirmada. Estamos procesando tu pedido.', orderId: r.orderId });
+      return NextResponse.json({ ok: true, reply: 'El código no es válido o expiró. Pide uno nuevo.' });
     }
-
-    // Ingest into Conversation/Message using existing server action
-    const digits = phone.replace(/[^0-9]/g, '');
-    await ingestInboundMessage(digits, text);
-
-    return NextResponse.json({ ok: true });
+    if (/^estado$/i.test(message)) {
+      // Could call shipping track and reply; placeholder
+      return NextResponse.json({ ok: true, reply: 'Para consultar tu estado, ingresa a tu panel o escribe el código de orden.' });
+    }\n    // Audio handling (placeholder)\n    const audioUrl = (body?.audioUrl || body?.mediaUrl || (body?.media && body.media.url)) as string | undefined;\n    if (audioUrl) {\n      try {\n        const ares = await fetch(audioUrl);\n        const abuf = await ares.arrayBuffer();\n        const fd = new FormData();\n        fd.append('file', new File([abuf], 'wa.ogg', { type: 'audio/ogg' }));\n        const stt = await fetch(new URL('/api/voice/stt', req.url), { method: 'POST', body: fd });\n        const sjson = await stt.json();\n        const text = String(sjson?.text || '').trim();\n        if (text) {\n          return NextResponse.json({ ok: true, reply: Transcribí tu nota de voz:  });\n        }\n      } catch {}\n    }\n    return NextResponse.json({ ok: true });
   } catch (e: any) {
-    console.error('[ManyChat Webhook] Error', e);
-    // Return 200 to avoid ManyChat retries; log for observability
-    return NextResponse.json({ ok: false, error: String(e) }, { status: 200 });
+    return NextResponse.json({ ok: false }, { status: 200 });
   }
-}
-
-export async function GET() {
-  // Optional: simple readiness probe
-  return NextResponse.json({ ok: true });
 }
 

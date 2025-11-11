@@ -1,37 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ingestInboundMessage } from '@/server/actions/messaging';
+﻿import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { validateTokenOrYes } from '@/server/ai/flows/purchaseFlow';
 
-// WhatsApp Cloud API verification
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const mode = url.searchParams.get('hub.mode');
-  const token = url.searchParams.get('hub.verify_token');
-  const challenge = url.searchParams.get('hub.challenge');
-  if (mode === 'subscribe' && token && challenge && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-    return new NextResponse(challenge, { status: 200 });
-  }
-  return new NextResponse('Forbidden', { status: 403 });
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const json = await req.json();
-    const entries = json?.entry || [];
-    for (const entry of entries) {
-      const changes = entry?.changes || [];
-      for (const change of changes) {
-        const value = change?.value;
-        const messages = value?.messages || [];
-        for (const m of messages) {
-          if (m?.type === 'text' && m?.from && m?.text?.body) {
-            await ingestInboundMessage(m.from, m.text.body, m.id);
-          }
-        }
-      }
+    const body = await req.json().catch(() => ({}));
+    const phone = String(body?.phone || body?.from || '').trim();
+    const message = String(body?.message || body?.text || '').trim();
+    if (!phone || !message) return NextResponse.json({ ok: false });
+    // Buscar usuario por phone exacto (puedes normalizar aquí)
+    const user = await prisma.user.findFirst({ where: { phone } });
+    if (!user) return NextResponse.json({ ok: true });
+    // Buscar última orden en estado pendiente (aprox: Order.status = PENDIENTE)
+    const order = await prisma.order.findFirst({ where: { userId: user.id, status: 'PENDIENTE' as any }, orderBy: { createdAt: 'desc' } });
+    if (!order) return NextResponse.json({ ok: true });
+    // Detectar confirmaciones
+    const isYes = /sí autorizo|si autorizo/i.test(message);
+    const tokenMatch = message.match(/\b(\d{6})\b/);
+    if (isYes || tokenMatch) {
+      const res = await validateTokenOrYes({ customerId: user.id }, { orderId: order.id, confirmText: message, token: tokenMatch?.[1] });
+      // Aquí podrías notificar por WhatsApp con tu proveedor
+      return NextResponse.json({ ok: true, result: res });
     }
     return NextResponse.json({ ok: true });
-  } catch (e:any) {
-    return new NextResponse(String(e), { status: 500 });
+  } catch {
+    return NextResponse.json({ ok: false }, { status: 200 });
   }
 }
-
