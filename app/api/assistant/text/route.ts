@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -8,7 +8,7 @@ import * as ProductsSearch from '@/agents/carpihogar-ai-actions/tools/products/s
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const text = String(body?.text || '').trim();
-  if (!text) return NextResponse.json({ type: 'text', message: '¿Puedes escribir tu consulta?' });
+  if (!text) return NextResponse.json({ type: 'text', message: 'Â¿Puedes escribir tu consulta?' });
 
   const session = await getServerSession(authOptions);
   const customerId = (session?.user as any)?.id as string | undefined;
@@ -34,20 +34,21 @@ export async function POST(req: Request) {
           controller.close();
           return;
         }
-        // Búsqueda de productos (fallback)
+        // BÃºsqueda de productos (fallback)
         const res = await ProductsSearch.run({ q: text });
         if (res?.success && Array.isArray(res.data) && res.data.length) {
-          emit({ type: 'text', message: 'Perfecto, aquí tienes algunas opciones:' });
+          emit({ type: 'text', message: 'Perfecto, aquÃ­ tienes algunas opciones:' });
           emit({ type: 'products', products: res.data } as any);
         } else {
-          emit({ type: 'text', message: 'No encontré coincidencias exactas. ¿Puedes darme más detalles? (marca, tipo, color, medida)' });
+          emit({ type: 'text', message: 'No encontrÃ© coincidencias exactas. Â¿Puedes darme mÃ¡s detalles? (marca, tipo, color, medida)' });
         }
       } catch (e) {
-        emit({ type: 'text', message: 'Tu mensaje fue recibido, pero hubo un problema procesándolo.' });
+        emit({ type: 'text', message: 'Tu mensaje fue recibido, pero hubo un problema procesÃ¡ndolo.' });
       } finally {
         controller.close();
       }
     },
   });
-  return new Response(stream, { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+  return new Response(stream, { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-cache, no-transform' } });
 }
+
