@@ -14,7 +14,15 @@ async function recalcReceivable(orderId: string) {
   else if (abonadoUSD > 0) status = 'PARCIAL';
   await prisma.receivable.update({ where: { id: order.receivable.id }, data: { status } });
   if (status === 'PAGADO') {
-    try { await prisma.order.update({ where: { id: orderId }, data: { status: 'PAGADO' as any } }); } catch {}\n  }\n  \n  try { const { emit } = await import('@/server/events/bus'); await emit('order.paid' as any, { orderId }); } catch {}\n\n}
+    try {
+      await prisma.order.update({ where: { id: orderId }, data: { status: 'PAGADO' as any } });
+    } catch {}
+    try {
+      const { emit } = await import('@/server/events/bus');
+      await emit('order.paid' as any, { orderId });
+    } catch {}
+  }
+}
 
 async function generateReceivablePdf(order: any): Promise<Buffer> {
   const PDFDocument = (await import('pdfkit/js/pdfkit.standalone.js')).default as any;
