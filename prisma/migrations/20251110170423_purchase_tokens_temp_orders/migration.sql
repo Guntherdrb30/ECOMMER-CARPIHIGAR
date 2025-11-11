@@ -1,4 +1,4 @@
-﻿-- purchase_tokens and orders_temp
+-- purchase_tokens and orders_temp
 CREATE TABLE IF NOT EXISTS "OrdersTemp" (
   "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   "customerId" TEXT NOT NULL,

@@ -1,4 +1,4 @@
-﻿-- Create AssistantCart, AssistantCartItem, OrderAuthToken
+-- Create AssistantCart, AssistantCartItem, OrderAuthToken
 CREATE TABLE IF NOT EXISTS "AssistantCart" (
   "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   "ownerKey" TEXT NOT NULL,
