@@ -6,15 +6,29 @@ export const maxDuration = 60;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type, Accept',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, Accept, X-API-Key, X-Auth-Token, X-MCP-Token',
 };
+
+function getIncomingToken(req: Request): string {
+  const auth = req.headers.get('authorization') || '';
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  const xApiKey = (req.headers.get('x-api-key') || '').trim();
+  const xAuth = (req.headers.get('x-auth-token') || '').trim();
+  const xMcp = (req.headers.get('x-mcp-token') || '').trim();
+  try {
+    const url = new URL(req.url);
+    const q = (url.searchParams.get('token') || url.searchParams.get('access_token') || '').trim();
+    return bearer || xApiKey || xAuth || xMcp || q;
+  } catch {
+    return bearer || xApiKey || xAuth || xMcp;
+  }
+}
 
 function checkAuth(req: Request): { ok: boolean; error?: string } {
   const token = process.env.MCP_SERVER_TOKEN || '';
   if (!token) return { ok: true }; // allow if not configured
-  const auth = req.headers.get('authorization') || '';
-  const given = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  const given = getIncomingToken(req);
   if (!given || given !== token) return { ok: false, error: 'Unauthorized' };
   return { ok: true };
 }
