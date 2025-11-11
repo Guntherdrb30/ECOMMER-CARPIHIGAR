@@ -4,6 +4,12 @@ import { listTools, callTool } from '@/lib/mcp/tools';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, Accept',
+};
+
 function checkAuth(req: Request): { ok: boolean; error?: string } {
   const token = process.env.MCP_SERVER_TOKEN || '';
   if (!token) return { ok: true }; // allow if not configured
@@ -15,7 +21,7 @@ function checkAuth(req: Request): { ok: boolean; error?: string } {
 
 export async function GET(req: Request) {
   const auth = checkAuth(req);
-  if (!auth.ok) return new Response('Unauthorized', { status: 401 });
+  if (!auth.ok) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -39,25 +45,29 @@ export async function GET(req: Request) {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
+      ...corsHeaders,
     },
   });
 }
 
 export async function POST(req: Request) {
   const auth = checkAuth(req);
-  if (!auth.ok) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  if (!auth.ok) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action || '').toLowerCase();
   if (action === 'list_tools') {
-    return NextResponse.json({ ok: true, tools: listTools() });
+    return NextResponse.json({ ok: true, tools: listTools() }, { headers: corsHeaders });
   }
   if (action === 'call_tool') {
     const name = String(body?.name || '');
     const input = body?.input || {};
     if (!name) return NextResponse.json({ ok: false, error: 'name requerido' }, { status: 400 });
     const res = await callTool(name, input);
-    return NextResponse.json({ ok: true, ...res });
+    return NextResponse.json({ ok: true, ...res }, { headers: corsHeaders });
   }
-  return NextResponse.json({ ok: false, error: 'action invalida' }, { status: 400 });
+  return NextResponse.json({ ok: false, error: 'action invalida' }, { status: 400, headers: corsHeaders });
 }
 
+export async function OPTIONS() {
+  return new Response(null, { status: 200, headers: corsHeaders });
+}

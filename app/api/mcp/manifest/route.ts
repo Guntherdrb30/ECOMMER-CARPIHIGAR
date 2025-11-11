@@ -3,6 +3,12 @@ import { listTools } from '@/lib/mcp/tools';
 
 export const runtime = 'nodejs';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, Accept',
+};
+
 export async function GET() {
   const spec = {
     server: 'carpihogar-ai-actions',
@@ -15,6 +21,9 @@ export async function GET() {
     auth: { type: process.env.MCP_SERVER_TOKEN ? 'bearer' : 'none' },
     tools: listTools(),
   };
-  return NextResponse.json(spec);
+  return NextResponse.json(spec, { headers: corsHeaders });
 }
 
+export async function OPTIONS() {
+  return new Response(null, { status: 200, headers: corsHeaders });
+}
