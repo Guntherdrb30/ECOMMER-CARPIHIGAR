@@ -2,28 +2,15 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import { safeQuery } from '@/agents/carpihogar-customer-assistant/utils/db';
-import { submitManualPayment } from '@/agents/carpihogar-customer-assistant/tools/orders/submitManualPayment';
+import { run as savePaymentProof } from '@/agents/carpihogar-ai-actions/tools/order/savePaymentProof';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 async function latestOrderId(customerId: string): Promise<string | null> {
-  // Busca la última orden en estados de pago activos en la tabla "orders" (DB raw)
-  const isUuid = /^[0-9a-fA-F-]{36}$/.test(customerId);
-  const statuses = ['awaiting_payment','payment_pending_review','pending_confirmation'];
-  let sql: string;
-  let params: any[];
-  if (isUuid) {
-    sql = `select o.id from orders o where o.customer_id = $1 and o.status = any($2) order by o.created_at desc limit 1`;
-    params = [customerId, statuses];
-  } else {
-    sql = `select o.id from orders o join customers c on c.id = o.customer_id where c.external_id = $1 and o.status = any($2) order by o.created_at desc limit 1`;
-    params = [customerId, statuses];
-  }
   try {
-    const r = await safeQuery(sql, params);
-    return (r.rows[0] as any)?.id || null;
+    const o = await prisma.order.findFirst({ where: { userId: customerId }, orderBy: { createdAt: 'desc' }, select: { id: true } });
+    return o?.id || null;
   } catch {
     return null;
   }
@@ -44,7 +31,7 @@ export async function POST(req: Request) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return NextResponse.json({ ok: false, error: 'OPENAI_API_KEY no configurada' }, { status: 500 });
 
-    const sys = 'Eres un asistente que extrae datos de soportes de pago. Devuelve SOLO JSON con: method ("Zelle"|"Pago Móvil"|"Transferencia Bancaria"), currency ("USD"|"VES"), amountUSD (número, si aplica), amountVES (número, si aplica), reference (string).';
+    const sys = 'Eres un asistente que extrae datos de soportes de pago. Devuelve SOLO JSON con: method ("Zelle"|"Pago Movil"|"Transferencia Bancaria"), currency ("USD"|"VES"), amountUSD (numero, si aplica), amountVES (numero, si aplica), reference (string).';
     const body = {
       model: 'gpt-4o-mini',
       temperature: 0,
@@ -53,7 +40,7 @@ export async function POST(req: Request) {
         {
           role: 'user',
           content: [
-            { type: 'text', text: 'Lee la imagen y devuelve SOLO JSON válido con los campos solicitados.' },
+            { type: 'text', text: 'Lee la imagen y devuelve SOLO JSON valido con los campos solicitados.' },
             { type: 'image_url', image_url: { url: `data:${mime};base64,${base64}` } },
           ] as any,
         },
@@ -76,7 +63,7 @@ export async function POST(req: Request) {
     if (!parsed || typeof parsed !== 'object') return NextResponse.json({ ok: false, error: 'No pude extraer datos del soporte.' }, { status: 200 });
 
     const rawMethod = String(parsed.method || '').toLowerCase();
-    const method = /zelle/.test(rawMethod) ? 'Zelle' : (/m[óo]vil/.test(rawMethod) ? 'Pago Móvil' : 'Transferencia Bancaria');
+    const method = /zelle/.test(rawMethod) ? 'ZELLE' : (/m[óo]vil|movil/.test(rawMethod) ? 'PAGO_MOVIL' : 'TRANSFERENCIA');
     const currency = String(parsed.currency || '').toUpperCase() === 'VES' ? 'VES' : 'USD';
     const amountUSDFromJson = Number(parsed.amountUSD || 0) || 0;
     const amountVESFromJson = Number(parsed.amountVES || 0) || 0;
@@ -91,11 +78,11 @@ export async function POST(req: Request) {
     amountUSD = Number(amountUSD.toFixed(2));
     const reference = String(parsed.reference || '').slice(0, 80) || undefined;
 
-    let submitted: any = { ok: false };
+    let submitted: any = { success: false };
     if (customerId) {
       const orderId = await latestOrderId(customerId);
-      if (orderId && amountUSD > 0) {
-        submitted = await submitManualPayment({ orderId, method, amountUSD, reference });
+      if (orderId) {
+        submitted = await savePaymentProof({ orderId, method: method as any, currency: currency as any, reference });
       }
     }
 
