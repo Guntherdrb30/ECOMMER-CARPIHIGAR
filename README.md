@@ -139,6 +139,27 @@ Revisa `.env.example` y configura al menos:
 2) Rama: `master` (por defecto).
 3) Al hacer `git push`, Vercel construye y despliega.
 
+## Licencia
+
+- Copyright © 2025 Guntherdrb30. Todos los derechos reservados.
+- El código se publica con fines de evaluación y demostración no comercial.
+- Cualquier uso, copia, modificación o explotación comercial requiere licencia previa y por escrito del titular.
+- Consulta el archivo `LICENSE` para los términos completos.
+
+## Separación de lógica sensible (recomendado)
+
+Para minimizar el riesgo en un repositorio público:
+- Mueve reglas críticas a un servicio privado (microservicio o función) detrás de autenticación (API Key/JWT) y CORS cerrado.
+- Ejemplos de lógica a aislar: motor de precios/descuentos, cálculo de comisiones, validaciones de crédito, claves de aprobación, integraciones con pagos/bancos.
+- El frontend/Next.js invoca endpoints del servicio privado (REST/JSON):
+  - `POST /pricing/quote` → calcula precios finales y márgenes.
+  - `POST /sales/credit/validate` → valida claves y políticas de crédito.
+  - `POST /payments/intent` → crea intents de pago y firma tokens.
+- Mantén secretos solo en variables de entorno del servicio privado; nunca en el cliente.
+- Registra auditoría en el backend privado (acción, usuario, IP, timestamp).
+
+Si te interesa, puedo preparar una carpeta `services/` con contratos de API y un proxy serverless para Vercel.
+
 ## Seguridad y Auditoría
 
 - Protección por rol en middleware.
