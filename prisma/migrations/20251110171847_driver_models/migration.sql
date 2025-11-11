@@ -1,6 +1,6 @@
-﻿-- ShipmentPhoto and DriverLocation tables
+-- ShipmentPhoto and DriverLocation tables
 CREATE TABLE IF NOT EXISTS "ShipmentPhoto" (
-  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "id" TEXT PRIMARY KEY,
   "shipmentId" TEXT NOT NULL,
   "type" TEXT NOT NULL,
   "url" TEXT NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS "ShipmentPhoto" (
 CREATE INDEX IF NOT EXISTS "ShipmentPhoto_shipment_idx" ON "ShipmentPhoto"("shipmentId");
 
 CREATE TABLE IF NOT EXISTS "DriverLocation" (
-  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "id" TEXT PRIMARY KEY,
   "driverId" TEXT NOT NULL,
   "lat" NUMERIC(10,7) NOT NULL,
   "lng" NUMERIC(10,7) NOT NULL,
