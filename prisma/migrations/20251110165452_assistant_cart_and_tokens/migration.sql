@@ -1,6 +1,6 @@
 -- Create AssistantCart, AssistantCartItem, OrderAuthToken
 CREATE TABLE IF NOT EXISTS "AssistantCart" (
-  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "id" TEXT PRIMARY KEY,
   "ownerKey" TEXT NOT NULL,
   "userId" TEXT NULL,
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -12,7 +12,7 @@ ALTER TABLE "AssistantCart"
   ADD CONSTRAINT "AssistantCart_user_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS "AssistantCartItem" (
-  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "id" TEXT PRIMARY KEY,
   "cartId" TEXT NOT NULL,
   "productId" TEXT NOT NULL,
   "name" TEXT NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS "AssistantCartItem" (
 CREATE UNIQUE INDEX IF NOT EXISTS "AssistantCartItem_cart_product_unique" ON "AssistantCartItem"("cartId","productId");
 
 CREATE TABLE IF NOT EXISTS "OrderAuthToken" (
-  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "id" TEXT PRIMARY KEY,
   "orderId" TEXT NOT NULL,
   "token" TEXT NOT NULL,
   "expiresAt" TIMESTAMPTZ NOT NULL,
