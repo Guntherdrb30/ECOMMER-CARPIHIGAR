@@ -65,6 +65,10 @@ model User {
   // Messaging relations
   conversations Conversation[] @relation("ConversationUser")
   assignedConversations Conversation[] @relation("ConversationAssignedTo")
+  
+  // Back-relations for drivers and AI assistant cart
+  driverLocations   DriverLocation[]
+  assistantCarts    AssistantCart[]
 
   passwordResetToken          String?   @unique
   passwordResetTokenExpiresAt DateTime?
@@ -197,6 +201,9 @@ model Product {
   // Self-referencing many-to-many for related products
   relatedFrom  RelatedProduct[] @relation("RelatedFrom")
   relatedTo    RelatedProduct[] @relation("RelatedTo")
+
+  // Back-relation to assistant cart items
+  assistantCartItems AssistantCartItem[]
 }
 
 // Join table for Product <-> Product related items
@@ -285,6 +292,9 @@ model Order {
   customerFiscalAddress String?
   // Vincula la orden con un presupuesto origen (si aplica)
   originQuoteId     String?
+
+  // Back-relation to order auth tokens (WhatsApp confirmation)
+  authTokens        OrderAuthToken[]
 }
 
 model OrderItem {
@@ -538,6 +548,9 @@ model Shipping {
   assignedAt   DateTime?
   deliveryFeeUSD Decimal?      @db.Decimal(10, 2)
   deliveryPaidAt DateTime?
+
+  // Back-relation to shipment evidences (photos/signature)
+  photos       ShipmentPhoto[]
 }
 // Estado de cuentas por cobrar
 enum ReceivableStatus {
