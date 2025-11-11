@@ -24,4 +24,5 @@ export * as ShippingTrackOrder from './tools/shipping/trackOrder';
 
 export * as WhatsAppSendMessage from './tools/whatsapp/sendMessage';
 
-\nexport * as VoiceTTS from './tools/voice/tts';\nexport * as VoiceSTT from './tools/voice/stt';\n
+export * as VoiceTTS from './tools/voice/tts';
+export * as VoiceSTT from './tools/voice/stt';

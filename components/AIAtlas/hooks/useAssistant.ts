@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -16,10 +16,13 @@ type UiView = 'chat'|'cart'|'address'|'products'|'payment_steps';
 
 function uid() { return Math.random().toString(36).slice(2) + Date.now(); }
 
-type PurchaseStep = 'start'|'ensureAddress'|'shipping'|'createOrder'|'sendToken'|'validateToken'|'showPayment'|'submitPayment';\n\nexport function useAssistant() {
+type PurchaseStep = 'start'|'ensureAddress'|'shipping'|'createOrder'|'sendToken'|'validateToken'|'showPayment'|'submitPayment';
+
+export function useAssistant() {
   const [open, setOpen] = useState<boolean>(false);
   const [view, setView] = useState<UiView>('chat');
-  const [messages, setMessages] = useState<AssistantMessage[]>([]);\n  const [lastOrderId, setLastOrderId] = useState<string>('');
+  const [messages, setMessages] = useState<AssistantMessage[]>([]);
+  const [lastOrderId, setLastOrderId] = useState<string>('');
   const booted = useRef(false);
 
   // Load from localStorage
@@ -34,7 +37,7 @@ type PurchaseStep = 'start'|'ensureAddress'|'shipping'|'createOrder'|'sendToken'
       if (!saved || saved.length === 0) {
         const welcome: AssistantMessage = {
           id: uid(), role: 'assistant', type: 'text', ts: Date.now(),
-          content: 'El gusto es mÃ­o ðŸ˜Š\nSoy tu asistente Carpihogar AI.\nEstoy aquÃ­ para ayudarte a encontrar el producto perfecto, comparar opciones y acompaÃ±arte hasta finalizar tu compra.\nÂ¿En quÃ© puedo ayudarte hoy?'
+          content: 'El gusto es mío 🙂\nSoy tu asistente Carpihogar AI.\nEstoy aquí para ayudarte a encontrar el producto perfecto, comparar opciones y acompañarte hasta finalizar tu compra.\n¿En qué puedo ayudarte hoy?'
         };
         setMessages([welcome]);
       }
@@ -51,6 +54,28 @@ type PurchaseStep = 'start'|'ensureAddress'|'shipping'|'createOrder'|'sendToken'
 
   const appendMessage = useCallback((m: AssistantMessage) => {
     setMessages((prev) => [...prev, m]);
+  }, []);
+
+  const handleUiControl = useCallback((control: any) => {
+    if (!control || control.type !== 'ui_control') return;
+    const a = String(control.action || '').toLowerCase();
+    if (a === 'open_cart') setView('cart');
+    if (a === 'open_address_form') setView('address');
+    if (a === 'show_products') setView('products');
+    if (a === 'show_payment_steps') setView('payment_steps');
+    if (a === 'show_payment_form') setView('payment_steps');
+    if (a === 'show_address_picker') setView('address');
+    if (a === 'add_to_cart_visual') {
+      const p = control.payload?.product;
+      if (p) setMessages((prev)=>[...prev,{ id: uid(), role: 'assistant', type: 'products', ts: Date.now(), data: [p]}]);
+    }
+    if (a === 'show_tracking') {
+      setView('chat');
+      const pld = control.payload || {};
+      const status = String(pld.status ?? pld.estado ?? '');
+      const state = String(pld.state ?? pld.detalle ?? '');
+      setMessages((prev)=>[...prev,{ id: uid(), role: 'assistant', type: 'text', ts: Date.now(), content: `Tracking: ${status} - Estado: ${state}` }]);
+    }
   }, []);
 
   const sendText = useCallback(async (text: string, opts?: { imageBase64?: string }) => {
@@ -99,9 +124,9 @@ type PurchaseStep = 'start'|'ensureAddress'|'shipping'|'createOrder'|'sendToken'
       if (json?.ui_control) handleUiControl(json.ui_control);
       if (arr.length) setMessages((prev) => [...prev, ...arr.map((x) => ({ ...x, id: uid(), ts: Date.now() }))]);
     } catch (e) {
-      setMessages((prev) => [...prev, { id: uid(), role: 'assistant', type: 'text', ts: Date.now(), content: 'Hubo un problema procesando tu mensaje. Â¿Intentamos de nuevo?' }]);
+      setMessages((prev) => [...prev, { id: uid(), role: 'assistant', type: 'text', ts: Date.now(), content: 'Hubo un problema procesando tu mensaje. ¿Intentamos de nuevo?' }]);
     }
-  }, [handleUiControl]);
+  }, [handleUiControl, lastOrderId]);
 
   const sendAudioBase64 = useCallback(async (audioBase64: string) => {
     const userMsg: AssistantMessage = { id: uid(), role: 'user', type: 'audio', audioBase64, ts: Date.now(), content: 'Audio enviado' };
@@ -137,18 +162,11 @@ type PurchaseStep = 'start'|'ensureAddress'|'shipping'|'createOrder'|'sendToken'
       if (json?.ui_control) handleUiControl(json.ui_control);
       if (arr.length) setMessages((prev) => [...prev, ...arr.map((x) => ({ ...x, id: uid(), ts: Date.now() }))]);
     } catch (e) {
-      setMessages((prev) => [...prev, { id: uid(), role: 'assistant', type: 'text', ts: Date.now(), content: 'No pude procesar el audio. Â¿Probamos nuevamente?' }]);
+      setMessages((prev) => [...prev, { id: uid(), role: 'assistant', type: 'text', ts: Date.now(), content: 'No pude procesar el audio. ¿Probamos nuevamente?' }]);
     }
   }, [handleUiControl]);
 
-  const handleUiControl = useCallback((control: any) => {
-    if (!control || control.type !== 'ui_control') return;
-    const a = String(control.action || '').toLowerCase();
-    if (a === 'open_cart') setView('cart');
-    if (a === 'open_address_form') setView('address');
-    if (a === 'show_products') setView('products');
-    if (a === 'show_payment_steps') setView('payment_steps');\n    if (a === 'show_payment_form') setView('payment_steps');\n    if (a === 'show_address_picker') setView('address');\n    if (a === 'add_to_cart_visual') { const p = control.payload?.product; if (p) setMessages((prev)=>[...prev,{ id: uid(), role: 'assistant', type: 'products', ts: Date.now(), data: [p]}]); }\n    if (a === 'show_tracking') { setView('chat'); const pld = control.payload || {}; setMessages((prev)=>[...prev,{ id: uid(), role: 'assistant', type: 'text', ts: Date.now(), content: Tracking:   - Estado:   }]); }\n    if (a === 'show_tracking') setView('products');
-  }, []);\n    const continuePurchase = useCallback(async (step: PurchaseStep, input?: any) => {
+  const continuePurchase = useCallback(async (step: PurchaseStep, input?: any) => {
     try {
       const res = await fetch('/api/flow/purchase/step', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step, input }) });
       const json = await res.json();
@@ -164,23 +182,23 @@ type PurchaseStep = 'start'|'ensureAddress'|'shipping'|'createOrder'|'sendToken'
         if (a === 'show_payment_methods') setView('payment_steps');
         if (a === 'payment_submitted') setView('chat');
       }
-            if (json?.order?.id) setLastOrderId(String(json.order.id));\n      return json;
+      if (json?.order?.id) setLastOrderId(String(json.order.id));
+      return json;
     } catch {
       setMessages((prev) => [...prev, { id: uid(), role: 'assistant', type: 'text', ts: Date.now(), content: 'No pude avanzar el flujo de compra. ¿Intentamos de nuevo?' }]);
       return null;
     }
-  }, [setView]);\n  const value = useMemo(() => ({
+  }, [setView]);
+
+  const value = useMemo(() => ({
     open, setOpen, toggle: () => setOpen((v) => !v),
     view, setView,
     messages, appendMessage,
     sendText, sendAudioBase64,
     handleUiControl,
-  }), [open, view, messages, appendMessage, sendText, sendAudioBase64, handleUiControl]);\n  return value as typeof value & { continuePurchase: typeof continuePurchase };\n}\n
+    continuePurchase,
+  }), [open, view, messages, appendMessage, sendText, sendAudioBase64, handleUiControl, continuePurchase]);
 
-
-
-
-
-
-
+  return value;
+}
 
