@@ -79,8 +79,8 @@ export default function AdminSidebar() {
   ];
 
   return (
-    <aside className="w-64 shrink-0 border-r bg-white min-h-[calc(100vh-64px)] print:hidden">
-      <nav className="p-4 space-y-1">
+    <aside className="w-56 xl:w-60 shrink-0 border-r bg-white min-h-[calc(100vh-64px)] print:hidden">
+      <nav className="p-3 space-y-1 text-sm max-h-[calc(100vh-64px)] overflow-y-auto">
         {links.map((l) => {
           const active = pathname === l.href || pathname?.startsWith(l.href + '/');
           return (
