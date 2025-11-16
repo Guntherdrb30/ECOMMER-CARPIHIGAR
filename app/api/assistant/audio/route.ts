@@ -10,12 +10,26 @@ export async function POST(req: Request) {
 
   const session = await getServerSession(authOptions);
   const customerId = (session?.user as any)?.id as string | undefined;
+
   const stream = new ReadableStream({
-    async start(controller) {
-      const chunk = (obj: any) => controller.enqueue(new TextEncoder().encode(JSON.stringify(obj) + "\n\n"));
-      for await (const c of processIncomingAudio({ audioBase64: base64, customerId })) chunk(c);
-      controller.close();
+    start(controller) {
+      const encoder = new TextEncoder();
+      const chunk = (obj: any) => controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n\n'));
+
+      (async () => {
+        try {
+          for await (const c of processIncomingAudio({ audioBase64: base64, customerId })) {
+            chunk(c);
+          }
+        } finally {
+          try {
+            controller.close();
+          } catch {}
+        }
+      })();
     },
   });
+
   return new Response(stream, { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 }
+
