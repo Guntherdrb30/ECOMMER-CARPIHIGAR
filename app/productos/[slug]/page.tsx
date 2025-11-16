@@ -2,7 +2,6 @@
 
 'use client';
 
-import { notFound } from 'next/navigation';
 import Price from '@/components/price';
 import { ProductActions } from '@/components/product-actions';
 import type { Product } from '@prisma/client';
@@ -177,24 +176,40 @@ export default function ProductoDetallePage({ params }: { params: { slug: string
   const [product, setProduct] = useState<Product | null>(null);
   const [settings, setSettings] = useState<any>(null);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchData() {
-      const { product: p, settings, relatedProducts } = await getProductPageData(resolvedParams.slug);
-      if (!p) {
-        notFound();
+      try {
+        const { product: p, settings, relatedProducts } = await getProductPageData(resolvedParams.slug);
+        if (!p) {
+          if (!cancelled) setError('Producto no encontrado.');
+          return;
+        }
+        // Redirect to canonical slug if different (e.g., entered without suffix)
+        if (p && resolvedParams.slug !== p.slug) {
+          router.replace(`/productos/${p.slug}`);
+          return;
+        }
+        if (!cancelled) {
+          setProduct(p);
+          setSettings(settings);
+          setRelatedProducts(relatedProducts);
+        }
+      } catch (e) {
+        if (!cancelled) setError('No pude cargar este producto. Intenta nuevamente.');
       }
-      // Redirect to canonical slug if different (e.g., entered without suffix)
-      if (p && resolvedParams.slug !== p.slug) {
-        router.replace(`/productos/${p.slug}`);
-        return; // avoid setting stale state
-      }
-      setProduct(p);
-      setSettings(settings);
-      setRelatedProducts(relatedProducts);
     }
     fetchData();
+    return () => {
+      cancelled = true;
+    };
   }, [resolvedParams.slug, router]);
+
+  if (error) {
+    return <div className="container mx-auto px-4 py-12">{error}</div>;
+  }
 
   if (!product || !settings) {
     return <div>Cargando...</div>;
