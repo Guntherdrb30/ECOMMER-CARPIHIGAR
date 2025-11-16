@@ -746,17 +746,37 @@ export async function getProductPageData(slug: string) {
     }
   }
 
-  // 3) Fallback adicional: buscar por nombre si el slug se parece al nombre
+  // 3) Fallback adicional: buscar por nombre con varias heurísticas
   if (!product && candidates.length) {
     const nameCandidate = candidates[candidates.length - 1];
     try {
+      // Igual que el texto completo
       product = await prisma.product.findFirst({
         where: { name: { equals: nameCandidate, mode: 'insensitive' } },
       });
+      // Contiene el texto completo
       if (!product) {
         product = await prisma.product.findFirst({
           where: { name: { contains: nameCandidate, mode: 'insensitive' } },
         });
+      }
+      // Contiene todas las palabras (ej. "Bisagra Master Black" -> AND de [bisagra, master, black])
+      if (!product) {
+        const words = nameCandidate
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .split(/\s+/)
+          .filter((w) => w.length > 1);
+        if (words.length) {
+          product = await prisma.product.findFirst({
+            where: {
+              AND: words.map((w) => ({
+                name: { contains: w, mode: 'insensitive' },
+              })),
+            },
+          });
+        }
       }
     } catch {}
   }
