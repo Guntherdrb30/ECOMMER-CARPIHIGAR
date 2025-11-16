@@ -1,42 +1,77 @@
 "use client";
 
-let voiceCache: SpeechSynthesisVoice | null = null;
+let cachedVoice: SpeechSynthesisVoice | null = null;
 
-function selectFemaleEsVoice(): SpeechSynthesisVoice | null {
-  const voices = window.speechSynthesis.getVoices();
-  // Prefer Spanish female voices
+function normalize(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function selectSpanishFemaleVoice(): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+  const synth = window.speechSynthesis;
+  const voices = synth.getVoices() || [];
+  if (!voices.length) return null;
+
+  const esVoices = voices.filter((v) => (v.lang || "").toLowerCase().startsWith("es"));
+
   const preferredNames = [
-    'Google español', 'Google español de Estados Unidos', 'Microsoft Helena - Spanish (Spain)',
-    'Microsoft Sabina - Spanish (Mexico)', 'Microsoft Laura - Spanish (Spain)'
+    "google español",
+    "google español de estados unidos",
+    "microsoft sabina - spanish (mexico)",
+    "microsoft laura - spanish (spain)",
+    "microsoft helena - spanish (spain)",
   ];
+
   for (const pref of preferredNames) {
-    const v = voices.find((x) => x.name.toLowerCase().includes(pref.toLowerCase()));
-    if (v) return v;
+    const match = esVoices.find((v) => normalize(v.name).includes(normalize(pref)));
+    if (match) return match;
   }
-  const esVoices = voices.filter((v) => (v.lang || '').toLowerCase().startsWith('es'));
-  return esVoices[0] || voices[0] || null;
+
+  if (esVoices.length) return esVoices[0];
+  return voices[0] || null;
 }
 
 export function speak(text: string) {
   try {
-    if (!('speechSynthesis' in window)) return;
-    if (!voiceCache) {
-      voiceCache = selectFemaleEsVoice();
-      // In case voices not loaded yet
-      if (!voiceCache) {
-        window.speechSynthesis.onvoiceschanged = () => { voiceCache = selectFemaleEsVoice(); };
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const synth = window.speechSynthesis;
+
+    // Evita que se superpongan varias voces
+    synth.cancel();
+
+    if (!cachedVoice) {
+      cachedVoice = selectSpanishFemaleVoice();
+      if (!cachedVoice) {
+        const handler = () => {
+          cachedVoice = selectSpanishFemaleVoice();
+          synth.removeEventListener("voiceschanged", handler);
+        };
+        synth.addEventListener("voiceschanged", handler);
       }
     }
+
     const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 1.0; // normal speed
-    utter.pitch = 1.1; // slightly higher (more feminine)
+    utter.rate = 1.0;
+    utter.pitch = 1.05;
     utter.volume = 1.0;
-    if (voiceCache) utter.voice = voiceCache;
-    window.speechSynthesis.speak(utter);
-  } catch {}
+    utter.lang = (cachedVoice && cachedVoice.lang) || "es-ES";
+    if (cachedVoice) utter.voice = cachedVoice;
+
+    synth.speak(utter);
+  } catch {
+    // no-op
+  }
 }
 
 export function stopSpeaking() {
-  try { window.speechSynthesis.cancel(); } catch {}
+  try {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+  } catch {
+    // no-op
+  }
 }
 
