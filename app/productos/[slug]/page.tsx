@@ -1,12 +1,9 @@
-'use client';
-
-'use client';
+"use client";
 
 import Price from '@/components/price';
 import { ProductActions } from '@/components/product-actions';
 import type { Product } from '@prisma/client';
-import { getProductPageData } from '@/server/actions/products';
-import { useState, useEffect, use, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import RelatedProductsCarousel from '@/components/related-products-carousel';
 import Head from 'next/head';
@@ -171,7 +168,7 @@ const AnimatedTitle = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function ProductoDetallePage({ params }: { params: { slug: string } }) {
-  const resolvedParams = use(params);
+  const resolvedParams = params;
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [settings, setSettings] = useState<any>(null);
@@ -182,20 +179,24 @@ export default function ProductoDetallePage({ params }: { params: { slug: string
     let cancelled = false;
     async function fetchData() {
       try {
-        const { product: p, settings, relatedProducts } = await getProductPageData(resolvedParams.slug);
-        if (!p) {
+        const res = await fetch(`/api/products/page-data?slug=${encodeURIComponent(resolvedParams.slug)}`, {
+          cache: 'no-store',
+        });
+        const json = await res.json();
+        if (!res.ok || !json?.product) {
           if (!cancelled) setError('Producto no encontrado.');
           return;
         }
-        // Redirect to canonical slug if different (e.g., entered without suffix)
+        const p = json.product;
+        // Redirect to canonical slug si el slug real es distinto
         if (p && resolvedParams.slug !== p.slug) {
           router.replace(`/productos/${p.slug}`);
           return;
         }
         if (!cancelled) {
           setProduct(p);
-          setSettings(settings);
-          setRelatedProducts(relatedProducts);
+          setSettings(json.settings);
+          setRelatedProducts(json.relatedProducts || []);
         }
       } catch (e) {
         if (!cancelled) setError('No pude cargar este producto. Intenta nuevamente.');
