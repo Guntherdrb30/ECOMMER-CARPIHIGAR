@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -8,10 +8,13 @@ import * as ProductsSearch from '@/agents/carpihogar-ai-actions/tools/products/s
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const text = String(body?.text || '').trim();
-  if (!text) return NextResponse.json({ type: 'text', message: 'Â¿Puedes escribir tu consulta?' });
+  if (!text) return NextResponse.json({ type: 'text', message: '¿Puedes escribir tu consulta?' });
 
-  const session = await getServerSession(authOptions);
-  const customerId = (session?.user as any)?.id as string | undefined;
+  let customerId: string | undefined = undefined;
+  try {
+    const session = await getServerSession(authOptions);
+    customerId = (session?.user as any)?.id as string | undefined;
+  } catch {}
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -34,16 +37,16 @@ export async function POST(req: Request) {
           controller.close();
           return;
         }
-        // BÃºsqueda de productos (fallback)
+        // Búsqueda de productos (fallback)
         const res = await ProductsSearch.run({ q: text });
         if (res?.success && Array.isArray(res.data) && res.data.length) {
-          emit({ type: 'text', message: 'Perfecto, aquÃ­ tienes algunas opciones:' });
+          emit({ type: 'text', message: 'Perfecto, aquí tienes algunas opciones:' });
           emit({ type: 'products', products: res.data } as any);
         } else {
-          emit({ type: 'text', message: 'No encontrÃ© coincidencias exactas. Â¿Puedes darme mÃ¡s detalles? (marca, tipo, color, medida)' });
+          emit({ type: 'text', message: 'No encontré coincidencias exactas. ¿Puedes darme más detalles? (marca, tipo, color, medida)' });
         }
       } catch (e) {
-        emit({ type: 'text', message: 'Tu mensaje fue recibido, pero hubo un problema procesÃ¡ndolo.' });
+        emit({ type: 'text', message: 'Tu mensaje fue recibido, pero hubo un problema procesándolo.' });
       } finally {
         controller.close();
       }

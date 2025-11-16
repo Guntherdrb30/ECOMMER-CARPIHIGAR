@@ -1,9 +1,19 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export type FlowResult = { messages: any[]; uiActions?: any[]; audioUrl?: string };
 
 export async function runPurchaseConversation({ customerId, sessionId, message }: { customerId?: string; sessionId?: string; message: string }): Promise<FlowResult> {
-  const intentRes = await fetch(`${process.env.NEXT_PUBLIC_URL || ''}/api/assistant/intent`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: message }) }).then(r => r.json()).catch(() => ({ intent: 'buy', entities: {} }));
+  const base = (() => {
+    const p1 = (process.env.NEXT_PUBLIC_URL || '').trim();
+    if (p1) return p1;
+    const p2 = (process.env.NEXTAUTH_URL || '').trim();
+    if (p2) return p2;
+    const vercel = (process.env.VERCEL_URL || '').trim();
+    if (vercel) return vercel.startsWith('http') ? vercel : `https://${vercel}`;
+    return 'http://localhost:3000';
+  })();
+  const intentUrl = new URL('/api/assistant/intent', base).toString();
+  const intentRes = await fetch(intentUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: message }) }).then(r => r.json()).catch(() => ({ intent: 'buy', entities: {} }));
   const intent = String(intentRes?.intent || 'buy');
   const entities = intentRes?.entities || {};
   if (intent === 'add_to_cart') {
@@ -28,3 +38,4 @@ export async function runPurchaseConversation({ customerId, sessionId, message }
   // Default
   return { messages: [{ role: 'assistant', type: 'text', content: 'Te ayudo con tu compra. ¿Qué producto deseas?' }] } as any;
 }
+
