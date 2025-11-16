@@ -13,6 +13,6 @@ export async function handleAddToCart({ customerId, sessionId, entities, message
     messages: [
       { role: 'assistant', type: 'text', content: `Agregado al carrito: ${p.name} x${qty}` },
     ],
-    uiActions: [ { type: 'ui_control', action: 'add_to_cart_visual', payload: { product: p } } ],
+    uiActions: [ { type: 'ui_control', action: 'add_to_cart_visual', payload: { product: p, quantity: qty } } ],
   };
 }
