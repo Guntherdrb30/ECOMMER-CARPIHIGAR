@@ -262,10 +262,75 @@ export async function createProduct(data: any) {
     const relatedIds: string[] = Array.isArray(data?.relatedIds)
         ? (data.relatedIds as string[]).map((x) => String(x)).filter(Boolean)
         : [];
-    const { relatedIds: _ignore, slug: _slugIn, ...rest } = data || {};
+    const {
+        relatedIds: _ignore,
+        slug: _slugIn,
+        priceUSD,
+        priceAllyUSD,
+        priceWholesaleUSD,
+        stock,
+        stockUnits,
+        stockMinUnits,
+        allowBackorder,
+        type,
+        unitsPerPackage,
+        stockPackages,
+        soldBy,
+        weightKg,
+        heightCm,
+        widthCm,
+        depthCm,
+        freightType,
+        ...rest
+    } = data || {};
+
+    const numericPriceUSD = Number(priceUSD || 0);
+    const numericPriceAllyUSD = priceAllyUSD != null ? Number(priceAllyUSD) : null;
+    const numericPriceWholesaleUSD = priceWholesaleUSD != null ? Number(priceWholesaleUSD) : null;
+
+    const units = stockUnits != null ? parseInt(String(stockUnits), 10) : parseInt(String(stock ?? 0), 10);
+    const minUnits = stockMinUnits != null ? parseInt(String(stockMinUnits), 10) : 0;
+    const allowBo = Boolean(allowBackorder);
+    const typeSafe = (String(type || 'SIMPLE').toUpperCase() as any);
+    const unitsPerPkg = unitsPerPackage != null ? parseInt(String(unitsPerPackage), 10) : null;
+    const stockPkgs = stockPackages != null ? parseInt(String(stockPackages), 10) : null;
+    const soldBySafe = (String(soldBy || 'UNIT').toUpperCase() as any);
+
+    const weightKgNum = weightKg != null ? Number(weightKg) : null;
+    const heightCmNum = heightCm != null ? Number(heightCm) : null;
+    const widthCmNum = widthCm != null ? Number(widthCm) : null;
+    const depthCmNum = depthCm != null ? Number(depthCm) : null;
+    const volumeCm3 =
+        heightCmNum != null && widthCmNum != null && depthCmNum != null
+            ? Number((heightCmNum * widthCmNum * depthCmNum).toFixed(2))
+            : null;
 
     // Create product first
-    const product = await prisma.product.create({ data: { ...rest, slug: uniqueSlug, barcode } });
+    const product = await prisma.product.create({
+        data: {
+            ...rest,
+            slug: uniqueSlug,
+            barcode,
+            priceUSD: numericPriceUSD as any,
+            priceAllyUSD: numericPriceAllyUSD as any,
+            priceWholesaleUSD: numericPriceWholesaleUSD as any,
+            priceClientUSD: numericPriceUSD as any,
+            stock: units,
+            stockUnits: units,
+            stockMinUnits: minUnits,
+            allowBackorder: allowBo,
+            type: typeSafe,
+            unitsPerPackage: unitsPerPkg,
+            stockPackages: stockPkgs,
+            soldBy: soldBySafe,
+            weightKg: weightKgNum as any,
+            heightCm: heightCmNum as any,
+            widthCm: widthCmNum as any,
+            depthCm: depthCmNum as any,
+            volumeCm3: volumeCm3 as any,
+            freightType: freightType || null,
+        },
+    });
 
     // Persist relationships both directions (A<->B) via join table
     if (relatedIds.length) {
@@ -360,9 +425,16 @@ export async function updateProductInline(formData: FormData) {
     const image = String(formData.get('image') || '').trim();
 
     const data: any = {};
-    if (priceUSD !== null) data.priceUSD = parseFloat(String(priceUSD));
+    if (priceUSD !== null) {
+        data.priceUSD = parseFloat(String(priceUSD));
+        data.priceClientUSD = parseFloat(String(priceUSD));
+    }
     if (priceAllyUSD !== null && String(priceAllyUSD).length) data.priceAllyUSD = parseFloat(String(priceAllyUSD));
-    if (stock !== null) data.stock = parseInt(String(stock), 10);
+    if (stock !== null) {
+        const units = parseInt(String(stock), 10);
+        data.stock = units;
+        data.stockUnits = units;
+    }
     if (isNew !== null) data.isNew = String(isNew) === 'on' || String(isNew) === 'true';
     if (image) data.images = { push: image } as any;
 
@@ -396,12 +468,16 @@ export async function createStockMovement(formData: FormData) {
     });
 
     // apply stock change
+    const delta = type === 'ENTRADA' ? quantity : type === 'SALIDA' ? -quantity : 0;
     await prisma.product.update({
         where: { id: productId },
         data: {
             stock: {
-                increment: type === 'ENTRADA' ? quantity : type === 'SALIDA' ? -quantity : 0,
+                increment: delta,
             },
+            stockUnits: {
+                increment: delta,
+            } as any,
         },
     });
     await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'STOCK_MOVE_'+type, details: `${productId}:${quantity}:${reason}` } });
@@ -475,15 +551,45 @@ export async function updateProductFull(formData: FormData) {
     const slug = String(formData.get('slug') || '');
     const description = String(formData.get('description') || '');
     const brand = String(formData.get('brand') || '').trim();
+    const model = String(formData.get('model') || '').trim() || null;
     const sku = String(formData.get('sku') || '') || null;
+    const barcode = String(formData.get('barcode') || '') || null;
+    const supplierCode = String(formData.get('supplierCode') || '') || null;
+    const guarantee = String(formData.get('guarantee') || '') || null;
+    const rawKeywords = String(formData.get('keywords') || '');
+    const keywords = rawKeywords
+        ? rawKeywords.split(',').map((s) => s.trim()).filter(Boolean)
+        : [];
+    const type = String(formData.get('type') || 'SIMPLE').toUpperCase() as any;
+
     const priceUSD = parseFloat(String(formData.get('priceUSD') || '0'));
     const priceAllyUSD = formData.get('priceAllyUSD') ? parseFloat(String(formData.get('priceAllyUSD'))) : null;
-    const stock = parseInt(String(formData.get('stock') || '0'), 10);
+    const priceWholesaleUSD = formData.get('priceWholesaleUSD') ? parseFloat(String(formData.get('priceWholesaleUSD'))) : null;
+
+    const stockUnits = parseInt(String(formData.get('stockUnits') || '0'), 10);
+    const stockMinUnits = parseInt(String(formData.get('stockMinUnits') || '0'), 10);
+    const allowBackorder = String(formData.get('allowBackorder') || '') === 'on' || String(formData.get('allowBackorder') || '') === 'true';
+    const unitsPerPackage = formData.get('unitsPerPackage') ? parseInt(String(formData.get('unitsPerPackage') || '0'), 10) : null;
+    const stockPackages = formData.get('stockPackages') ? parseInt(String(formData.get('stockPackages') || '0'), 10) : null;
+    const soldBy = String(formData.get('soldBy') || 'UNIT').toUpperCase() as any;
+
+    const weightKg = formData.get('weightKg') ? parseFloat(String(formData.get('weightKg'))) : null;
+    const heightCm = formData.get('heightCm') ? parseFloat(String(formData.get('heightCm'))) : null;
+    const widthCm = formData.get('widthCm') ? parseFloat(String(formData.get('widthCm'))) : null;
+    const depthCm = formData.get('depthCm') ? parseFloat(String(formData.get('depthCm'))) : null;
+    const freightType = String(formData.get('freightType') || '') || null;
+    const status = String(formData.get('status') || 'ACTIVE').toUpperCase() as any;
+
     const categoryId = String(formData.get('categoryId') || '' ) || null;
     const supplierId = String(formData.get('supplierId') || '' ) || null;
     const isNew = String(formData.get('isNew') || '') === 'on' || String(formData.get('isNew') || '') === 'true';
     const videoUrl = String(formData.get('videoUrl') || '').trim() || null;
     const showSocialButtons = String(formData.get('showSocialButtons') || '') === 'on' || String(formData.get('showSocialButtons') || '') === 'true';
+
+    const volumeCm3 =
+        heightCm != null && widthCm != null && depthCm != null
+            ? Number((heightCm * widthCm * depthCm).toFixed(2))
+            : null;
 
     // Images handling
     const replaceAll = String(formData.get('replaceAllImages') || '') === 'on' || String(formData.get('replaceAllImages') || '') === 'true';
@@ -502,7 +608,43 @@ export async function updateProductFull(formData: FormData) {
 
     const product = await prisma.product.update({
         where: { id },
-        data: { name, slug, description, sku, brand, priceUSD, priceAllyUSD, stock, categoryId, supplierId, isNew, images, videoUrl, showSocialButtons },
+        data: {
+            name,
+            slug,
+            description,
+            brand,
+            model,
+            sku,
+            barcode,
+            supplierCode,
+            guarantee,
+            keywords,
+            type,
+            priceUSD: priceUSD as any,
+            priceClientUSD: priceUSD as any,
+            priceAllyUSD: priceAllyUSD as any,
+            priceWholesaleUSD: priceWholesaleUSD as any,
+            stock: stockUnits,
+            stockUnits,
+            stockMinUnits,
+            allowBackorder,
+            unitsPerPackage,
+            stockPackages,
+            soldBy,
+            weightKg: weightKg as any,
+            heightCm: heightCm as any,
+            widthCm: widthCm as any,
+            depthCm: depthCm as any,
+            volumeCm3: volumeCm3 as any,
+            freightType,
+            status,
+            categoryId,
+            supplierId,
+            isNew,
+            images,
+            videoUrl,
+            showSocialButtons,
+        },
     });
 
     // Update related products if provided (tolerant if join table doesn't exist yet)

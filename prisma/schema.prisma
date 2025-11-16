@@ -28,6 +28,26 @@ enum DeliveryStatus {
   APPROVED
 }
 
+enum ProductType {
+  SIMPLE
+  GROUPED
+  COMBO
+}
+
+enum ProductSoldBy {
+  UNIT
+  PACKAGE
+  BOTH
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  REVIEW
+  WHOLESALE_ONLY
+  CLEARANCE
+}
+
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
@@ -167,6 +187,15 @@ model Product {
   sku          String?         @unique
   // Câ”œâ”‚digo interno opcional (puede venir de proveedor)
   code         String?         @unique
+  supplierCode String?
+  // Palabras clave SEO / búsqueda
+  keywords     String[]        @default([])
+  // Modelo y garantía
+  model        String?
+  guarantee    String?
+
+  // Tipo de producto (simple / agrupado / combo)
+  type         ProductType     @default(SIMPLE)
   priceUSD     Decimal         @db.Decimal(10, 2)
   priceAllyUSD Decimal?        @db.Decimal(10, 2)
   // Nuevo: Precio mayorista (calculado)
@@ -178,7 +207,32 @@ model Product {
   marginWholesalePct Decimal?  @db.Decimal(5, 2)
   // Nuevo: precios calculados explâ”œÂ¡citos (el priceUSD existente se usa como Cliente)
   priceClientUSD    Decimal?   @db.Decimal(10, 2)
+  // Inventario principal
   stock        Int             @default(0)
+  // Stock en unidades (alias más explícito para stock)
+  stockUnits   Int             @default(0)
+  // Stock mínimo recomendado
+  stockMinUnits Int            @default(0)
+  // Permitir venta por pedido / backorder (solo ERP)
+  allowBackorder Boolean       @default(false)
+  // Permitir venta por unidad cuando es agrupado
+  allowUnitSale Boolean        @default(true)
+  // Configuración para productos agrupados (cajas/paquetes)
+  unitsPerPackage Int?
+  stockPackages   Int?
+  soldBy          ProductSoldBy @default(UNIT)
+
+  // Datos de envío / flete
+  weightKg    Decimal?         @db.Decimal(10, 3)
+  heightCm    Decimal?         @db.Decimal(10, 2)
+  widthCm     Decimal?         @db.Decimal(10, 2)
+  depthCm     Decimal?         @db.Decimal(10, 2)
+  volumeCm3   Decimal?         @db.Decimal(12, 2)
+  freightType String?
+
+  // Estado del producto
+  status      ProductStatus    @default(ACTIVE)
+
   supplierId   String?
   supplier     Supplier?       @relation(fields: [supplierId], references: [id])
   reorderPoint Int?

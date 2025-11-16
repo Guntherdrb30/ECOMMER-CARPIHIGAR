@@ -97,6 +97,26 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           if (mainImage) images.unshift(mainImage);
           const limited = images.slice(0, 4);
           const relatedIds = (formData.getAll('relatedIds[]') as string[]).map(String).filter(Boolean);
+          const type = String(formData.get('type') || 'SIMPLE') as any;
+          const stockUnits = parseInt(String(formData.get('stockUnits') || formData.get('stock') || '0'), 10);
+          const stockMinUnits = parseInt(String(formData.get('stockMinUnits') || '0'), 10);
+          const allowBackorder = String(formData.get('allowBackorder') || '') === 'on';
+          const priceUSD = parseFloat(String(formData.get('priceUSD') || '0'));
+          const priceAllyUSD = formData.get('priceAllyUSD') ? parseFloat(String(formData.get('priceAllyUSD'))) : null;
+          const priceWholesaleUSD = formData.get('priceWholesaleUSD') ? parseFloat(String(formData.get('priceWholesaleUSD'))) : null;
+          const unitsPerPackage = type === 'GROUPED' ? parseInt(String(formData.get('unitsPerPackage') || '0'), 10) || null : null;
+          const stockPackages = type === 'GROUPED' ? parseInt(String(formData.get('stockPackages') || '0'), 10) || null : null;
+          const soldBy = String(formData.get('soldBy') || 'UNIT') as any;
+          const weightKg = formData.get('weightKg') ? parseFloat(String(formData.get('weightKg'))) : null;
+          const heightCm = formData.get('heightCm') ? parseFloat(String(formData.get('heightCm'))) : null;
+          const widthCm = formData.get('widthCm') ? parseFloat(String(formData.get('widthCm'))) : null;
+          const depthCm = formData.get('depthCm') ? parseFloat(String(formData.get('depthCm'))) : null;
+          const freightType = String(formData.get('freightType') || '') || null;
+          const categoryId = String(formData.get('categoryId') || '' ) || null;
+          const supplierId = String(formData.get('supplierId') || '' ) || null;
+          const isNew = Boolean(formData.get('isNew'));
+          const videoUrl = String((formData.get('videoUrl') as string) || '').trim() || null;
+          const showSocialButtons = Boolean(formData.get('showSocialButtons'));
           await createProduct({
             name: String(formData.get('name') || ''),
             slug: String(formData.get('slug') || ''),
@@ -105,30 +125,130 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             images: limited,
             sku: String(formData.get('sku') || '') || null,
             barcode: String(formData.get('barcode') || ''),
-            priceUSD: parseFloat(String(formData.get('priceUSD') || '0')),
-            priceAllyUSD: formData.get('priceAllyUSD') ? parseFloat(String(formData.get('priceAllyUSD'))) : null,
-            stock: parseInt(String(formData.get('stock') || '0'), 10),
-            categoryId: String(formData.get('categoryId') || '' ) || null,
-            supplierId: String(formData.get('supplierId') || '' ) || null,
-            isNew: Boolean(formData.get('isNew')),
-            videoUrl: String((formData.get('videoUrl') as string) || '').trim() || null,
-            showSocialButtons: Boolean(formData.get('showSocialButtons')),
+            priceUSD,
+            priceAllyUSD,
+            priceWholesaleUSD,
+            stock: stockUnits,
+            stockUnits,
+            stockMinUnits,
+            allowBackorder,
+            type,
+            unitsPerPackage,
+            stockPackages,
+            soldBy,
+            weightKg,
+            heightCm,
+            widthCm,
+            depthCm,
+            freightType,
+            categoryId,
+            supplierId,
+            isNew,
+            videoUrl,
+            showSocialButtons,
             relatedIds,
           });
           redirect('/dashboard/admin/productos?message=Producto%20creado');
         }} className="form-grid">
-          <input name="name" placeholder="Nombre" className="form-input" required />
-          <input name="slug" placeholder="slug-ejemplo" className="form-input" required />
-          <input name="sku" placeholder="SKU (opcional)" className="form-input" />
-          <input name="barcode" placeholder="Codigo de barras (opcional)" className="form-input" />
-          <input name="brand" placeholder="Marca" className="form-input" required />
-          <div className="md:col-span-3">
-            <label className="block text-sm text-gray-700 mb-1">Descripcion</label>
-            <textarea name="description" placeholder="Descripcion del producto" className="w-full border rounded px-2 py-1 min-h-[80px]"></textarea>
+          {/* SECCIÓN 1 – Tipo de producto */}
+          <div className="md:col-span-3 border-b pb-2 mb-2">
+            <h3 className="font-semibold text-sm mb-2">Tipo de producto</h3>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <label className="inline-flex items-center gap-2">
+                <input type="radio" name="type" value="SIMPLE" defaultChecked /> Producto simple
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input type="radio" name="type" value="GROUPED" /> Producto agrupado (caja/paquete)
+              </label>
+            </div>
           </div>
-          <input name="priceUSD" type="number" step="0.01" placeholder="Precio USD" className="form-input" required />
-          <input name="priceAllyUSD" type="number" step="0.01" placeholder="Precio Aliado USD (opcional)" className="form-input" />
-          <input name="stock" type="number" min="0" placeholder="Stock" className="form-input" required />
+
+          {/* SECCIÓN 2 – Datos básicos */}
+          <input name="name" placeholder="Nombre del producto" className="form-input md:col-span-2" required />
+          <input name="slug" placeholder="slug-ejemplo" className="form-input" required />
+          <input name="sku" placeholder="Código interno Carpihogar (SKU)" className="form-input" />
+          <input name="barcode" placeholder="Código de barras (opcional)" className="form-input" />
+          <input name="brand" placeholder="Marca" className="form-input" required />
+          <input name="model" placeholder="Modelo" className="form-input" />
+          <div className="md:col-span-3">
+            <label className="block text-sm text-gray-700 mb-1">Descripción</label>
+            <textarea name="description" placeholder="Descripción del producto" className="w-full border rounded px-2 py-1 min-h-[80px]"></textarea>
+          </div>
+
+          {/* SECCIÓN 3 – Precios */}
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Precio Cliente (USD)</label>
+            <input name="priceUSD" type="number" step="0.01" placeholder="Precio Cliente" className="form-input" required />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Precio Aliado (USD)</label>
+            <input name="priceAllyUSD" type="number" step="0.01" placeholder="Precio Aliado" className="form-input" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Precio Mayorista (USD)</label>
+            <input name="priceWholesaleUSD" type="number" step="0.01" placeholder="Precio Mayorista" className="form-input" />
+          </div>
+
+          {/* SECCIÓN 4 – Inventario */}
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Stock en unidades</label>
+            <input name="stockUnits" type="number" min="0" placeholder="Stock unidades" className="form-input" required />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Stock mínimo</label>
+            <input name="stockMinUnits" type="number" min="0" placeholder="Stock mínimo" className="form-input" />
+          </div>
+          <div className="md:col-span-1 flex items-end">
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" name="allowBackorder" /> Permitir venta por pedido (solo ERP)
+            </label>
+          </div>
+
+          {/* Campos para productos agrupados (se pueden dejar vacíos para SIMPLE) */}
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Unidades por paquete/caja</label>
+            <input name="unitsPerPackage" type="number" min="0" placeholder="Unidades por paquete" className="form-input" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Stock en paquetes/cajas</label>
+            <input name="stockPackages" type="number" min="0" placeholder="Stock paquetes" className="form-input" />
+          </div>
+          <div className="md:col-span-1">
+            <label className="block text-sm text-gray-700 mb-1">Forma de venta</label>
+            <select name="soldBy" className="form-select">
+              <option value="UNIT">Solo unidad</option>
+              <option value="PACKAGE">Solo caja/paquete</option>
+              <option value="BOTH">Ambas</option>
+            </select>
+          </div>
+
+          {/* SECCIÓN 5 – Envío / Flete */}
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Peso (kg)</label>
+            <input name="weightKg" type="number" step="0.001" min="0" placeholder="Peso kg" className="form-input" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Alto (cm)</label>
+            <input name="heightCm" type="number" step="0.01" min="0" placeholder="Alto" className="form-input" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Ancho (cm)</label>
+            <input name="widthCm" type="number" step="0.01" min="0" placeholder="Ancho" className="form-input" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Profundidad (cm)</label>
+            <input name="depthCm" type="number" step="0.01" min="0" placeholder="Profundidad" className="form-input" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Tipo de flete</label>
+            <select name="freightType" className="form-select">
+              <option value="">Seleccionar tipo de flete</option>
+              <option value="normal">Normal</option>
+              <option value="fragil">Frágil</option>
+              <option value="voluminoso">Voluminoso</option>
+              <option value="sobrepeso">Sobrepeso</option>
+            </select>
+          </div>
           <input name="videoUrl" placeholder="URL de video (opcional)" className="form-input" />
           <select name="categoryId" className="form-select">
             <option value="">Sin categoria</option>

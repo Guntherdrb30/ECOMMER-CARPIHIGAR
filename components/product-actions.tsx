@@ -16,10 +16,15 @@ import {
   TelegramIcon,
 } from 'react-share';
 
-export function ProductActions({ product }: { product: Omit<Product, 'priceUSD'> & { priceUSD: number } }) {
+export function ProductActions({ product }: { product: Omit<Product, 'priceUSD' | 'stockUnits'> & { priceUSD: number; stockUnits?: number | null } }) {
   const [quantity, setQuantity] = useState(1);
   const [liveStock, setLiveStock] = useState<number | null>(null);
-  const stock = useMemo(() => (liveStock ?? product.stock), [liveStock, product.stock]);
+  const stock = useMemo(() => {
+    const base = typeof product.stockUnits === 'number' && product.stockUnits != null && !isNaN(product.stockUnits)
+      ? product.stockUnits
+      : product.stock;
+    return liveStock ?? base;
+  }, [liveStock, product.stock, product.stockUnits]);
   useEffect(() => {
     let cancelled = false;
     const poll = async () => {

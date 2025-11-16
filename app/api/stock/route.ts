@@ -17,10 +17,15 @@ export async function GET(req: Request) {
     }
     const rows = await prisma.product.findMany({
       where: { id: { in: ids } },
-      select: { id: true, stock: true },
+      select: { id: true, stock: true, stockUnits: true },
     });
     const map: Record<string, number> = {};
-    for (const r of rows) map[r.id] = Number(r.stock || 0);
+    for (const r of rows) {
+      const units = typeof (r as any).stockUnits === 'number' && (r as any).stockUnits != null
+        ? Number((r as any).stockUnits)
+        : Number(r.stock || 0);
+      map[r.id] = units;
+    }
     // Include ids not found as 0 to avoid undefined client-side
     for (const id of ids) if (!(id in map)) map[id] = 0;
     return NextResponse.json({ stocks: map }, { headers: { 'Cache-Control': 'no-store' } });
@@ -30,4 +35,3 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'stock_error' }, { status: 500 });
   }
 }
-

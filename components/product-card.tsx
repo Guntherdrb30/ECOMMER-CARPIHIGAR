@@ -17,7 +17,12 @@ type ProductWithCategory = Product & {
 
 const ProductCard = ({ product, tasa, isWishlisted = false, compact = false }: { product: ProductWithCategory, tasa: number, isWishlisted?: boolean, compact?: boolean }) => {
   const [liveStock, setLiveStock] = useState<number | null>(null);
-  const stock = useMemo(() => (liveStock ?? product.stock), [liveStock, product.stock]);
+  const stock = useMemo(() => {
+    const base = typeof (product as any).stockUnits === 'number' && (product as any).stockUnits != null && !isNaN((product as any).stockUnits)
+      ? (product as any).stockUnits
+      : product.stock;
+    return liveStock ?? base;
+  }, [liveStock, product.stock, (product as any).stockUnits]);
 
   useEffect(() => {
     let cancelled = false;

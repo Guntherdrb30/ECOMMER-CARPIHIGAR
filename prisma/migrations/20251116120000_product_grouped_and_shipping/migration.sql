@@ -1,0 +1,57 @@
+-- Extend Product model for grouped products, inventory and shipping
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ProductType') THEN
+    CREATE TYPE "ProductType" AS ENUM ('SIMPLE','GROUPED','COMBO');
+  END IF;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ProductSoldBy') THEN
+    CREATE TYPE "ProductSoldBy" AS ENUM ('UNIT','PACKAGE','BOTH');
+  END IF;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ProductStatus') THEN
+    CREATE TYPE "ProductStatus" AS ENUM ('ACTIVE','INACTIVE','REVIEW','WHOLESALE_ONLY','CLEARANCE');
+  END IF;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "supplierCode" TEXT;
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "keywords" TEXT[] DEFAULT ARRAY[]::TEXT[];
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "model" TEXT;
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "guarantee" TEXT;
+
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "type" "ProductType" NOT NULL DEFAULT 'SIMPLE';
+
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "stockUnits" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "stockMinUnits" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "allowBackorder" BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "allowUnitSale" BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "unitsPerPackage" INTEGER;
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "stockPackages" INTEGER;
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "soldBy" "ProductSoldBy" NOT NULL DEFAULT 'UNIT';
+
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "weightKg" DECIMAL(10,3);
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "heightCm" DECIMAL(10,2);
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "widthCm" DECIMAL(10,2);
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "depthCm" DECIMAL(10,2);
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "volumeCm3" DECIMAL(12,2);
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "freightType" TEXT;
+
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "status" "ProductStatus" NOT NULL DEFAULT 'ACTIVE';
+
+-- Backfill basic defaults for existing products
+UPDATE "Product"
+SET
+  "stockUnits"    = COALESCE("stockUnits", "stock"),
+  "stockMinUnits" = COALESCE("stockMinUnits", 0)
+WHERE TRUE;
+

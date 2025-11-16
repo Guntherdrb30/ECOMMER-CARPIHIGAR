@@ -4,8 +4,8 @@ import { getProductById, updateProductFull, getRelatedIds, getProducts } from "@
 import ProductMediaManager from "@/components/admin/product-media-manager";
 import RelatedProductsPicker from "@/components/admin/related-products-picker";
 
-export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function EditProductPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   let product: any = null;
   let categories: any[] = [];
   let suppliers: any[] = [];
@@ -35,84 +35,336 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       <h1 className="text-2xl font-bold">Editar Producto</h1>
       <form action={updateProductFull} className="form-card form-grid">
         <input type="hidden" name="id" value={product.id} />
-        <input name="name" defaultValue={product.name} placeholder="Nombre" className="border rounded px-2 py-1" required />
-        <input name="slug" defaultValue={product.slug} placeholder="slug-ejemplo" className="border rounded px-2 py-1" required />
-        <input name="brand" defaultValue={(product as any).brand || ''} placeholder="Marca" className="border rounded px-2 py-1" required />
-        <input name="sku" defaultValue={product.sku || ''} placeholder="SKU (opcional)" className="border rounded px-2 py-1" />
-        <input name="priceUSD" type="number" step="0.01" defaultValue={Number(product.priceUSD)} placeholder="Precio USD" className="border rounded px-2 py-1" required />
-        <input name="priceAllyUSD" type="number" step="0.01" defaultValue={product.priceAllyUSD ? Number(product.priceAllyUSD) : undefined} placeholder="Precio Aliado USD (opcional)" className="border rounded px-2 py-1" />
-        <input name="stock" type="number" defaultValue={product.stock} placeholder="Stock" className="border rounded px-2 py-1" />
-        <select name="categoryId" defaultValue={product.categoryId || ''} className="border rounded px-2 py-1">
+
+        {/* SECCIÓN 1 – Tipo de producto */}
+        <div className="md:col-span-3 border-b pb-2 mb-2">
+          <h2 className="font-semibold text-sm mb-2">Tipo de producto</h2>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <label className="inline-flex items-center gap-2">
+              <input type="radio" name="type" value="SIMPLE" defaultChecked={product.type === 'SIMPLE'} /> Producto simple
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input type="radio" name="type" value="GROUPED" defaultChecked={product.type === 'GROUPED'} /> Producto agrupado (caja/paquete)
+            </label>
+          </div>
+        </div>
+
+        {/* SECCIÓN 2 – Datos básicos */}
+        <input
+          name="name"
+          defaultValue={product.name}
+          placeholder="Nombre del producto"
+          className="border rounded px-2 py-1 md:col-span-2"
+          required
+        />
+        <input
+          name="slug"
+          defaultValue={product.slug}
+          placeholder="slug-ejemplo"
+          className="border rounded px-2 py-1"
+          required
+        />
+        <input
+          name="brand"
+          defaultValue={(product as any).brand || ''}
+          placeholder="Marca"
+          className="border rounded px-2 py-1"
+          required
+        />
+        <input
+          name="model"
+          defaultValue={(product as any).model || ''}
+          placeholder="Modelo"
+          className="border rounded px-2 py-1"
+        />
+        <input
+          name="sku"
+          defaultValue={product.sku || ''}
+          placeholder="Código interno Carpihogar (SKU)"
+          className="border rounded px-2 py-1"
+        />
+        <input
+          name="barcode"
+          defaultValue={product.barcode || ''}
+          placeholder="Código de barras (opcional)"
+          className="border rounded px-2 py-1"
+        />
+        <input
+          name="supplierCode"
+          defaultValue={(product as any).supplierCode || ''}
+          placeholder="Código del proveedor"
+          className="border rounded px-2 py-1"
+        />
+
+        <select
+          name="categoryId"
+          defaultValue={product.categoryId || ''}
+          className="border rounded px-2 py-1"
+        >
           <option value="">Sin categoría</option>
           {(categories as any[]).map((c: any) => (
-            <option key={c.id} value={c.id}>{`${'— '.repeat(c.depth || 0)}${c.name}`}</option>
+            <option key={c.id} value={c.id}>{`${'- '.repeat(c.depth || 0)}${c.name}`}</option>
           ))}
         </select>
-        <select name="supplierId" defaultValue={(product as any).supplierId || ''} className="border rounded px-2 py-1">
+        <select
+          name="supplierId"
+          defaultValue={(product as any).supplierId || ''}
+          className="border rounded px-2 py-1"
+        >
           <option value="">Sin proveedor</option>
           {suppliers?.map?.((s: any) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
-        <label className="inline-flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" name="isNew" defaultChecked={product.isNew} /> Nuevo</label>
-        <textarea name="description" defaultValue={product.description || ''} placeholder="Descripción" className="md:col-span-3 border rounded px-2 py-1" />
+        <select
+          name="status"
+          defaultValue={(product as any).status || 'ACTIVE'}
+          className="border rounded px-2 py-1"
+        >
+          <option value="ACTIVE">Activo</option>
+          <option value="INACTIVE">Inactivo</option>
+          <option value="REVIEW">En revisión</option>
+          <option value="WHOLESALE_ONLY">Solo mayorista</option>
+          <option value="CLEARANCE">Remate</option>
+        </select>
+        <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+          <input type="checkbox" name="isNew" defaultChecked={product.isNew} /> Nuevo
+        </label>
 
         <div className="md:col-span-3">
-          <RelatedProductsPicker products={allProducts as any} name="relatedIds[]" defaultValue={relatedIds as any} watchCategoryName="categoryId" />
-        </div>
-        {/* Media Manager (images + video) */}
-        <ProductMediaManager defaultImages={(product.images as any as string[])} defaultVideoUrl={(product as any).videoUrl || ''} />
-
-        {/* Legacy media inputs hidden (preserved for reference) */}
-        <div className="hidden md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm text-gray-700">URL de video (mp4/webm/ogg) opcional</label>
-            <input name="videoUrl" defaultValue={(product as any).videoUrl || ''} placeholder="https://.../video.mp4" className="border rounded px-2 py-1 w-full" />
-          </div>
-          <div className="flex items-end">
-            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-              <input type="checkbox" name="showSocialButtons" defaultChecked={Boolean((product as any).showSocialButtons)} /> Mostrar botones Instagram/TikTok en el producto
-            </label>
-          </div>
-        </div>
-
-        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <h3 className="font-semibold mb-1">Imágenes actuales</h3>
-            <div className="flex gap-2 flex-wrap">
-              {(product.images as any as string[]).map((u) => (
-                <div key={u} className="w-20 h-20 border rounded overflow-hidden">
-                  <img src={u} alt="img" className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-1">Nueva imagen principal (opcional)</h3>
-            {/* main image uploader removido en favor de ProductMediaManager */}
-          </div>
-          <div>
-            <h3 className="font-semibold mb-1">Nuevas imágenes adicionales (opcional)</h3>
-            {/* images uploader removido en favor de ProductMediaManager */}
-          </div>
+          <label className="block text-sm text-gray-700 mb-1">Descripción</label>
+          <textarea
+            name="description"
+            defaultValue={product.description || ''}
+            placeholder="Descripción"
+            className="border rounded px-2 py-1 w-full min-h-[80px]"
+          />
         </div>
         <div className="md:col-span-3">
+          <label className="block text-sm text-gray-700 mb-1">Garantía</label>
+          <textarea
+            name="guarantee"
+            defaultValue={(product as any).guarantee || ''}
+            placeholder="Garantía"
+            className="border rounded px-2 py-1 w-full min-h-[60px]"
+          />
+        </div>
+        <div className="md:col-span-3">
+          <label className="block text-sm text-gray-700 mb-1">Palabras clave (separadas por coma)</label>
+          <input
+            name="keywords"
+            defaultValue={
+              Array.isArray((product as any).keywords)
+                ? (product as any).keywords.join(', ')
+                : ''
+            }
+            placeholder="mueble baño, peinadora, bisagras, ..."
+            className="border rounded px-2 py-1 w-full"
+          />
+        </div>
+
+        {/* SECCIÓN 3 – Precios */}
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Precio Cliente (USD)</label>
+          <input
+            name="priceUSD"
+            type="number"
+            step="0.01"
+            defaultValue={Number(product.priceUSD)}
+            placeholder="Precio Cliente"
+            className="border rounded px-2 py-1"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Precio Aliado (USD)</label>
+          <input
+            name="priceAllyUSD"
+            type="number"
+            step="0.01"
+            defaultValue={product.priceAllyUSD ? Number(product.priceAllyUSD) : undefined}
+            placeholder="Precio Aliado (opcional)"
+            className="border rounded px-2 py-1"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Precio Mayorista (USD)</label>
+          <input
+            name="priceWholesaleUSD"
+            type="number"
+            step="0.01"
+            defaultValue={(product as any).priceWholesaleUSD ? Number((product as any).priceWholesaleUSD) : undefined}
+            placeholder="Precio Mayorista (opcional)"
+            className="border rounded px-2 py-1"
+          />
+        </div>
+
+        {/* SECCIÓN 4 – Inventario */}
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Stock en unidades</label>
+          <input
+            name="stockUnits"
+            type="number"
+            min={0}
+            defaultValue={(product as any).stockUnits ?? product.stock}
+            placeholder="Stock unidades"
+            className="border rounded px-2 py-1"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Stock mínimo</label>
+          <input
+            name="stockMinUnits"
+            type="number"
+            min={0}
+            defaultValue={(product as any).stockMinUnits ?? 0}
+            placeholder="Stock mínimo"
+            className="border rounded px-2 py-1"
+          />
+        </div>
+        <div className="flex items-end">
           <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-            <input type="checkbox" name="replaceAllImages" /> Reemplazar todas las imágenes (si marcas, solo se guardarán la nueva principal + nuevas adicionales)
+            <input
+              type="checkbox"
+              name="allowBackorder"
+              defaultChecked={Boolean((product as any).allowBackorder)}
+            />{" "}
+            Permitir venta por pedido (solo ERP)
           </label>
         </div>
 
+        {/* Configuración agrupados */}
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Unidades por paquete/caja</label>
+          <input
+            name="unitsPerPackage"
+            type="number"
+            min={0}
+            defaultValue={(product as any).unitsPerPackage ?? ''}
+            placeholder="Unidades por paquete"
+            className="border rounded px-2 py-1"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Stock en paquetes/cajas</label>
+          <input
+            name="stockPackages"
+            type="number"
+            min={0}
+            defaultValue={(product as any).stockPackages ?? ''}
+            placeholder="Stock paquetes"
+            className="border rounded px-2 py-1"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Forma de venta</label>
+          <select
+            name="soldBy"
+            defaultValue={(product as any).soldBy || 'UNIT'}
+            className="border rounded px-2 py-1"
+          >
+            <option value="UNIT">Solo unidad</option>
+            <option value="PACKAGE">Solo caja/paquete</option>
+            <option value="BOTH">Ambas</option>
+          </select>
+        </div>
+
+        {/* SECCIÓN 5 – Envío / Flete */}
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Peso (kg)</label>
+          <input
+            name="weightKg"
+            type="number"
+            step="0.001"
+            min={0}
+            defaultValue={(product as any).weightKg ?? ''}
+            placeholder="Peso kg"
+            className="border rounded px-2 py-1"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Alto (cm)</label>
+          <input
+            name="heightCm"
+            type="number"
+            step="0.01"
+            min={0}
+            defaultValue={(product as any).heightCm ?? ''}
+            placeholder="Alto"
+            className="border rounded px-2 py-1"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Ancho (cm)</label>
+          <input
+            name="widthCm"
+            type="number"
+            step="0.01"
+            min={0}
+            defaultValue={(product as any).widthCm ?? ''}
+            placeholder="Ancho"
+            className="border rounded px-2 py-1"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Profundidad (cm)</label>
+          <input
+            name="depthCm"
+            type="number"
+            step="0.01"
+            min={0}
+            defaultValue={(product as any).depthCm ?? ''}
+            placeholder="Profundidad"
+            className="border rounded px-2 py-1"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Tipo de flete</label>
+          <select
+            name="freightType"
+            defaultValue={(product as any).freightType || 'normal'}
+            className="border rounded px-2 py-1"
+          >
+            <option value="normal">Normal</option>
+            <option value="fragil">Frágil</option>
+            <option value="voluminoso">Voluminoso</option>
+            <option value="sobrepeso">Sobrepeso</option>
+          </select>
+        </div>
+
+        {/* Media / relaciones */}
+        <div className="md:col-span-3">
+          <RelatedProductsPicker
+            products={allProducts as any}
+            name="relatedIds[]"
+            defaultValue={relatedIds as any}
+            watchCategoryName="categoryId"
+          />
+        </div>
+        <ProductMediaManager
+          defaultImages={product.images as any as string[]}
+          defaultVideoUrl={(product as any).videoUrl || ''}
+        />
+
         <div className="md:col-span-3">
           <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-            <input type="checkbox" name="showSocialButtons" defaultChecked={Boolean((product as any).showSocialButtons)} /> Mostrar botones Instagram/TikTok en el producto
+            <input
+              type="checkbox"
+              name="showSocialButtons"
+              defaultChecked={Boolean((product as any).showSocialButtons)}
+            />{" "}
+            Mostrar botones Instagram/TikTok en el producto
           </label>
         </div>
 
         <div className="md:col-span-3 flex gap-2">
           <button className="bg-green-600 text-white px-3 py-1 rounded">Guardar cambios</button>
-          <a href="/dashboard/admin/productos" className="px-3 py-1 rounded border">Volver</a>
+          <a href="/dashboard/admin/productos" className="px-3 py-1 rounded border">
+            Volver
+          </a>
         </div>
       </form>
     </div>
   );
 }
+

@@ -200,7 +200,7 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
 
         // Validate stock and create order atomically with stock deduction
         const ids = Array.from(new Set(items.map(i => i.id)));
-        const products = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, stock: true } });
+        const products = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, stock: true, stockUnits: true, allowBackorder: true } });
         const byId = new Map(products.map(p => [p.id, p] as const));
         // Check availability
         for (const it of items) {
@@ -208,8 +208,9 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
             if (!p) {
                 return { ok: false, error: `Producto no encontrado (${it.name})` };
             }
-            if (Number(p.stock) < Number(it.quantity)) {
-                return { ok: false, error: `Stock insuficiente para ${p.name}. Disponible: ${p.stock}` };
+            const available = (p as any).stockUnits != null ? Number((p as any).stockUnits) : Number(p.stock);
+            if (available < Number(it.quantity)) {
+                return { ok: false, error: `Stock insuficiente para ${p.name}. Disponible: ${available}` };
             }
         }
 
@@ -236,7 +237,13 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
             // Deduct stock and record movement
             for (const it of items) {
                 await tx.stockMovement.create({ data: { productId: it.id, type: 'SALIDA' as any, quantity: Number(it.quantity), reason: `SALE ${order.id}`, userId } });
-                await tx.product.update({ where: { id: it.id }, data: { stock: { decrement: Number(it.quantity) } } });
+                await tx.product.update({
+                    where: { id: it.id },
+                    data: {
+                        stock: { decrement: Number(it.quantity) },
+                        stockUnits: { decrement: Number(it.quantity) } as any,
+                    },
+                });
             }
             return order;
         });

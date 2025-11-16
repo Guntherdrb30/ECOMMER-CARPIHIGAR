@@ -317,7 +317,15 @@ export async function receivePO(formData: FormData) {
       const oldStock = Number(product?.stock || 0);
       const oldAvg = Number(product?.avgCost || 0);
       const newAvg = (oldStock * oldAvg + receiveQty * Number(dbItem.costUSD)) / Math.max(1, oldStock + receiveQty);
-      await prisma.product.update({ where: { id: dbItem.productId }, data: { stock: { increment: receiveQty }, lastCost: dbItem.costUSD as any, avgCost: newAvg as any } });
+      await prisma.product.update({
+        where: { id: dbItem.productId },
+        data: {
+          stock: { increment: receiveQty },
+          stockUnits: { increment: receiveQty } as any,
+          lastCost: dbItem.costUSD as any,
+          avgCost: newAvg as any,
+        },
+      });
     }
 
     const updated = await prisma.purchaseOrder.findUnique({ where: { id: poId }, include: { items: true } });

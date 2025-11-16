@@ -32,7 +32,11 @@ function ProductJsonLd({ product, baseUrl }: { product: Product; baseUrl: string
       '@type': 'Offer',
       price: product.priceUSD.toString(),
       priceCurrency: 'USD',
-      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      availability: (product as any).stockUnits && (product as any).stockUnits > 0
+        ? 'https://schema.org/InStock'
+        : (product as any).stock > 0
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
       url: productUrl,
     },
   };
@@ -48,7 +52,16 @@ function ProductJsonLd({ product, baseUrl }: { product: Product; baseUrl: string
       <meta property="og:image" content={product.images[0] || `${baseUrl}/logo-default.svg`} />
       {/* Open Graph product extension */}
       <meta property="product:brand" content={(product as any).brand || 'Carpihogar'} />
-      <meta property="product:availability" content={product.stock > 0 ? 'in stock' : 'out of stock'} />
+      <meta
+        property="product:availability"
+        content={
+          (product as any).stockUnits && (product as any).stockUnits > 0
+            ? 'in stock'
+            : (product as any).stock > 0
+              ? 'in stock'
+              : 'out of stock'
+        }
+      />
       <meta property="product:retailer_item_id" content={product.sku || product.id} />
       {/* Open Graph price metadata for product */}
       <meta property="product:price:amount" content={product.priceUSD.toString()} />
