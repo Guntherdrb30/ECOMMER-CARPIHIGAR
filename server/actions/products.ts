@@ -704,18 +704,60 @@ export async function updateProductBarcodeByForm(formData: FormData) {
 
 export async function getProductPageData(slug: string) {
   await ensureProductColumns();
-  // Try exact slug; if not found, try begins-with fallback (e.g. "peinadora" -> "peinadora-abc12")
-  let product = await prisma.product.findUnique({ where: { slug } });
+
+  const raw = String(slug || '').trim();
+  const candidates = (() => {
+    const arr: string[] = [];
+    if (raw) arr.push(raw);
+    try {
+      const decoded = decodeURIComponent(raw);
+      if (decoded && decoded !== raw) arr.push(decoded);
+    } catch {}
+    return Array.from(new Set(arr));
+  })();
+
+  let product: any = null;
+
+  // 1) Intentar exact match de slug (incluyendo variantes decodificadas)
+  for (const s of candidates) {
+    if (!s) continue;
+    product = await prisma.product.findUnique({ where: { slug: s } });
+    if (product) break;
+  }
+
+  // 2) Fallback: slug con sufijo generado / case-insensitive
   if (!product) {
+    for (const s of candidates) {
+      if (!s) continue;
+      try {
+        const found = await prisma.product.findFirst({
+          where: {
+            OR: [
+              { slug: { startsWith: s + '-' } as any },
+              { slug: { equals: s, mode: 'insensitive' } as any },
+            ],
+          },
+        });
+        if (found) {
+          product = found;
+          break;
+        }
+      } catch {}
+    }
+  }
+
+  // 3) Fallback adicional: buscar por nombre si el slug se parece al nombre
+  if (!product && candidates.length) {
+    const nameCandidate = candidates[candidates.length - 1];
     try {
       product = await prisma.product.findFirst({
-        where: {
-          OR: [
-            { slug: { startsWith: slug + '-' } as any },
-            { slug: { equals: slug, mode: 'insensitive' } as any },
-          ],
-        },
-      }) as any;
+        where: { name: { equals: nameCandidate, mode: 'insensitive' } },
+      });
+      if (!product) {
+        product = await prisma.product.findFirst({
+          where: { name: { contains: nameCandidate, mode: 'insensitive' } },
+        });
+      }
     } catch {}
   }
   const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
