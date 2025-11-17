@@ -1,9 +1,13 @@
-import { getSuppliers, createSupplier, updateSupplier } from "@/server/actions/procurement";
+import { getSuppliers, createSupplier, updateSupplier } from '@/server/actions/procurement';
 import { PendingButton } from '@/components/pending-button';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import MainImageUploader from '@/components/admin/main-image-uploader';
 
-export default async function SuppliersPage({ searchParams }: { searchParams?: Promise<{ error?: string; message?: string }> }) {
+export default async function SuppliersPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string; message?: string }>;
+}) {
   const [suppliers, sp] = await Promise.all([
     getSuppliers(),
     (async () => (await searchParams) || {})(),
@@ -167,55 +171,92 @@ export default async function SuppliersPage({ searchParams }: { searchParams?: P
           <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700">
             Ver proveedores
           </summary>
-          <div className="overflow-x-auto">
-            <table className="w-full table-fixed text-sm">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="px-3 py-2 text-left">Nombre</th>
-                  <th className="px-3 py-2">RIF/NIT</th>
-                  <th className="px-3 py-2">Email</th>
-                  <th className="px-3 py-2">Teléfono empresa</th>
-                  <th className="px-3 py-2">Contacto</th>
-                  <th className="px-3 py-2">Crédito</th>
-                  <th className="px-3 py-2">Dirección</th>
-                  <th className="px-3 py-2">RIF (imagen)</th>
+          <div className="mt-2 overflow-x-auto">
+            <table className="min-w-full text-sm border border-gray-200 rounded-md overflow-hidden">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700 w-56">Nombre</th>
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700 w-32">RIF / NIT</th>
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700 w-52">Email</th>
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700 w-40">Teléfono empresa</th>
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700 w-40">Contacto</th>
+                  <th className="px-3 py-2 text-center font-semibold text-gray-700 w-32">Crédito</th>
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700">Dirección</th>
+                  <th className="px-3 py-2 text-center font-semibold text-gray-700 w-32">RIF</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-100">
                 {suppliers.map((s: any) => (
-                  <tr key={s.id}>
-                    <td className="border px-3 py-2">{s.name}</td>
-                    <td className="border px-3 py-2 text-center">{s.taxId || '—'}</td>
-                    <td className="border px-3 py-2 text-center">{s.email || '—'}</td>
-                    <td className="border px-3 py-2 text-center">{s.phone || '—'}</td>
-                    <td className="border px-3 py-2 text-center">
-                      {s.contactName ? (
-                        <div className="space-y-0.5">
-                          <div>{s.contactName}</div>
-                          <div className="text-xs text-gray-500">
-                            {s.contactPhone || ''}
-                          </div>
-                        </div>
+                  <tr key={s.id} className="hover:bg-gray-50 align-top">
+                    <td className="px-3 py-3">
+                      <div className="font-medium text-gray-900 truncate" title={s.name}>
+                        {s.name}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-gray-700 whitespace-nowrap">
+                      {s.taxId || '—'}
+                    </td>
+                    <td className="px-3 py-3">
+                      {s.email ? (
+                        <a
+                          href={`mailto:${s.email}`}
+                          className="text-blue-600 hover:underline break-all text-xs"
+                        >
+                          {s.email}
+                        </a>
                       ) : (
-                        '—'
+                        <span className="text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="border px-3 py-2 text-center">
-                      {s.givesCredit ? `Sí, ${s.creditDays ?? 0} días` : 'No'}
+                    <td className="px-3 py-3 text-sm text-gray-700 whitespace-nowrap">
+                      {s.phone || <span className="text-gray-400">—</span>}
                     </td>
-                    <td className="border px-3 py-2">{s.address || '—'}</td>
-                    <td className="border px-3 py-2 text-center">
+                    <td className="px-3 py-3 text-sm text-gray-700">
+                      {s.contactName ? (
+                        <div className="space-y-0.5">
+                          <div className="font-medium">{s.contactName}</div>
+                          {s.contactPhone && (
+                            <div className="text-xs text-gray-500 whitespace-nowrap">
+                              {s.contactPhone}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-center text-sm">
+                      {s.givesCredit ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Sí&nbsp;{s.creditDays ?? 0} días
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                          No
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700">
+                      {s.address ? (
+                        <p className="line-clamp-3 leading-snug" title={s.address}>
+                          {s.address}
+                        </p>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-center">
                       {s.rifImageUrl ? (
                         <a
                           href={s.rifImageUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
+                          className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold rounded-full bg-brand/10 text-brand hover:bg-brand/20"
                         >
                           Ver RIF
                         </a>
                       ) : (
-                        '—'
+                        <span className="text-gray-400 text-sm">—</span>
                       )}
                     </td>
                   </tr>
