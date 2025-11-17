@@ -624,9 +624,7 @@ enum PayableStatus {
 model Payable {
   id         String         @id @default(cuid())
   purchaseId String         @unique
-  purchase   Purchase       @relation(fields: [purchaseId], references: [id])
   supplierId String?
-  supplier   Supplier?      @relation(fields: [supplierId], references: [id])
   status     PayableStatus  @default(PENDIENTE)
   totalUSD   Decimal        @db.Decimal(12, 2)
   balanceUSD Decimal        @db.Decimal(12, 2)
@@ -645,7 +643,6 @@ model PayableEntry {
   currency      Currency      @default(USD)
   method        PaymentMethod?
   bankAccountId String?
-  bankAccount   BankAccount?  @relation(fields: [bankAccountId], references: [id])
   reference     String?
   notes         String?
   createdAt     DateTime      @default(now())

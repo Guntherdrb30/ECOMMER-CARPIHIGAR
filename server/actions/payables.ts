@@ -50,12 +50,22 @@ export async function getPayables(filters?: {
   if (filters?.supplierId) {
     where.supplierId = String(filters.supplierId);
   }
+
+  // Filtro por número de factura / compra
   if (filters?.invoice) {
     const inv = String(filters.invoice);
-    where.OR = [
-      { purchase: { invoiceNumber: { contains: inv, mode: 'insensitive' } } },
-      { purchaseId: { contains: inv } },
-    ];
+    const matches = await prisma.purchase.findMany({
+      where: {
+        OR: [
+          { invoiceNumber: { contains: inv, mode: 'insensitive' } as any },
+          { id: { contains: inv } as any },
+        ],
+      },
+      select: { id: true },
+    });
+    const ids = matches.map((p) => p.id);
+    if (!ids.length) return [];
+    where.purchaseId = { in: ids };
   }
   if (filters?.from || filters?.to) {
     const createdAt: any = {};
@@ -73,16 +83,36 @@ export async function getPayables(filters?: {
     }
     if (Object.keys(createdAt).length) where.createdAt = createdAt;
   }
-  return prisma.payable.findMany({
+  const payables = await prisma.payable.findMany({
     where,
-    include: {
-      supplier: true,
-      purchase: true,
-      entries: true,
-    },
+    include: { entries: true },
     orderBy: { createdAt: 'desc' },
     take: 200,
   });
+
+  const purchaseIds = payables.map((p) => p.purchaseId).filter(Boolean) as string[];
+  const supplierIds = payables
+    .map((p) => p.supplierId)
+    .filter((id: any) => typeof id === 'string' && id.length) as string[];
+
+  const [purchases, suppliers] = await Promise.all([
+    purchaseIds.length
+      ? prisma.purchase.findMany({ where: { id: { in: purchaseIds } } })
+      : Promise.resolve([]),
+    supplierIds.length
+      ? prisma.supplier.findMany({ where: { id: { in: supplierIds } } })
+      : Promise.resolve([]),
+  ]);
+
+  const purchaseMap = new Map(purchases.map((p: any) => [p.id, p]));
+  const supplierMap = new Map(suppliers.map((s: any) => [s.id, s]));
+
+  // Enriquecer cada payable con supplier y purchase para la UI
+  return payables.map((p: any) => ({
+    ...p,
+    purchase: purchaseMap.get(p.purchaseId) || null,
+    supplier: p.supplierId ? supplierMap.get(p.supplierId) || null : null,
+  }));
 }
 
 export async function addPayablePayment(formData: FormData) {
@@ -108,7 +138,6 @@ export async function addPayablePayment(formData: FormData) {
 
   const payable = await prisma.payable.findUnique({
     where: { id: payableId },
-    include: { purchase: true },
   });
   if (!payable) throw new Error('Cuenta por pagar no encontrada');
 
@@ -145,4 +174,3 @@ export async function addPayablePayment(formData: FormData) {
   await recalcPayable(payableId);
   revalidatePath('/dashboard/admin/cuentas-por-pagar');
 }
-
