@@ -24,9 +24,20 @@ export async function POST(req: Request) {
   try {
     const schema = z.object({
       supplierId: z.string().optional().nullable(),
-      currency: z.enum(['USD','VES']).default('USD'),
+      currency: z.enum(['USD','VES','USDT']).default('USD'),
       tasaVES: z.coerce.number().default(0),
       notes: z.string().optional(),
+      invoiceNumber: z.string().optional().nullable(),
+      baseAmountUSD: z.coerce.number().optional(),
+      discountPercent: z.coerce.number().optional(),
+      discountAmountUSD: z.coerce.number().optional(),
+      ivaPercent: z.coerce.number().optional(),
+      ivaAmountUSD: z.coerce.number().optional(),
+      totalInvoiceUSD: z.coerce.number().optional(),
+      itemsCount: z.coerce.number().optional(),
+      paymentCurrency: z.enum(['USD','VES','USDT']).optional(),
+      bankAccountId: z.string().optional().nullable(),
+      paymentReference: z.string().optional().nullable(),
       items: z.array(z.object({
         productId: z.string().optional().nullable(),
         code: z.string().optional().nullable(),
@@ -40,13 +51,45 @@ export async function POST(req: Request) {
     });
     const body = schema.parse(await req.json());
     const supplierId: string | undefined = (body?.supplierId || undefined) as any;
-    const currency: 'USD'|'VES' = body.currency;
+    const currency: 'USD'|'VES'|'USDT' = body.currency;
     const tasaVES: number = Number(body?.tasaVES || 0) || 0;
     const notes: string | undefined = body?.notes || undefined;
+    const invoiceNumber: string | undefined = body?.invoiceNumber || undefined;
+    const itemsCount: number | undefined = body?.itemsCount || undefined;
+    const paymentCurrency: 'USD'|'VES'|'USDT' | undefined = body?.paymentCurrency || undefined;
+    const bankAccountId: string | undefined = (body?.bankAccountId || undefined) as any;
+    const paymentReference: string | undefined = body?.paymentReference || undefined;
+
     const items: SaveItem[] = body.items as any;
 
     let subtotalUSD = 0;
     for (const it of items) subtotalUSD += Number(it.quantity) * Number(it.costUSD);
+
+    const baseAmountUSD =
+      typeof body.baseAmountUSD === 'number' && !isNaN(body.baseAmountUSD)
+        ? body.baseAmountUSD
+        : subtotalUSD;
+    const discountPercent =
+      typeof body.discountPercent === 'number' && !isNaN(body.discountPercent)
+        ? body.discountPercent
+        : 0;
+    const discountAmountUSD =
+      typeof body.discountAmountUSD === 'number' && !isNaN(body.discountAmountUSD)
+        ? body.discountAmountUSD
+        : Number((baseAmountUSD * (discountPercent / 100)).toFixed(2));
+    const ivaPercent =
+      typeof body.ivaPercent === 'number' && !isNaN(body.ivaPercent)
+        ? body.ivaPercent
+        : 0;
+    const ivaBase = baseAmountUSD - discountAmountUSD;
+    const ivaAmountUSD =
+      typeof body.ivaAmountUSD === 'number' && !isNaN(body.ivaAmountUSD)
+        ? body.ivaAmountUSD
+        : Number((ivaBase * (ivaPercent / 100)).toFixed(2));
+    const totalInvoiceUSD =
+      typeof body.totalInvoiceUSD === 'number' && !isNaN(body.totalInvoiceUSD)
+        ? body.totalInvoiceUSD
+        : Number((ivaBase + ivaAmountUSD).toFixed(2));
 
     // Create purchase header
     const purchase = await prisma.purchase.create({
@@ -55,7 +98,14 @@ export async function POST(req: Request) {
         currency: currency as any,
         tasaVES: (tasaVES || 0) as any,
         subtotalUSD: subtotalUSD as any,
-        totalUSD: subtotalUSD as any,
+        totalUSD: totalInvoiceUSD as any,
+        invoiceNumber: invoiceNumber || null,
+        baseAmountUSD: baseAmountUSD as any,
+        discountPercent: discountPercent as any,
+        discountAmountUSD: discountAmountUSD as any,
+        ivaPercent: ivaPercent as any,
+        ivaAmountUSD: ivaAmountUSD as any,
+        itemsCount: itemsCount ?? items.length,
         notes: notes || null,
         createdById: (session.user as any)?.id,
       },
@@ -140,6 +190,26 @@ export async function POST(req: Request) {
           userId: (session.user as any)?.id,
         },
       });
+    }
+
+    // Registrar movimiento en banco si se especificó cuenta y moneda de pago
+    if (bankAccountId && paymentCurrency && totalInvoiceUSD > 0) {
+      try {
+        await prisma.bankTransaction.create({
+          data: {
+            bankAccountId,
+            type: 'DEBITO' as any,
+            amount: totalInvoiceUSD as any,
+            currency: paymentCurrency as any,
+            description: `Compra a proveedor ${supplierId || ''}`.trim(),
+            reference: paymentReference || null,
+            purchaseId: purchase.id,
+          },
+        });
+      } catch (e) {
+        // No bloquear la compra si falla el registro bancario
+        console.error('[purchases/save] bankTransaction error', e);
+      }
     }
 
     try { await prisma.auditLog.create({ data: { userId: (session.user as any)?.id, action: 'PURCHASE_SAVE', details: purchase.id } }); } catch {}

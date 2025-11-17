@@ -190,8 +190,33 @@ export async function createSupplier(formData: FormData) {
   const phone = String(formData.get('phone') || '');
   const taxId = String(formData.get('taxId') || '');
   const address = String(formData.get('address') || '');
+  const rifImageUrl = String(formData.get('rifImageUrl') || '').trim();
+  const contactName = String(formData.get('contactName') || '').trim();
+  const contactPhone = String(formData.get('contactPhone') || '').trim();
+  const givesCreditRaw = formData.get('givesCredit');
+  const givesCredit =
+    typeof givesCreditRaw === 'string'
+      ? givesCreditRaw === 'on' || givesCreditRaw === 'true' || givesCreditRaw === '1'
+      : Boolean(givesCreditRaw);
+  const creditDaysStr = String(formData.get('creditDays') || '').trim();
+  const creditDays =
+    creditDaysStr && !isNaN(Number(creditDaysStr)) ? parseInt(creditDaysStr, 10) : null;
+
   if (!name.trim()) redirect('/dashboard/admin/proveedores?error=Nombre%20requerido');
-  await prisma.supplier.create({ data: { name, email: email || null, phone: phone || null, taxId: taxId || null, address: address || null } });
+  await prisma.supplier.create({
+    data: {
+      name,
+      email: email || null,
+      phone: phone || null,
+      taxId: taxId || null,
+      address: address || null,
+      rifImageUrl: rifImageUrl || null,
+      contactName: contactName || null,
+      contactPhone: contactPhone || null,
+      givesCredit,
+      creditDays,
+    },
+  });
   revalidatePath('/dashboard/admin/proveedores');
   redirect('/dashboard/admin/proveedores?message=Proveedor%20creado');
 }
@@ -206,15 +231,36 @@ export async function updateSupplier(formData: FormData) {
   const phone = String(formData.get('phone') || '').trim();
   const taxId = String(formData.get('taxId') || '').trim();
   const address = String(formData.get('address') || '').trim();
+  const rifImageUrlRaw = formData.get('rifImageUrl');
+  const contactName = String(formData.get('contactName') || '').trim();
+  const contactPhone = String(formData.get('contactPhone') || '').trim();
+  const givesCreditRaw = formData.get('givesCredit');
+  const givesCredit =
+    typeof givesCreditRaw === 'string'
+      ? givesCreditRaw === 'on' || givesCreditRaw === 'true' || givesCreditRaw === '1'
+      : Boolean(givesCreditRaw);
+  const creditDaysStr = String(formData.get('creditDays') || '').trim();
+  const creditDays =
+    creditDaysStr && !isNaN(Number(creditDaysStr)) ? parseInt(creditDaysStr, 10) : null;
+
   if (!name) { redirect('/dashboard/admin/proveedores?error=Nombre%20requerido'); }
   try {
-    await prisma.supplier.update({ where: { id }, data: {
+    const data: any = {
       name,
       email: email || null,
       phone: phone || null,
       taxId: taxId || null,
       address: address || null,
-    }});
+      contactName: contactName || null,
+      contactPhone: contactPhone || null,
+      givesCredit,
+      creditDays,
+    };
+    if (rifImageUrlRaw !== null) {
+      const rif = String(rifImageUrlRaw || '').trim();
+      data.rifImageUrl = rif || null;
+    }
+    await prisma.supplier.update({ where: { id }, data });
   } catch {
     redirect('/dashboard/admin/proveedores?error=No%20se%20pudo%20actualizar');
   }

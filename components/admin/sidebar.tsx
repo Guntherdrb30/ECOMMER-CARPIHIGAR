@@ -1,4 +1,4 @@
-﻿﻿'use client';
+'use client';
 
 import React from 'react';
 import Link from 'next/link';
@@ -65,12 +65,13 @@ export default function AdminSidebar() {
     { href: '/dashboard/admin/presupuestos', label: 'Presupuestos' },
     { href: '/dashboard/admin/compras', label: 'Compras' },
     { href: '/dashboard/admin/proveedores', label: 'Proveedores' },
+    { href: '/dashboard/admin/bancos', label: 'Bancos' },
     { href: '/dashboard/admin/usuarios', label: 'Usuarios' },
     { href: '/dashboard/admin/envios', label: 'Envíos' },
     { href: '/dashboard/admin/envios/online', label: 'Envíos Online' },
     { href: '/dashboard/admin/envios/tienda', label: 'Envíos en Tienda' },
     { href: '/dashboard/admin/ajustes', label: 'Ajustes' },
-    // Cursos (IA) — sólo visible para ADMIN/ROOT
+    // Cursos (IA) - sólo visible para ADMIN/ROOT
     ...(isAdmin ? [{ href: '/dashboard/settings/courses', label: 'Cursos (IA)' }] : []),
     { href: '/dashboard/admin/envios/logs', label: 'Logs de Envios' },
     ...(isRoot ? [{ href: '/dashboard/admin/ajustes/sistema', label: 'Ajustes del Sistema (Root)' }] : []),
@@ -118,13 +119,4 @@ export default function AdminSidebar() {
     </aside>
   );
 }
-
-
-
-
-
-
-
-
-
 
