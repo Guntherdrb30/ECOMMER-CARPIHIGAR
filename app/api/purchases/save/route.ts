@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   try {
     const schema = z.object({
       supplierId: z.string().optional().nullable(),
-      currency: z.enum(['USD','VES','USDT']).default('USD'),
+      currency: z.enum(['USD', 'VES', 'USDT']).default('USD'),
       tasaVES: z.coerce.number().default(0),
       notes: z.string().optional(),
       invoiceNumber: z.string().optional().nullable(),
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       ivaAmountUSD: z.coerce.number().optional(),
       totalInvoiceUSD: z.coerce.number().optional(),
       itemsCount: z.coerce.number().optional(),
-      paymentCurrency: z.enum(['USD','VES','USDT']).optional(),
+      paymentCurrency: z.enum(['USD', 'VES', 'USDT']).optional(),
       bankAccountId: z.string().optional().nullable(),
       paymentReference: z.string().optional().nullable(),
       items: z.array(z.object({
@@ -51,12 +51,12 @@ export async function POST(req: Request) {
     });
     const body = schema.parse(await req.json());
     const supplierId: string | undefined = (body?.supplierId || undefined) as any;
-    const currency: 'USD'|'VES'|'USDT' = body.currency;
+    const currency: 'USD' | 'VES' | 'USDT' = body.currency;
     const tasaVES: number = Number(body?.tasaVES || 0) || 0;
     const notes: string | undefined = body?.notes || undefined;
     const invoiceNumber: string | undefined = body?.invoiceNumber || undefined;
     const itemsCount: number | undefined = body?.itemsCount || undefined;
-    const paymentCurrency: 'USD'|'VES'|'USDT' | undefined = body?.paymentCurrency || undefined;
+    const paymentCurrency: 'USD' | 'VES' | 'USDT' | undefined = body?.paymentCurrency || undefined;
     const bankAccountId: string | undefined = (body?.bankAccountId || undefined) as any;
     const paymentReference: string | undefined = body?.paymentReference || undefined;
 
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
         ? body.totalInvoiceUSD
         : Number((ivaBase + ivaAmountUSD).toFixed(2));
 
-    // Create purchase header
+    // Crear cabecera de compra
     const purchase = await prisma.purchase.create({
       data: {
         supplierId: supplierId || null,
@@ -112,18 +112,18 @@ export async function POST(req: Request) {
     });
 
     for (const it of items) {
-      // compute prices
       const priceClientUSD = Number((it.costUSD * (1 + it.marginClientPct / 100)).toFixed(2));
       const priceAllyUSD = Number((it.costUSD * (1 + it.marginAllyPct / 100)).toFixed(2));
       const priceWholesaleUSD = Number((it.costUSD * (1 + it.marginWholesalePct / 100)).toFixed(2));
 
       if (it.productId) {
-        // Update existing product
         const p = await prisma.product.findUnique({ where: { id: it.productId } });
         if (p) {
           const oldStock = Number(p.stock || 0);
           const oldAvg = Number(p.avgCost || p.costUSD || it.costUSD || 0);
-          const newAvg = (oldStock * oldAvg + Number(it.quantity) * Number(it.costUSD)) / Math.max(1, oldStock + Number(it.quantity));
+          const newAvg =
+            (oldStock * oldAvg + Number(it.quantity) * Number(it.costUSD)) /
+            Math.max(1, oldStock + Number(it.quantity));
           await prisma.product.update({
             where: { id: p.id },
             data: {
@@ -134,7 +134,7 @@ export async function POST(req: Request) {
               marginAllyPct: it.marginAllyPct as any,
               marginWholesalePct: it.marginWholesalePct as any,
               priceClientUSD: priceClientUSD as any,
-              priceUSD: priceClientUSD as any, // mantener compatibilidad
+              priceUSD: priceClientUSD as any,
               priceAllyUSD: priceAllyUSD as any,
               priceWholesaleUSD: priceWholesaleUSD as any,
               stock: { increment: Number(it.quantity) },
@@ -142,7 +142,6 @@ export async function POST(req: Request) {
           });
         }
       } else {
-        // Create new product
         const created = await prisma.product.create({
           data: {
             name: it.name,
@@ -192,7 +191,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // Registrar movimiento en banco si se especificó cuenta y moneda de pago
+    // Registrar movimiento bancario si se indicó cuenta y moneda de pago
     if (bankAccountId && paymentCurrency && totalInvoiceUSD > 0) {
       try {
         await prisma.bankTransaction.create({
@@ -207,15 +206,72 @@ export async function POST(req: Request) {
           },
         });
       } catch (e) {
-        // No bloquear la compra si falla el registro bancario
         console.error('[purchases/save] bankTransaction error', e);
       }
     }
 
-    try { await prisma.auditLog.create({ data: { userId: (session.user as any)?.id, action: 'PURCHASE_SAVE', details: purchase.id } }); } catch {}
+    // Crear cuenta por pagar asociada
+    try {
+      let dueDate: Date | null = null;
+      if (supplierId) {
+        const sup = await prisma.supplier.findUnique({
+          where: { id: supplierId },
+          select: { givesCredit: true, creditDays: true },
+        });
+        if (sup?.givesCredit && sup.creditDays && Number(sup.creditDays) > 0) {
+          const base = new Date(purchase.createdAt as any);
+          base.setDate(base.getDate() + Number(sup.creditDays));
+          dueDate = base;
+        }
+      }
+      const initialStatus: 'PENDIENTE' | 'PAGADO' =
+        bankAccountId && paymentCurrency && totalInvoiceUSD > 0 ? 'PAGADO' : 'PENDIENTE';
+      const initialBalance = initialStatus === 'PAGADO' ? 0 : totalInvoiceUSD;
+
+      const payable = await prisma.payable.create({
+        data: {
+          purchaseId: purchase.id,
+          supplierId: supplierId || null,
+          totalUSD: totalInvoiceUSD as any,
+          balanceUSD: initialBalance as any,
+          status: initialStatus as any,
+          dueDate,
+        },
+      });
+
+      if (initialStatus === 'PAGADO' && totalInvoiceUSD > 0) {
+        await prisma.payableEntry.create({
+          data: {
+            payableId: payable.id,
+            amountUSD: totalInvoiceUSD as any,
+            currency: (paymentCurrency || currency) as any,
+            method: null,
+            bankAccountId: bankAccountId || null,
+            reference: paymentReference || null,
+            notes: 'Pago registrado al crear la compra',
+          },
+        });
+      }
+    } catch (e) {
+      console.error('[purchases/save] payable create error', e);
+    }
+
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: (session.user as any)?.id,
+          action: 'PURCHASE_SAVE',
+          details: purchase.id,
+        },
+      });
+    } catch {}
     revalidatePath('/dashboard/admin/compras');
     return NextResponse.json({ ok: true, id: purchase.id });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'No se pudo guardar la compra' }, { status: 500 });
+    return NextResponse.json(
+      { error: e?.message || 'No se pudo guardar la compra' },
+      { status: 500 },
+    );
   }
 }
+

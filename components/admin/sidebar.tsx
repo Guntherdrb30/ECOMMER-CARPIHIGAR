@@ -57,6 +57,7 @@ export default function AdminSidebar() {
     { href: '/dashboard/admin/delivery/solicitudes', label: 'Delivery (verificar)' },
     { href: '/dashboard/admin/delivery/liquidaciones', label: 'Liquidaciones Delivery' },
     { href: '/dashboard/admin/cuentas-por-cobrar', label: 'Cuentas por Cobrar' },
+    { href: '/dashboard/admin/cuentas-por-pagar', label: 'Cuentas por Pagar' },
     { href: '/dashboard/admin/inventario', label: 'Inventario' },
     { href: '/dashboard/admin/inventario/valuacion', label: 'Valuación' },
     { href: '/dashboard/admin/inventario/valuacion/por-proveedor', label: 'Val. por Proveedor' },
@@ -119,4 +120,3 @@ export default function AdminSidebar() {
     </aside>
   );
 }
-
