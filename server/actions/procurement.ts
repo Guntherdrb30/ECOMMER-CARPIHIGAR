@@ -63,7 +63,9 @@ export async function importPurchasesCsv(form: FormData) {
   if (!file) throw new Error('Archivo CSV requerido');
   const supplierId = String(form.get('supplierId') || '') || undefined;
   const currency = String(form.get('currency') || 'USD').toUpperCase();
-  const tasaVES = Number(String(form.get('tasaVES') || '0')) || 0;
+  // Siempre usamos la tasa oficial almacenada en SiteSettings (BCV)
+  const settings = await getSettings();
+  const tasaVES = Number((settings as any).tasaVES || 0) || 0;
   const notes = String(form.get('notes') || '') || undefined;
   const delimiter = String(form.get('delimiter') || '') || undefined;
 
@@ -71,7 +73,6 @@ export async function importPurchasesCsv(form: FormData) {
   const rows = parseCsv(text, delimiter);
   if (!rows.length) throw new Error('CSV vacío');
 
-  const settings = await getSettings();
   const defClient = Number((settings as any).defaultMarginClientPct ?? 40);
   const defAlly = Number((settings as any).defaultMarginAllyPct ?? 30);
   const defWholesale = Number((settings as any).defaultMarginWholesalePct ?? 20);

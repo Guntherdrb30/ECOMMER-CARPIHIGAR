@@ -147,8 +147,9 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
             }
         }
 
-        const tasaVES = Number(formData.get('tasaVES') ?? 40);
-        const ivaPercent = Number(formData.get('ivaPercent') ?? 16);
+        const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
+        const tasaVES = Number((settings as any)?.tasaVES || 40);
+        const ivaPercent = Number((settings as any)?.ivaPercent || 16);
 
         // Resolve shipping address: selected by user or fallback to latest
         let selectedAddress: any = null;

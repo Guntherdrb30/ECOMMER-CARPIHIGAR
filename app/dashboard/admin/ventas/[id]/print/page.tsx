@@ -20,28 +20,26 @@ export default async function PrintSalePage({
 
   if (!order) return <div className="p-4">Venta no encontrada</div>;
 
-  const moneda = ((sp.moneda as any) || (order as any)?.payment?.currency || 'USD').toUpperCase();
+  // Las facturas legales s�lo se imprimen en Bs (VES)
+  const moneda = 'VES';
   const ivaPercent = Number(order.ivaPercent || (settings as any).ivaPercent || 16);
   const tasaVES = Number(order.tasaVES || (settings as any).tasaVES || 40);
   const subtotalUSD = Number(order.subtotalUSD);
   const ivaUSD = Number((subtotalUSD * ivaPercent) / 100);
   const totalUSD = Number(subtotalUSD + ivaUSD);
 
-  const toMoney = (v: number) => (moneda === 'VES' ? v * tasaVES : v);
-  const fmt = (v: number) => (moneda === 'VES' ? `Bs ${v.toFixed(2)}` : `$ ${v.toFixed(2)}`);
+  const toMoney = (v: number) => v * tasaVES;
+  const fmt = (v: number) => `Bs ${v.toFixed(2)}`;
 
-  const titleMap: any = { recibo: 'Recibo', nota: 'Nota de Entrega', factura: 'Factura' };
+  const titleMap: any = { recibo: 'Recibo', factura: 'Factura' };
   const title = titleMap[tipo] || 'Comprobante';
 
   return (
     <div className="p-6 text-sm">
       <div className="flex items-center justify-between mb-4 print:hidden">
         <div className="space-x-2">
-          <a className="px-3 py-1 border rounded" href={`?tipo=${tipo}&moneda=USD`}>USD</a>
-          <a className="px-3 py-1 border rounded" href={`?tipo=${tipo}&moneda=VES`}>Bs</a>
-          <a className="px-3 py-1 border rounded" href={`?tipo=recibo&moneda=${moneda}`}>Recibo</a>
-          <a className="px-3 py-1 border rounded" href={`?tipo=nota&moneda=${moneda}`}>Nota</a>
-          <a className="px-3 py-1 border rounded" href={`?tipo=factura&moneda=${moneda}`}>Factura</a>
+          <a className="px-3 py-1 border rounded" href={`?tipo=recibo`}>Recibo</a>
+          <a className="px-3 py-1 border rounded" href={`?tipo=factura`}>Factura</a>
         </div>
         <PrintButton />
       </div>

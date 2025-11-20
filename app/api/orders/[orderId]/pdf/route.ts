@@ -44,10 +44,9 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
   }
   const url = new URL(req.url);
   const tipoRaw = (url.searchParams.get('tipo') || 'recibo').toLowerCase();
-  const monedaRaw = (url.searchParams.get('moneda') || 'USD').toUpperCase();
-  const allowedDocs = ['recibo', 'nota', 'factura'];
-  const tipo = (allowedDocs.includes(tipoRaw) ? tipoRaw : 'recibo') as 'recibo'|'nota'|'factura';
-  const moneda = (['USD','VES'].includes(monedaRaw) ? monedaRaw : 'USD') as 'USD'|'VES';
+  const allowedDocs = ['recibo', 'factura'];
+  const tipo = (allowedDocs.includes(tipoRaw) ? tipoRaw : 'recibo') as 'recibo'|'factura';
+  const moneda: 'VES' = 'VES';
 
   const orderId = params.orderId;
   try {
@@ -73,10 +72,10 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
 
     const ivaPercent = Number(order.ivaPercent || (settings as any)?.ivaPercent || 16);
     const tasaVES = Number(order.tasaVES || (settings as any)?.tasaVES || 40);
-    const titleMap: any = { recibo: 'Recibo', nota: 'Nota de Entrega', factura: 'Factura' };
+    const titleMap: any = { recibo: 'Recibo', factura: 'Factura' };
     const title = titleMap[tipo] || 'Comprobante';
-    const toMoney = (v: number) => (moneda === 'VES' ? v * tasaVES : v);
-    const money = (v: number) => (moneda === 'VES' ? `Bs ${v.toFixed(2)}` : `$ ${v.toFixed(2)}`);
+    const toMoney = (v: number) => v * tasaVES;
+    const money = (v: number) => `Bs ${v.toFixed(2)}`;
 
     // Header
     if (logoBuf) {
@@ -101,7 +100,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     }
     doc.text(`Fecha: ${new Date(order.createdAt as any).toLocaleString()}`);
     doc.text(`Moneda: ${moneda}`);
-    doc.text(`IVA: ${ivaPercent}%${moneda === 'VES' ? ` - Tasa: ${tasaVES}` : ''}`);
+    doc.text(`IVA: ${ivaPercent}% - Tasa: ${tasaVES}`);
     doc.moveDown();
 
     // Items table

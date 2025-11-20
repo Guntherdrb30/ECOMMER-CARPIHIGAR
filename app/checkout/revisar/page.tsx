@@ -85,8 +85,8 @@ export default function RevisarPage() {
     })();
     return () => { cancelled = true };
   }, []);// ConfiguraciÃ³n (puede venir de BD/ajustes si se requiere)
-  const ivaPercent = 16; // %
-  const tasaVES = 40; // tasa de ejemplo
+  const [ivaPercent, setIvaPercent] = useState<number>(16);
+  const [tasaVES, setTasaVES] = useState<number>(40);
 
   const subtotal = useMemo(() => getTotalUSD(), [getTotalUSD, items]);
   const iva = useMemo(() => subtotal * (ivaPercent / 100), [subtotal, ivaPercent]);
@@ -99,6 +99,29 @@ export default function RevisarPage() {
   const initialState = { ok: false as boolean, error: '' as string };
   const [state, formAction] = useFormState(confirmOrderAction as any, initialState);
   const [errors, setErrors] = useState<{ reference?: string; pm_phone?: string; zelle_email?: string; zelle_payer_name?: string }>({});
+
+  // Cargar IVA y tasaVES desde ajustes (incluye tasa del BCV).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/payment', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        if (typeof data.ivaPercent === 'number') {
+          setIvaPercent(Number(data.ivaPercent) || 16);
+        }
+        if (typeof data.tasaVES === 'number') {
+          setTasaVES(Number(data.tasaVES) || 40);
+          setTasaTop(Number(data.tasaVES) || 40);
+        }
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Ajuste inicial: si la moneda es USD, forzar 'ZELLE' como método por defecto
   // para que las instrucciones se muestren de inmediato. Si es VES, usar Pago Móvil.

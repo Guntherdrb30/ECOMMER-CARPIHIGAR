@@ -45,13 +45,53 @@ export async function POST(req: Request) {
               ...(digits.length >= 6 ? [{ barcode: digits }] : []),
             ],
           },
-          select: { id: true, name: true, sku: true, code: true, barcode: true, priceUSD: true, priceAllyUSD: true, priceWholesaleUSD: true, costUSD: true, avgCost: true, lastCost: true, marginClientPct: true, marginAllyPct: true, marginWholesalePct: true },
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            code: true,
+            barcode: true,
+            priceUSD: true,
+            priceAllyUSD: true,
+            priceWholesaleUSD: true,
+            costUSD: true,
+            avgCost: true,
+            lastCost: true,
+            marginClientPct: true,
+            marginAllyPct: true,
+            marginWholesalePct: true,
+            supplierCode: true,
+            description: true,
+            weightKg: true,
+            soldBy: true,
+            unitsPerPackage: true,
+          },
         });
       }
       if (!product) {
         product = await prisma.product.findFirst({
           where: { name: { equals: name, mode: 'insensitive' } },
-          select: { id: true, name: true, sku: true, code: true, barcode: true, priceUSD: true, priceAllyUSD: true, priceWholesaleUSD: true, costUSD: true, avgCost: true, lastCost: true, marginClientPct: true, marginAllyPct: true, marginWholesalePct: true },
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            code: true,
+            barcode: true,
+            priceUSD: true,
+            priceAllyUSD: true,
+            priceWholesaleUSD: true,
+            costUSD: true,
+            avgCost: true,
+            lastCost: true,
+            marginClientPct: true,
+            marginAllyPct: true,
+            marginWholesalePct: true,
+            supplierCode: true,
+            description: true,
+            weightKg: true,
+            soldBy: true,
+            unitsPerPackage: true,
+          },
         });
       }
 
@@ -79,6 +119,14 @@ export async function POST(req: Request) {
         priceAllyUSD: Number(priceAlly.toFixed(2)),
         priceWholesaleUSD: Number(priceWholesale.toFixed(2)),
         product,
+        supplierCode: product?.supplierCode || null,
+        description: product?.description || null,
+        weightKg: product?.weightKg != null ? Number(product.weightKg) : null,
+        soldBy: product?.soldBy || null,
+        unitsPerPackage:
+          (product as any)?.unitsPerPackage != null
+            ? Number((product as any).unitsPerPackage)
+            : null,
         estadoIA: status,
         accion: action,
       });

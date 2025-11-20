@@ -141,10 +141,14 @@ export default async function PurchasesPage({ searchParams }: { searchParams?: S
               <tr className="bg-gray-100">
                 <th className="px-3 py-2 text-left">Compra</th>
                 <th className="px-3 py-2">Proveedor</th>
+                <th className="px-3 py-2">Factura #</th>
+                <th className="px-3 py-2">Fecha factura</th>
+                <th className="px-3 py-2">IGTF USD</th>
+                <th className="px-3 py-2">Soporte</th>
                 <th className="px-3 py-2">Creada por</th>
                 <th className="px-3 py-2">Items</th>
                 <th className="px-3 py-2">Total USD</th>
-                <th className="px-3 py-2">Fecha</th>
+                <th className="px-3 py-2">Fecha registro</th>
               </tr>
             </thead>
             <tbody>
@@ -152,6 +156,27 @@ export default async function PurchasesPage({ searchParams }: { searchParams?: S
                 <tr key={p.id}>
                   <td className="border px-3 py-2">{p.id.slice(-6)}</td>
                   <td className="border px-3 py-2">{p.supplier?.name || '-'}</td>
+                  <td className="border px-3 py-2">{p.invoiceNumber || '-'}</td>
+                  <td className="border px-3 py-2">
+                    {p.invoiceDate ? new Date(p.invoiceDate as any).toLocaleDateString() : '-'}
+                  </td>
+                  <td className="border px-3 py-2 text-right">
+                    {p.igtfAmountUSD ? Number(p.igtfAmountUSD).toFixed(2) : '-'}
+                  </td>
+                  <td className="border px-3 py-2 text-center">
+                    {p.invoiceImageUrl ? (
+                      <a
+                        href={p.invoiceImageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 hover:underline text-xs break-all"
+                      >
+                        Ver soporte
+                      </a>
+                    ) : (
+                      <span className="text-gray-400 text-xs">�?"</span>
+                    )}
+                  </td>
                   <td className="border px-3 py-2">{p.createdBy?.name || p.createdBy?.email || '-'}</td>
                   <td className="border px-3 py-2 text-center">{p.items?.length || 0}</td>
                   <td className="border px-3 py-2 text-right">{Number(p.totalUSD || p.subtotalUSD || 0).toFixed(2)}</td>

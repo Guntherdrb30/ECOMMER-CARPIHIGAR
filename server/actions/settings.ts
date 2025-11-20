@@ -34,6 +34,28 @@ async function ensureSiteSettingsColumns() {
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+// Obtiene la tasa BCV (Bs/USD) desde la p�gina oficial
+async function fetchBcvRate(): Promise<number | null> {
+  try {
+    const res = await fetch('https://www.bcv.org.ve', { cache: 'no-store' });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const marker = 'id="dolar"';
+    const idx = html.indexOf(marker);
+    if (idx === -1) return null;
+    const snippet = html.slice(idx, idx + 1200);
+    const m = snippet.match(/<strong>\s*([\d.,]+)\s*<\/strong>/i);
+    if (!m) return null;
+    const raw = m[1].trim();
+    const normalized = raw.replace(/\./g, '').replace(',', '.');
+    const value = parseFloat(normalized);
+    if (!isFinite(value) || value <= 0) return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 export async function getSettings() {
   await ensureSiteSettingsColumns();
   try {
@@ -150,6 +172,39 @@ export async function setPaymentInstructions(formData: FormData) {
   return { ok: true };
 }
 
+// Actualiza la tasa VES desde el BCV y la guarda en SiteSettings
+export async function refreshTasaFromBCV() {
+  await ensureSiteSettingsColumns();
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') {
+    throw new Error('Not authorized');
+  }
+  const rate = await fetchBcvRate();
+  if (!rate) {
+    throw new Error('No se pudo obtener la tasa del BCV');
+  }
+  await prisma.siteSettings.update({
+    where: { id: 1 },
+    data: { tasaVES: rate as any },
+  });
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId: (session?.user as any)?.id,
+        action: 'BCV_RATE_REFRESHED',
+        details: `tasaVES=${rate}`,
+      },
+    });
+  } catch {}
+  // Revalidar vistas que dependen de la tasa
+  try { revalidatePath('/dashboard/admin/ajustes/sistema'); } catch {}
+  try { revalidatePath('/dashboard/admin/ajustes'); } catch {}
+  try { revalidatePath('/dashboard/admin/ventas'); } catch {}
+  try { revalidatePath('/dashboard/admin/compras'); } catch {}
+  try { revalidatePath('/checkout/revisar'); } catch {}
+  return { ok: true, tasaVES: rate };
+}
+
 export async function updateSettings(data: any) {
   const session = await getServerSession(authOptions);
 
@@ -157,8 +212,13 @@ export async function updateSettings(data: any) {
     throw new Error('Not authorized');
   }
 
+  // La tasa oficial (tasaVES) se gestiona solo v���a BCV,
+  // nunca desde formularios manuales de ajustes.
+  const cleaned = { ...(data || {}) } as any;
+  delete cleaned.tasaVES;
+
   // Normalize hero autoplay and enforce first slide as image if available
-  const urlsIn = Array.isArray(data?.homeHeroUrls) ? (data.homeHeroUrls as string[]).filter(Boolean) : [];
+  const urlsIn = Array.isArray(cleaned?.homeHeroUrls) ? (cleaned.homeHeroUrls as string[]).filter(Boolean) : [];
   const isVideo = (u: string) => {
     const s = String(u || '').toLowerCase();
     return s.endsWith('.mp4') || s.endsWith('.webm') || s.endsWith('.ogg');
@@ -169,15 +229,15 @@ export async function updateSettings(data: any) {
       const t = urlsIn[0]; urlsIn[0] = urlsIn[idx]; urlsIn[idx] = t;
     }
   }
-  const msRaw = Number(data?.heroAutoplayMs ?? 5000);
+  const msRaw = Number(cleaned?.heroAutoplayMs ?? 5000);
   const heroAutoplayMs = (!isNaN(msRaw) && msRaw > 0) ? Math.min(Math.max(msRaw, 1000), 120000) : 5000;
 
   const prepared = {
-    ...data,
+    ...cleaned,
     homeHeroUrls: urlsIn,
     heroAutoplayMs,
-    categoryBannerCarpinteriaUrl: (data as any).categoryBannerCarpinteriaUrl || null,
-    categoryBannerHogarUrl: (data as any).categoryBannerHogarUrl || null,
+    categoryBannerCarpinteriaUrl: cleaned.categoryBannerCarpinteriaUrl || null,
+    categoryBannerHogarUrl: cleaned.categoryBannerHogarUrl || null,
   } as any;
 
   const settings = await prisma.siteSettings.update({

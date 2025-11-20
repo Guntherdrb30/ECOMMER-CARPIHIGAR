@@ -16,6 +16,12 @@ export type CompareItem = {
   priceAllyUSD: number;
   priceWholesaleUSD: number;
   product?: { id: string; name: string } | null;
+  // Metadatos adicionales del producto
+  supplierCode?: string | null;
+  description?: string | null;
+  weightKg?: number | null;
+  soldBy?: 'UNIT' | 'PACKAGE' | 'BOTH' | null;
+  unitsPerPackage?: number | null;
   estadoIA: 'EXISTENTE' | 'NUEVO';
   accion: 'ACTUALIZAR' | 'CREAR';
 };
@@ -26,6 +32,8 @@ export default function PurchasePreviewTable({
   currency,
   tasaVES,
   invoiceNumber,
+  invoiceDate,
+  invoiceImageUrl,
   defaultIvaPercent,
   paymentCurrency,
   bankAccountId,
@@ -37,6 +45,8 @@ export default function PurchasePreviewTable({
   currency: 'USD' | 'VES';
   tasaVES?: number;
   invoiceNumber?: string;
+  invoiceDate?: string;
+  invoiceImageUrl?: string;
   defaultIvaPercent: number;
   paymentCurrency: 'USD' | 'VES' | 'USDT';
   bankAccountId?: string;
@@ -56,6 +66,13 @@ export default function PurchasePreviewTable({
   });
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [ivaPercent, setIvaPercent] = useState<number>(defaultIvaPercent || 16);
+  const [paymentMode, setPaymentMode] = useState<
+    'CONTADO' | 'CREDITO_SIN_ABONO' | 'CREDITO_CON_ABONO'
+  >('CONTADO');
+  const [paidAmountUSD, setPaidAmountUSD] = useState<number | ''>('');
+  const [igtfPercent, setIgtfPercent] = useState<number>(
+    paymentCurrency === 'USD' ? 3 : 0,
+  );
 
   const setField = (idx: number, patch: Partial<CompareItem>) => {
     setRows((prev) => {
@@ -107,17 +124,39 @@ export default function PurchasePreviewTable({
     [taxableBase, ivaAmountUSD],
   );
 
+  const igtfAmountUSD = useMemo(() => {
+    if (paymentCurrency !== 'USD' || !igtfPercent) return 0;
+    const paid =
+      paymentMode === 'CONTADO'
+        ? totalInvoiceUSD
+        : paymentMode === 'CREDITO_CON_ABONO' && typeof paidAmountUSD === 'number'
+          ? Math.max(0, Math.min(totalInvoiceUSD, paidAmountUSD))
+          : 0;
+    if (!paid) return 0;
+    return Number((paid * (igtfPercent / 100)).toFixed(2));
+  }, [paymentCurrency, igtfPercent, paymentMode, paidAmountUSD, totalInvoiceUSD]);
+
   const save = async (selectedOnly: boolean) => {
     const pick = rows.filter((r) => (selectedOnly ? r.selected : true));
     if (!pick.length) {
       toast.error('No hay filas seleccionadas');
       return;
     }
+
+    const paid =
+      paymentMode === 'CONTADO'
+        ? totalInvoiceUSD
+        : paymentMode === 'CREDITO_CON_ABONO' && typeof paidAmountUSD === 'number'
+          ? Math.max(0, Math.min(totalInvoiceUSD, paidAmountUSD))
+          : 0;
+
     const payload = {
       supplierId: supplierId || null,
       currency,
       tasaVES: tasaVES || 0,
       invoiceNumber: invoiceNumber || null,
+      invoiceDate: invoiceDate || null,
+      invoiceImageUrl: invoiceImageUrl || null,
       baseAmountUSD,
       discountPercent,
       discountAmountUSD,
@@ -128,6 +167,10 @@ export default function PurchasePreviewTable({
       paymentCurrency,
       bankAccountId: bankAccountId || null,
       paymentReference: paymentReference || null,
+      igtfPercent,
+      igtfAmountUSD,
+      paymentMode,
+      paidAmountUSD: paid,
       items: pick.map((r) => ({
         productId: r.product?.id || null,
         code: r.code || null,
@@ -137,8 +180,15 @@ export default function PurchasePreviewTable({
         marginClientPct: Number(r.marginClientPct || 0),
         marginAllyPct: Number(r.marginAllyPct || 0),
         marginWholesalePct: Number(r.marginWholesalePct || 0),
+        supplierCode: r.supplierCode || null,
+        description: r.description || null,
+        weightKg: typeof r.weightKg === 'number' ? r.weightKg : null,
+        soldBy: r.soldBy || null,
+        unitsPerPackage:
+          typeof r.unitsPerPackage === 'number' ? r.unitsPerPackage : null,
       })),
     };
+
     try {
       const res = await fetch('/api/purchases/save', {
         method: 'POST',
@@ -149,7 +199,8 @@ export default function PurchasePreviewTable({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Error');
       toast.success('Compra guardada');
-      window.location.href = '/dashboard/admin/compras?message=Compra%20guardada';
+      window.location.href =
+        '/dashboard/admin/compras?message=Compra%20guardada';
     } catch (e: any) {
       toast.error(e?.message || 'No se pudo guardar');
     }
@@ -162,7 +213,7 @@ export default function PurchasePreviewTable({
           <thead>
             <tr className="bg-gray-100">
               <th className="px-2 py-1"></th>
-              <th className="px-2 py-1 text-left">Código / Nombre</th>
+              <th className="px-2 py-1 text-left">C��digo / Nombre / Detalles</th>
               <th className="px-2 py-1">Cantidad</th>
               <th className="px-2 py-1">Costo USD</th>
               <th className="px-2 py-1">% Cliente</th>
@@ -172,7 +223,7 @@ export default function PurchasePreviewTable({
               <th className="px-2 py-1">Precio Aliado</th>
               <th className="px-2 py-1">Precio Mayorista</th>
               <th className="px-2 py-1">Estado IA</th>
-              <th className="px-2 py-1">Acción</th>
+              <th className="px-2 py-1">Acci��n</th>
             </tr>
           </thead>
           <tbody>
@@ -189,7 +240,54 @@ export default function PurchasePreviewTable({
                   <div className="font-medium truncate" title={r.name}>
                     {r.name}
                   </div>
-                  <div className="text-xs text-gray-500">{r.code || '—'}</div>
+                  <div className="text-xs text-gray-500">{r.code || '�?"'}</div>
+                  <div className="mt-1 grid grid-cols-1 md:grid-cols-3 gap-1 text-[11px] text-gray-600">
+                    <label className="flex flex-col">
+                      <span>C�d. proveedor</span>
+                      <input
+                        type="text"
+                        value={r.supplierCode || ''}
+                        onChange={(e) =>
+                          setField(idx, {
+                            supplierCode: e.target.value || null,
+                          })
+                        }
+                        className="border rounded px-1 py-0.5 text-[11px]"
+                      />
+                    </label>
+                    <label className="flex flex-col">
+                      <span>Peso (kg unidad)</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.001}
+                        value={typeof r.weightKg === 'number' ? r.weightKg : ''}
+                        onChange={(e) =>
+                          setField(idx, {
+                            weightKg:
+                              e.target.value === ''
+                                ? null
+                                : Number(e.target.value),
+                          })
+                        }
+                        className="border rounded px-1 py-0.5 text-[11px]"
+                      />
+                    </label>
+                    <label className="flex flex-col">
+                      <span>Unidad venta</span>
+                      <select
+                        value={r.soldBy || 'UNIT'}
+                        onChange={(e) =>
+                          setField(idx, { soldBy: e.target.value as any })
+                        }
+                        className="border rounded px-1 py-0.5 text-[11px]"
+                      >
+                        <option value="UNIT">Pieza</option>
+                        <option value="PACKAGE">Paquete/Caja</option>
+                        <option value="BOTH">Ambos</option>
+                      </select>
+                    </label>
+                  </div>
                 </td>
                 <td className="border px-2 py-1 text-center">
                   <input
@@ -198,7 +296,10 @@ export default function PurchasePreviewTable({
                     value={r.quantity}
                     onChange={(e) =>
                       setField(idx, {
-                        quantity: Math.max(1, parseInt(e.target.value || '1', 10)),
+                        quantity: Math.max(
+                          1,
+                          parseInt(e.target.value || '1', 10),
+                        ),
                       })
                     }
                     className="w-20 border rounded px-1 py-0.5"
@@ -212,7 +313,10 @@ export default function PurchasePreviewTable({
                     value={r.costUSD}
                     onChange={(e) =>
                       setField(idx, {
-                        costUSD: Math.max(0, parseFloat(e.target.value || '0')),
+                        costUSD: Math.max(
+                          0,
+                          parseFloat(e.target.value || '0'),
+                        ),
                       })
                     }
                     className="w-24 border rounded px-1 py-0.5"
@@ -226,7 +330,10 @@ export default function PurchasePreviewTable({
                     value={r.marginClientPct}
                     onChange={(e) =>
                       setField(idx, {
-                        marginClientPct: Math.max(0, parseFloat(e.target.value || '0')),
+                        marginClientPct: Math.max(
+                          0,
+                          parseFloat(e.target.value || '0'),
+                        ),
                       })
                     }
                     className="w-20 border rounded px-1 py-0.5"
@@ -240,7 +347,10 @@ export default function PurchasePreviewTable({
                     value={r.marginAllyPct}
                     onChange={(e) =>
                       setField(idx, {
-                        marginAllyPct: Math.max(0, parseFloat(e.target.value || '0')),
+                        marginAllyPct: Math.max(
+                          0,
+                          parseFloat(e.target.value || '0'),
+                        ),
                       })
                     }
                     className="w-20 border rounded px-1 py-0.5"
@@ -254,7 +364,10 @@ export default function PurchasePreviewTable({
                     value={r.marginWholesalePct}
                     onChange={(e) =>
                       setField(idx, {
-                        marginWholesalePct: Math.max(0, parseFloat(e.target.value || '0')),
+                        marginWholesalePct: Math.max(
+                          0,
+                          parseFloat(e.target.value || '0'),
+                        ),
                       })
                     }
                     className="w-20 border rounded px-1 py-0.5"
@@ -275,7 +388,10 @@ export default function PurchasePreviewTable({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td className="px-2 py-2 text-sm text-gray-500" colSpan={12}>
+                <td
+                  className="px-2 py-2 text-sm text-gray-500"
+                  colSpan={12}
+                >
                   No hay productos detectados.
                 </td>
               </tr>
@@ -314,8 +430,32 @@ export default function PurchasePreviewTable({
         </div>
       </div>
 
+      <div className="border rounded p-3 bg-gray-50 space-y-3 text-sm">
+        <div className="font-semibold">Datos de la factura</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <div className="text-xs text-gray-600">Moneda factura</div>
+            <div className="font-semibold">{currency}</div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-600">Tasa VES/USD</div>
+            <div className="font-semibold">
+              {currency === 'VES' ? (tasaVES || 0).toFixed(2) : '�?"'}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-600">N�� factura</div>
+            <div className="font-semibold">{invoiceNumber || '�?"'}</div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-600">Fecha factura</div>
+            <div className="font-semibold">{invoiceDate || '�?"'}</div>
+          </div>
+        </div>
+      </div>
+
       <div className="border rounded p-3 bg-gray-50 space-y-2 text-sm">
-        <div className="font-semibold">Resumen de factura</div>
+        <div className="font-semibold">Resumen de montos</div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
           <div>
             <label className="text-xs text-gray-600">Base imponible USD</label>
@@ -336,7 +476,9 @@ export default function PurchasePreviewTable({
               step={0.01}
               className="w-full border rounded px-2 py-1"
               value={discountPercent}
-              onChange={(e) => setDiscountPercent(Number(e.target.value || 0))}
+              onChange={(e) =>
+                setDiscountPercent(Number(e.target.value || 0))
+              }
             />
             <div className="text-xs text-gray-500 mt-1">
               Monto desc.: ${discountAmountUSD.toFixed(2)}
@@ -367,7 +509,88 @@ export default function PurchasePreviewTable({
           </div>
         </div>
       </div>
+
+      <div className="border rounded p-3 bg-gray-50 space-y-3 text-sm">
+        <div className="font-semibold">Condiciones de pago y IGTF</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <div className="text-xs text-gray-600 mb-1">Tipo de pago</div>
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="radio"
+                  name="paymentMode"
+                  checked={paymentMode === 'CONTADO'}
+                  onChange={() => setPaymentMode('CONTADO')}
+                />
+                <span>Contado (pago completo)</span>
+              </label>
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="radio"
+                  name="paymentMode"
+                  checked={paymentMode === 'CREDITO_SIN_ABONO'}
+                  onChange={() => setPaymentMode('CREDITO_SIN_ABONO')}
+                />
+                <span>Cr�dito (sin abono)</span>
+              </label>
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="radio"
+                  name="paymentMode"
+                  checked={paymentMode === 'CREDITO_CON_ABONO'}
+                  onChange={() => setPaymentMode('CREDITO_CON_ABONO')}
+                />
+                <span>Cr�dito con abono inicial</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-600">
+              Monto abono USD (si aplica)
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              disabled={paymentMode !== 'CREDITO_CON_ABONO'}
+              className="w-full border rounded px-2 py-1 disabled:opacity-60"
+              value={paidAmountUSD === '' ? '' : paidAmountUSD}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (!v) {
+                  setPaidAmountUSD('');
+                  return;
+                }
+                const n = Number(v);
+                setPaidAmountUSD(isNaN(n) ? '' : n);
+              }}
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              Se usa para crear el abono inicial en cuentas por pagar.
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-600">
+              IGTF (%) sobre pago en USD
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              disabled={paymentCurrency !== 'USD'}
+              className="w-full border rounded px-2 py-1 disabled:opacity-60"
+              value={igtfPercent}
+              onChange={(e) => setIgtfPercent(Number(e.target.value || 0))}
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              Monto IGTF estimado: ${igtfAmountUSD.toFixed(2)}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-

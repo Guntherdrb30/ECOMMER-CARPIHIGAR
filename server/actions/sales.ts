@@ -85,7 +85,6 @@ export async function createOfflineSale(formData: FormData) {
   const customerFiscalAddress = (String(formData.get('customerFiscalAddress') || '').trim() || null);
   const originQuoteId = (String(formData.get('originQuoteId') || '').trim() || null);
   const ivaPercentForm = formData.get('ivaPercent');
-  const tasaVESForm = formData.get('tasaVES');
   const sendEmailFlag = String(formData.get('sendEmail') || '');
   const docTypeRaw = String(formData.get('docType') || 'recibo').toLowerCase();
   const allowedDocs = ['recibo','nota','factura'];
@@ -142,7 +141,7 @@ export async function createOfflineSale(formData: FormData) {
 
   const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
   const ivaPercent = ivaPercentForm !== null ? Number(ivaPercentForm) : Number(settings?.ivaPercent || 16);
-  const tasaVES = tasaVESForm !== null ? Number(tasaVESForm) : Number(settings?.tasaVES || 40);
+  const tasaVES = Number(settings?.tasaVES || 40);
   // Enforce credit sales: only ADMIN by default; VENDEDOR requires deleteSecret approval
   const deleteSecretInput = String(formData.get('deleteSecret') || '');
   if (role === 'VENDEDOR' && saleType === 'CREDITO') {
@@ -381,7 +380,6 @@ export async function rejectAllySaleByForm(formData: FormData) {
   try { revalidatePath('/dashboard/aliado/ventas'); } catch {}
   redirect('/dashboard/admin/ventas/aliados?message=' + encodeURIComponent('Venta rechazada'));
 }
-
 
 
 

@@ -14,7 +14,8 @@ export async function GET() {
     paymentMercantilAccount: (s as any).paymentMercantilAccount || '',
     paymentMercantilRif: (s as any).paymentMercantilRif || '',
     paymentMercantilName: (s as any).paymentMercantilName || '',
+    ivaPercent: (s as any).ivaPercent || 16,
+    tasaVES: (s as any).tasaVES || 40,
   };
   return NextResponse.json(payload, { headers: { 'Cache-Control': 'no-store' } });
 }
-

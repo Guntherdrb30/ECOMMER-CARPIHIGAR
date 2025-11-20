@@ -36,7 +36,6 @@ export default async function AdminSettingsPage() {
                 contactPhone: formData.get('contactPhone') as string,
                 contactEmail: formData.get('contactEmail') as string,
                 ivaPercent: parseFloat(formData.get('ivaPercent') as string),
-                tasaVES: parseFloat(formData.get('tasaVES') as string),
                 primaryColor: (formData.get('primaryColor') as string) || undefined,
                 secondaryColor: (formData.get('secondaryColor') as string) || undefined,
                 logoUrl: (formData.get('logoUrl') as string) || undefined,
@@ -96,16 +95,6 @@ export default async function AdminSettingsPage() {
               name="ivaPercent"
               step="0.01"
               defaultValue={settings.ivaPercent.toString()}
-              className="w-full px-3 py-2 border rounded-lg"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700">Tasa VES</label>
-            <input
-              type="number"
-              name="tasaVES"
-              step="0.01"
-              defaultValue={settings.tasaVES.toString()}
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>

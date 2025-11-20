@@ -60,11 +60,11 @@ function parseCsv(text: string, delimiter?: string): Array<Record<string,string>
   return rows;
 }
 
-export default function PurchaseCsvUploader({ suppliers }: { suppliers: Supplier[] }) {
+export default function PurchaseCsvUploader({ suppliers, defaultTasa }: { suppliers: Supplier[]; defaultTasa: number }) {
   const [file, setFile] = useState<File | null>(null);
   const [delimiter, setDelimiter] = useState<string>(',');
   const [currency, setCurrency] = useState<'USD'|'VES'>('USD');
-  const [tasa, setTasa] = useState<number>(0);
+  const [tasa, setTasa] = useState<number>(defaultTasa || 0);
   const [supplierId, setSupplierId] = useState<string>('');
   const [preview, setPreview] = useState<PreviewItem[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -139,8 +139,17 @@ export default function PurchaseCsvUploader({ suppliers }: { suppliers: Supplier
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-700">Tasa VES</label>
-          <input value={tasa} onChange={(e)=>setTasa(Number(e.target.value))} type="number" step="0.0001" className="form-input" />
+          <label className="block text-sm text-gray-700">Tasa VES (BCV)</label>
+          <input
+            value={tasa}
+            readOnly
+            type="number"
+            step="0.0001"
+            className="form-input bg-gray-50"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Se usa la tasa oficial configurada (BCV). No editable.
+          </p>
         </div>
         <div>
           <label className="block text-sm text-gray-700">Separador</label>
@@ -196,4 +205,3 @@ export default function PurchaseCsvUploader({ suppliers }: { suppliers: Supplier
     </div>
   );
 }
-

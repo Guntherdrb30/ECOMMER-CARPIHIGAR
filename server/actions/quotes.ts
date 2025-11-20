@@ -70,7 +70,6 @@ export async function createQuote(formData: FormData) {
   const itemsJson = String(formData.get('items') || '[]');
   const items: Array<{ productId: string; name: string; priceUSD: number; quantity: number } > = JSON.parse(itemsJson || '[]');
   const ivaPercentForm = formData.get('ivaPercent');
-  const tasaVESForm = formData.get('tasaVES');
   const customerTaxId = (String(formData.get('customerTaxId') || '').trim() || null);
   const customerFiscalAddress = (String(formData.get('customerFiscalAddress') || '').trim() || null);
   const notes = String(formData.get('notes') || '');
@@ -121,7 +120,7 @@ export async function createQuote(formData: FormData) {
 
   const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
   const ivaPercent = ivaPercentForm !== null ? Number(ivaPercentForm) : Number(settings?.ivaPercent || 16);
-  const tasaVES = tasaVESForm !== null ? Number(tasaVESForm) : Number(settings?.tasaVES || 40);
+  const tasaVES = Number(settings?.tasaVES || 40);
 
   const subtotalUSD = items.reduce((acc, it) => acc + (Number(it.priceUSD) * Number(it.quantity)), 0);
   const totalUSD = subtotalUSD * (1 + ivaPercent/100);
@@ -309,7 +308,6 @@ export async function updateQuoteByForm(formData: FormData) {
   const itemsJson = String(formData.get('items') || '[]');
   const items: Array<{ productId: string; name: string; priceUSD: number; quantity: number } > = JSON.parse(itemsJson || '[]');
   const ivaPercentForm = formData.get('ivaPercent');
-  const tasaVESForm = formData.get('tasaVES');
   const customerTaxId = (String(formData.get('customerTaxId') || '').trim() || null);
   const customerFiscalAddress = (String(formData.get('customerFiscalAddress') || '').trim() || null);
   const notes = String(formData.get('notes') || '');
@@ -328,7 +326,7 @@ export async function updateQuoteByForm(formData: FormData) {
 
   const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
   const ivaPercent = ivaPercentForm !== null ? Number(ivaPercentForm) : Number(settings?.ivaPercent || 16);
-  const tasaVES = tasaVESForm !== null ? Number(tasaVESForm) : Number(settings?.tasaVES || 40);
+  const tasaVES = Number(settings?.tasaVES || 40);
 
   const subtotalUSD = items.reduce((acc, it) => acc + (Number(it.priceUSD) * Number(it.quantity)), 0);
   const totalUSD = subtotalUSD * (1 + ivaPercent/100);
