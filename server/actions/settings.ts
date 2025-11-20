@@ -84,6 +84,21 @@ export async function getSettings() {
       });
     }
 
+    // Auto-actualizar mejor-esfuerzo la tasa BCV para que siempre
+    // refleje el valor oficial más reciente cuando se consultan ajustes.
+    try {
+      const current = Number((settings as any).tasaVES || 0) || 0;
+      const rate = await fetchBcvRate();
+      if (rate && isFinite(rate) && rate > 0 && Math.abs(rate - current) > 0.0001) {
+        settings = await prisma.siteSettings.update({
+          where: { id: 1 },
+          data: { tasaVES: rate as any },
+        });
+      }
+    } catch {
+      // Si falla BCV, seguimos usando la tasa guardada
+    }
+
     return {
       ...settings,
       ivaPercent: settings.ivaPercent.toNumber(),
