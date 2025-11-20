@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export type CompareItem = {
@@ -24,6 +24,13 @@ export type CompareItem = {
   unitsPerPackage?: number | null;
   estadoIA: 'EXISTENTE' | 'NUEVO';
   accion: 'ACTUALIZAR' | 'CREAR';
+};
+
+type ProdSearch = {
+  id: string;
+  name: string;
+  sku: string | null;
+  priceUSD: number | null;
 };
 
 export default function PurchasePreviewTable({
@@ -73,6 +80,42 @@ export default function PurchasePreviewTable({
   const [igtfPercent, setIgtfPercent] = useState<number>(
     paymentCurrency === 'USD' ? 3 : 0,
   );
+  const [searchQ, setSearchQ] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<ProdSearch[]>([]);
+
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      const q = searchQ.trim();
+      if (!q) {
+        setSearchResults([]);
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/products/search?q=${encodeURIComponent(q)}`,
+          { credentials: "include" },
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        if (Array.isArray(json)) {
+          setSearchResults(
+            json.map((p: any) => ({
+              id: String(p.id),
+              name: String(p.name || ""),
+              sku: (p.sku as string | null) ?? null,
+              priceUSD:
+                typeof p.priceUSD === "number"
+                  ? p.priceUSD
+                  : Number(p.priceUSD || 0),
+            })),
+          );
+        }
+      } catch {
+        // ignorar errores del buscador
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQ]);
 
   const setField = (idx: number, patch: Partial<CompareItem>) => {
     setRows((prev) => {
@@ -96,6 +139,92 @@ export default function PurchasePreviewTable({
       (next[idx] as any).selected = v;
       return next;
     });
+
+  const addExistingProduct = (p: ProdSearch) => {
+    const costUSD = Number(p.priceUSD || 0);
+    const marginClientPct = 40;
+    const marginAllyPct = 30;
+    const marginWholesalePct = 20;
+    const priceClientUSD = Number(
+      (costUSD * (1 + marginClientPct / 100)).toFixed(2),
+    );
+    const priceAllyUSD = Number(
+      (costUSD * (1 + marginAllyPct / 100)).toFixed(2),
+    );
+    const priceWholesaleUSD = Number(
+      (costUSD * (1 + marginWholesalePct / 100)).toFixed(2),
+    );
+
+    setRows((prev) => [
+      ...prev,
+      {
+        input: {
+          code: p.sku || null,
+          name: p.name,
+          quantity: 1,
+          unitCost: costUSD,
+        },
+        code: p.sku || null,
+        name: p.name,
+        quantity: 1,
+        costUSD,
+        marginClientPct,
+        marginAllyPct,
+        marginWholesalePct,
+        priceClientUSD,
+        priceAllyUSD,
+        priceWholesaleUSD,
+        product: { id: p.id, name: p.name },
+        supplierCode: null,
+        description: null,
+        weightKg: null,
+        soldBy: 'UNIT',
+        unitsPerPackage: null,
+        estadoIA: 'EXISTENTE',
+        accion: 'ACTUALIZAR',
+        selected: true,
+      },
+    ]);
+    setSearchQ("");
+    setSearchResults([]);
+  };
+
+  const addManualProductFromQuery = () => {
+    const name = searchQ.trim();
+    if (!name) return;
+    const costUSD = 0;
+    const marginClientPct = 40;
+    const marginAllyPct = 30;
+    const marginWholesalePct = 20;
+
+    setRows((prev) => [
+      ...prev,
+      {
+        input: { code: null, name, quantity: 1, unitCost: costUSD },
+        code: null,
+        name,
+        quantity: 1,
+        costUSD,
+        marginClientPct,
+        marginAllyPct,
+        marginWholesalePct,
+        priceClientUSD: 0,
+        priceAllyUSD: 0,
+        priceWholesaleUSD: 0,
+        product: undefined,
+        supplierCode: null,
+        description: null,
+        weightKg: null,
+        soldBy: 'UNIT',
+        unitsPerPackage: null,
+        estadoIA: 'NUEVO',
+        accion: 'CREAR',
+        selected: true,
+      },
+    ]);
+    setSearchQ("");
+    setSearchResults([]);
+  };
 
   const totals = useMemo(() => {
     const sel = rows.filter((r) => r.selected);
@@ -208,6 +337,52 @@ export default function PurchasePreviewTable({
 
   return (
     <div className="space-y-4">
+      <div className="space-y-2">
+        <div className="text-sm font-semibold">
+          Agregar productos desde inventario
+        </div>
+        <input
+          value={searchQ}
+          onChange={(e) => setSearchQ(e.target.value)}
+          placeholder="Buscar por nombre, SKU o código de barras"
+          className="w-full border rounded px-2 py-1 text-sm"
+        />
+        {searchResults.length > 0 && (
+          <div className="border rounded bg-white divide-y max-h-64 overflow-auto text-sm">
+            {searchResults.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="w-full text-left px-2 py-1 hover:bg-gray-50 flex justify-between"
+                onClick={() => addExistingProduct(p)}
+              >
+                <span>
+                  {p.name}{" "}
+                  <span className="text-gray-500">
+                    ({p.sku || "sin SKU"})
+                  </span>
+                </span>
+                <span className="text-gray-600">
+                  ${Number(p.priceUSD || 0).toFixed(2)}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        {searchQ.trim() && searchResults.length === 0 && (
+          <div className="flex items-center justify-between text-xs text-gray-600">
+            <span>No se encontraron productos con ese texto.</span>
+            <button
+              type="button"
+              className="px-2 py-1 bg-green-600 text-white rounded"
+              onClick={addManualProductFromQuery}
+            >
+              Crear producto nuevo en esta factura
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="overflow-x-auto border rounded">
         <table className="w-full table-auto text-sm">
           <thead>
