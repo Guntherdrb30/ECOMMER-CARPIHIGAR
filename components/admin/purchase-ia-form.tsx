@@ -34,8 +34,9 @@ export default function PurchaseIAForm({
 }) {
   const [supplierId, setSupplierId] = useState<string>("");
   const [currency, setCurrency] = useState<"USD" | "VES">("USD");
-  // Tasa BCV tomada de ajustes (no editable)
-  const [tasaVES] = useState<number>(defaultTasa || 0);
+  // Tasa aplicada a la factura. Por defecto viene de ajustes (BCV),
+  // pero se puede ajustar para reflejar la tasa real del día de pago.
+  const [tasaVES, setTasaVES] = useState<number>(defaultTasa || 0);
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
   const [invoiceDate, setInvoiceDate] = useState<string>("");
 
@@ -84,7 +85,9 @@ export default function PurchaseIAForm({
         credentials: "include",
         body: JSON.stringify({
           currency: parsed.currency || currency,
-          tasaVES: parsed.tasaVES || tasaVES,
+          // Preferimos la tasa elegida por el usuario; si el PDF trae una tasa
+          // distinta, solo se usa cuando no hay valor manual.
+          tasaVES: tasaVES || parsed.tasaVES || 0,
           lines: parsed.lines || [],
         }),
       });
@@ -127,12 +130,17 @@ export default function PurchaseIAForm({
         throw new Error(data?.error || "No se pudo subir el soporte");
       }
       setInvoiceImageUrl(String(data.url));
-      toast.success("Soporte de factura subido");
+      toast.success("Soporte subido");
     } catch (e: any) {
-      toast.error(e?.message || "Error al subir el soporte");
+      toast.error(e?.message || "Error subiendo soporte");
     } finally {
       setSupportUploading(false);
     }
+  };
+
+  // Permitir registro manual sin archivo: arranca la tabla vacía.
+  const startManual = () => {
+    setItems([]);
   };
 
   if (items) {
@@ -142,7 +150,7 @@ export default function PurchaseIAForm({
           <div>
             <div className="text-sm text-gray-600">Proveedor</div>
             <div className="font-semibold">
-              {selectedSupplier?.name || "�?"}
+              {selectedSupplier?.name || "—"}
             </div>
             {selectedSupplier && (
               <div className="text-xs text-gray-500 space-y-0.5 mt-1">
@@ -170,16 +178,16 @@ export default function PurchaseIAForm({
             <div>{currency}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-600">Tasa (VES→USD)</div>
-            <div>{currency === "VES" ? tasaVES.toFixed(4) : "�?"}</div>
+            <div className="text-sm text-gray-600">Tasa aplicada (VES→USD)</div>
+            <div>{currency === "VES" ? tasaVES.toFixed(4) : "—"}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-600">N� factura</div>
-            <div>{invoiceNumber || "�?"}</div>
+            <div className="text-sm text-gray-600">N° factura</div>
+            <div>{invoiceNumber || "—"}</div>
           </div>
           <div>
             <div className="text-sm text-gray-600">Fecha factura</div>
-            <div>{invoiceDate || "�?"}</div>
+            <div>{invoiceDate || "—"}</div>
           </div>
         </div>
         <PurchasePreviewTable
@@ -230,25 +238,26 @@ export default function PurchaseIAForm({
           </select>
         </div>
         <div>
-          <label className="form-label">Tasa del d�a (VES→USD)</label>
+          <label className="form-label">Tasa aplicada (VES→USD)</label>
           <input
-            className="form-input bg-gray-50"
+            className="form-input"
             type="number"
             step={0.0001}
             value={tasaVES}
-            readOnly
+            onChange={(e) => setTasaVES(Number(e.target.value || 0))}
           />
           <p className="text-xs text-gray-500 mt-1">
-            Tasa oficial BCV tomada de ajustes. No editable.
+            Por defecto usa la tasa BCV actual de ajustes. Si la factura fue
+            pagada en otra fecha, ajusta este valor a la tasa de ese día.
           </p>
         </div>
         <div>
-          <label className="form-label">N� factura</label>
+          <label className="form-label">N° factura</label>
           <input
             className="form-input"
             value={invoiceNumber}
             onChange={(e) => setInvoiceNumber(e.target.value)}
-            placeholder="N�mero de factura legal"
+            placeholder="Número de factura legal"
           />
         </div>
         <div>
@@ -282,7 +291,7 @@ export default function PurchaseIAForm({
             value={bankAccountId}
             onChange={(e) => setBankAccountId(e.target.value)}
           >
-            <option value="">Sin v�nculo de banco</option>
+            <option value="">Sin vínculo de banco</option>
             {bankAccounts.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name} {b.bankName ? `- ${b.bankName}` : ""} ({b.currency})
@@ -302,17 +311,25 @@ export default function PurchaseIAForm({
       </div>
 
       <div>
-        <label className="form-label">Factura o lista (PDF/CSV)</label>
+        <label className="form-label">
+          Factura o lista (PDF/CSV) para precargar (opcional)
+        </label>
         <input
           className="form-input"
           type="file"
           accept="application/pdf,text/csv,.csv,.txt"
           onChange={(e) => setFile(e.target.files?.[0] || null)}
         />
+        <p className="text-xs text-gray-500 mt-1">
+          Si no tienes archivo estructurado, puedes omitir este paso y
+          registrar la factura manualmente.
+        </p>
       </div>
 
       <div className="space-y-1">
-        <label className="form-label">Soporte de factura (imagen/PDF)</label>
+        <label className="form-label">
+          Soporte de factura (imagen/PDF, opcional)
+        </label>
         <input
           className="form-input"
           type="file"
@@ -326,7 +343,7 @@ export default function PurchaseIAForm({
             onClick={handleSupportUpload}
             className="bg-emerald-600 text-white px-3 py-1 rounded disabled:opacity-50"
           >
-            {supportUploading ? "Subiendo�?�" : "Subir soporte"}
+            {supportUploading ? "Subiendo..." : "Subir soporte"}
           </button>
           {invoiceImageUrl && (
             <a
@@ -339,15 +356,27 @@ export default function PurchaseIAForm({
             </a>
           )}
         </div>
+        <p className="text-xs text-gray-500">
+          Puedes usar el mismo PDF de la factura o una foto/imagen como soporte
+          legal. No es obligatorio si ya tienes el PDF arriba.
+        </p>
       </div>
 
-      <div>
+      <div className="flex flex-wrap gap-3 items-center">
         <button
+          type="button"
           disabled={!canUpload || loading}
           onClick={handleUpload}
           className="bg-blue-600 text-white px-3 py-1 rounded disabled:opacity-50"
         >
-          {loading ? "Procesando�?�" : "Subir y precargar"}
+          {loading ? "Procesando..." : "Subir y precargar"}
+        </button>
+        <button
+          type="button"
+          onClick={startManual}
+          className="bg-gray-100 text-gray-800 px-3 py-1 rounded border border-gray-300"
+        >
+          Registrar manualmente sin archivo
         </button>
       </div>
     </div>
