@@ -376,6 +376,106 @@ export default async function SystemSettingsPage() {
           </div>
         </form>
       </div>
+
+      {/* Datos legales y correlativos de facturación (root) */}
+      {isRoot && (
+        <div className="bg-white p-4 rounded-lg shadow space-y-3">
+          <h2 className="text-lg font-semibold">Datos legales / Facturación (Trends172, C.A)</h2>
+          <p className="text-sm text-gray-600">
+            Estos datos se usan en las facturas legales y para llevar el correlativo de facturas y
+            recibos. Solo el usuario root puede modificarlos.
+          </p>
+          <form
+            action={async (formData) => {
+              "use server";
+              const { setLegalBillingSettings } = await import("@/server/actions/settings");
+              try {
+                await setLegalBillingSettings(formData);
+              } catch (e: any) {
+                const msg = encodeURIComponent(
+                  String(e?.message || "No se pudo guardar los datos legales"),
+                );
+                redirect("/dashboard/admin/ajustes/sistema?error=" + msg);
+              }
+              redirect("/dashboard/admin/ajustes/sistema?message=Datos%20legales%20actualizados");
+            }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-4xl"
+          >
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-700">Nombre legal de la empresa</label>
+              <input
+                name="legalCompanyName"
+                defaultValue={(siteSettings as any).legalCompanyName || "Trends172, C.A"}
+                className="border rounded px-2 py-1 w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700">RIF</label>
+              <input
+                name="legalCompanyRif"
+                defaultValue={(siteSettings as any).legalCompanyRif || "J-31758009-5"}
+                className="border rounded px-2 py-1 w-full"
+                placeholder="J-XXXXXXXX-X"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700">Teléfono</label>
+              <input
+                name="legalCompanyPhone"
+                defaultValue={(siteSettings as any).legalCompanyPhone || "04245192679"}
+                className="border rounded px-2 py-1 w-full"
+                placeholder="0424-0000000"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-700">Dirección fiscal</label>
+              <textarea
+                name="legalCompanyAddress"
+                defaultValue={
+                  (siteSettings as any).legalCompanyAddress ||
+                  "Av. Industrial, Edificio Teka, Ciudad Barinas, Estado Barinas"
+                }
+                className="border rounded px-2 py-1 w-full"
+                rows={2}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700">Próximo número de factura</label>
+              <input
+                name="invoiceNextNumber"
+                type="number"
+                min={1}
+                defaultValue={Number((siteSettings as any).invoiceNextNumber || 1)}
+                className="border rounded px-2 py-1 w-full"
+              />
+              <p className="text-xs text-gray-500">
+                El sistema usará este valor como siguiente correlativo de factura.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700">Próximo número de recibo</label>
+              <input
+                name="receiptNextNumber"
+                type="number"
+                min={1}
+                defaultValue={Number((siteSettings as any).receiptNextNumber || 1)}
+                className="border rounded px-2 py-1 w-full"
+              />
+              <p className="text-xs text-gray-500">
+                Los recibos comenzarán en 0000001 y el sistema irá incrementando.
+              </p>
+            </div>
+            <div className="md:col-span-2 flex gap-2 mt-2">
+              <PendingButton className="px-3 py-2 bg-blue-600 text-white rounded" pendingText="Guardando...">
+                Guardar datos legales
+              </PendingButton>
+              <a className="px-3 py-2 border rounded" href="/dashboard/admin/ajustes">
+                Volver a ajustes
+              </a>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

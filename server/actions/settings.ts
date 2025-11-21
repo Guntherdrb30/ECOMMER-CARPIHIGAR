@@ -29,7 +29,13 @@ async function ensureSiteSettingsColumns() {
         'ADD COLUMN IF NOT EXISTS "paymentMercantilAccount" TEXT, ' +
         'ADD COLUMN IF NOT EXISTS "paymentMercantilRif" TEXT, ' +
         'ADD COLUMN IF NOT EXISTS "paymentMercantilName" TEXT, ' +
-        'ADD COLUMN IF NOT EXISTS "supportHours" TEXT'
+        'ADD COLUMN IF NOT EXISTS "supportHours" TEXT, ' +
+        'ADD COLUMN IF NOT EXISTS "legalCompanyName" TEXT, ' +
+        'ADD COLUMN IF NOT EXISTS "legalCompanyRif" TEXT, ' +
+        'ADD COLUMN IF NOT EXISTS "legalCompanyAddress" TEXT, ' +
+        'ADD COLUMN IF NOT EXISTS "legalCompanyPhone" TEXT, ' +
+        'ADD COLUMN IF NOT EXISTS "invoiceNextNumber" INTEGER, ' +
+        'ADD COLUMN IF NOT EXISTS "receiptNextNumber" INTEGER'
     );
   } catch {}
 }
@@ -152,6 +158,14 @@ export async function getSettings() {
       paymentMercantilRif: (settings as any).paymentMercantilRif || "",
       paymentMercantilName: (settings as any).paymentMercantilName || "",
       supportHours: (settings as any).supportHours || "Lun-Vie 9:00-18:00",
+      legalCompanyName: (settings as any).legalCompanyName || "Trends172, C.A",
+      legalCompanyRif: (settings as any).legalCompanyRif || "J-31758009-5",
+      legalCompanyAddress:
+        (settings as any).legalCompanyAddress ||
+        "Av. Industrial, Edificio Teka, Ciudad Barinas, Estado Barinas",
+      legalCompanyPhone: (settings as any).legalCompanyPhone || "04245192679",
+      invoiceNextNumber: Number((settings as any).invoiceNextNumber ?? 1) || 1,
+      receiptNextNumber: Number((settings as any).receiptNextNumber ?? 1) || 1,
     } as any;
   } catch (err) {
     console.warn("[getSettings] DB not reachable, using defaults.", err);
@@ -186,6 +200,13 @@ export async function getSettings() {
       paymentMercantilRif: "",
       paymentMercantilName: "",
       supportHours: "Lun-Vie 9:00-18:00",
+      legalCompanyName: "Trends172, C.A",
+      legalCompanyRif: "J-31758009-5",
+      legalCompanyAddress:
+        "Av. Industrial, Edificio Teka, Ciudad Barinas, Estado Barinas",
+      legalCompanyPhone: "04245192679",
+      invoiceNextNumber: 1,
+      receiptNextNumber: 1,
     } as any;
   }
 }
@@ -216,6 +237,54 @@ export async function setPaymentInstructions(formData: FormData) {
   try {
     revalidatePath("/checkout/revisar");
   } catch {}
+  return { ok: true };
+}
+
+export async function setLegalBillingSettings(formData: FormData) {
+  await ensureSiteSettingsColumns();
+  const session = await getServerSession(authOptions);
+  const email = (session?.user as any)?.email as string | undefined;
+  const isAdmin = (session?.user as any)?.role === "ADMIN";
+  const rootEmail = String(process.env.ROOT_EMAIL || "root@carpihogar.com").toLowerCase();
+  if (!isAdmin || String(email || "").toLowerCase() !== rootEmail) {
+    throw new Error("Not authorized");
+  }
+
+  const legalCompanyName = String(formData.get("legalCompanyName") || "").trim();
+  const legalCompanyRif = String(formData.get("legalCompanyRif") || "").trim();
+  const legalCompanyAddress = String(formData.get("legalCompanyAddress") || "").trim();
+  const legalCompanyPhone = String(formData.get("legalCompanyPhone") || "").trim();
+
+  const invoiceNextRaw = String(formData.get("invoiceNextNumber") || "").trim();
+  const receiptNextRaw = String(formData.get("receiptNextNumber") || "").trim();
+  const invoiceNextNumber = invoiceNextRaw ? Number(invoiceNextRaw) : undefined;
+  const receiptNextNumber = receiptNextRaw ? Number(receiptNextRaw) : undefined;
+
+  const data: any = {
+    legalCompanyName: legalCompanyName || null,
+    legalCompanyRif: legalCompanyRif || null,
+    legalCompanyAddress: legalCompanyAddress || null,
+    legalCompanyPhone: legalCompanyPhone || null,
+  };
+  if (invoiceNextNumber && isFinite(invoiceNextNumber) && invoiceNextNumber > 0) {
+    data.invoiceNextNumber = invoiceNextNumber;
+  }
+  if (receiptNextNumber && isFinite(receiptNextNumber) && receiptNextNumber > 0) {
+    data.receiptNextNumber = receiptNextNumber;
+  }
+
+  await prisma.siteSettings.update({ where: { id: 1 }, data });
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId: (session?.user as any)?.id,
+        action: "LEGAL_BILLING_SETTINGS_UPDATED",
+        details: `invoiceNext=${data.invoiceNextNumber ?? "-"};receiptNext=${data.receiptNextNumber ?? "-"}`,
+      },
+    });
+  } catch {}
+
+  revalidatePath("/dashboard/admin/ajustes/sistema");
   return { ok: true };
 }
 

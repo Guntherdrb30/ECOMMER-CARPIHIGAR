@@ -161,6 +161,13 @@ model SiteSettings {
   paymentMercantilAccount  String?
   paymentMercantilRif      String?
   paymentMercantilName     String?
+  // Legal / billing data for invoices (root-only)
+  legalCompanyName         String?
+  legalCompanyRif          String?
+  legalCompanyAddress      String?
+  legalCompanyPhone        String?
+  invoiceNextNumber        Int?    @default(1)
+  receiptNextNumber        Int?    @default(1)
 }
 
 model Category {
@@ -338,6 +345,9 @@ model Order {
   createdAt         DateTime    @default(now())
   status            OrderStatus @default(PENDIENTE)
   saleType          SaleType    @default(CONTADO)
+  // Legal correlatives for receipts/invoices (assigned at first PDF generation)
+  invoiceNumber     Int?
+  receiptNumber     Int?
   // Origen de la venta (ONLINE = web, ERP = cargada por admin/aliado)
   originChannel     String?     @default("ONLINE")
   // Control interno de revisión administrativa
