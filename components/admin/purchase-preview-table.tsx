@@ -71,15 +71,13 @@ export default function PurchasePreviewTable({
     );
     return Number(total.toFixed(2));
   });
-  const [discountPercent, setDiscountPercent] = useState<number>(0);
+  const [discountAmountUSD, setDiscountAmountUSD] = useState<number>(0);
   const [ivaPercent, setIvaPercent] = useState<number>(defaultIvaPercent || 16);
   const [paymentMode, setPaymentMode] = useState<
     'CONTADO' | 'CREDITO_SIN_ABONO' | 'CREDITO_CON_ABONO'
   >('CONTADO');
   const [paidAmountUSD, setPaidAmountUSD] = useState<number | ''>('');
-  const [igtfPercent, setIgtfPercent] = useState<number>(
-    paymentCurrency === 'USD' ? 3 : 0,
-  );
+  const [igtfAmountManualUSD, setIgtfAmountManualUSD] = useState<number>(0);
   const [searchQ, setSearchQ] = useState<string>("");
   const [searchResults, setSearchResults] = useState<ProdSearch[]>([]);
   const [newName, setNewName] = useState<string>("");
@@ -283,34 +281,27 @@ export default function PurchasePreviewTable({
     return { qty, usd };
   }, [rows]);
 
-  const discountAmountUSD = useMemo(
-    () => Number((baseAmountUSD * (discountPercent / 100)).toFixed(2)),
-    [baseAmountUSD, discountPercent],
-  );
+  const discountAmount = Number(discountAmountUSD || 0);
   const taxableBase = useMemo(
-    () => Number((baseAmountUSD - discountAmountUSD).toFixed(2)),
-    [baseAmountUSD, discountAmountUSD],
+    () => Number((baseAmountUSD - discountAmount).toFixed(2)),
+    [baseAmountUSD, discountAmount],
   );
   const ivaAmountUSD = useMemo(
     () => Number((taxableBase * (ivaPercent / 100)).toFixed(2)),
     [taxableBase, ivaPercent],
   );
-  const totalInvoiceUSD = useMemo(
-    () => Number((taxableBase + ivaAmountUSD).toFixed(2)),
-    [taxableBase, ivaAmountUSD],
+  const igtfAmountUSD = useMemo(
+    () =>
+      paymentCurrency === 'USD'
+        ? Number(igtfAmountManualUSD || 0)
+        : 0,
+    [paymentCurrency, igtfAmountManualUSD],
   );
-
-  const igtfAmountUSD = useMemo(() => {
-    if (paymentCurrency !== 'USD' || !igtfPercent) return 0;
-    const paid =
-      paymentMode === 'CONTADO'
-        ? totalInvoiceUSD
-        : paymentMode === 'CREDITO_CON_ABONO' && typeof paidAmountUSD === 'number'
-          ? Math.max(0, Math.min(totalInvoiceUSD, paidAmountUSD))
-          : 0;
-    if (!paid) return 0;
-    return Number((paid * (igtfPercent / 100)).toFixed(2));
-  }, [paymentCurrency, igtfPercent, paymentMode, paidAmountUSD, totalInvoiceUSD]);
+  const totalInvoiceUSD = useMemo(
+    () =>
+      Number((taxableBase + ivaAmountUSD + igtfAmountUSD).toFixed(2)),
+    [taxableBase, ivaAmountUSD, igtfAmountUSD],
+  );
 
   const save = async (selectedOnly: boolean) => {
     const pick = rows.filter((r) => (selectedOnly ? r.selected : true));
@@ -334,8 +325,12 @@ export default function PurchasePreviewTable({
       invoiceDate: invoiceDate || null,
       invoiceImageUrl: invoiceImageUrl || null,
       baseAmountUSD,
-      discountPercent,
-      discountAmountUSD,
+      // Para compatibilidad, derivamos el % de descuento a partir del monto.
+      discountPercent:
+        baseAmountUSD > 0
+          ? Number(((discountAmount / baseAmountUSD) * 100).toFixed(2))
+          : 0,
+      discountAmountUSD: discountAmount,
       ivaPercent,
       ivaAmountUSD,
       totalInvoiceUSD,
@@ -343,7 +338,7 @@ export default function PurchasePreviewTable({
       paymentCurrency,
       bankAccountId: bankAccountId || null,
       paymentReference: paymentReference || null,
-      igtfPercent,
+      igtfPercent: 0,
       igtfAmountUSD,
       paymentMode,
       paidAmountUSD: paid,
@@ -742,20 +737,17 @@ export default function PurchasePreviewTable({
             />
           </div>
           <div>
-            <label className="text-xs text-gray-600">% Descuento</label>
+            <label className="text-xs text-gray-600">Descuento USD</label>
             <input
               type="number"
               min={0}
               step={0.01}
               className="w-full border rounded px-2 py-1"
-              value={discountPercent}
+              value={discountAmountUSD}
               onChange={(e) =>
-                setDiscountPercent(Number(e.target.value || 0))
+                setDiscountAmountUSD(Number(e.target.value || 0))
               }
             />
-            <div className="text-xs text-gray-500 mt-1">
-              Monto desc.: ${discountAmountUSD.toFixed(2)}
-            </div>
           </div>
           <div>
             <label className="text-xs text-gray-600">% IVA</label>
@@ -847,7 +839,7 @@ export default function PurchasePreviewTable({
 
           <div>
             <label className="text-xs text-gray-600">
-              IGTF (%) sobre pago en USD
+              Monto IGTF USD (solo si pago en USD)
             </label>
             <input
               type="number"
@@ -855,11 +847,13 @@ export default function PurchasePreviewTable({
               step={0.01}
               disabled={paymentCurrency !== 'USD'}
               className="w-full border rounded px-2 py-1 disabled:opacity-60"
-              value={igtfPercent}
-              onChange={(e) => setIgtfPercent(Number(e.target.value || 0))}
+              value={paymentCurrency === 'USD' ? igtfAmountManualUSD : 0}
+              onChange={(e) =>
+                setIgtfAmountManualUSD(Number(e.target.value || 0))
+              }
             />
             <div className="text-xs text-gray-500 mt-1">
-              Monto IGTF estimado: ${igtfAmountUSD.toFixed(2)}
+              Este monto se suma a la factura solo cuando la moneda de pago es USD.
             </div>
           </div>
         </div>
