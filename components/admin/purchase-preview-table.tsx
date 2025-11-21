@@ -3,29 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-export type CompareItem = {
-  input: { code?: string | null; name: string; quantity: number; unitCost: number };
-  code?: string | null;
-  name: string;
-  quantity: number;
-  costUSD: number;
-  marginClientPct: number;
-  marginAllyPct: number;
-  marginWholesalePct: number;
-  priceClientUSD: number;
-  priceAllyUSD: number;
-  priceWholesaleUSD: number;
-  product?: { id: string; name: string } | null;
-  // Metadatos adicionales del producto
-  supplierCode?: string | null;
-  description?: string | null;
-  weightKg?: number | null;
-  soldBy?: 'UNIT' | 'PACKAGE' | 'BOTH' | null;
-  unitsPerPackage?: number | null;
-  estadoIA: 'EXISTENTE' | 'NUEVO';
-  accion: 'ACTUALIZAR' | 'CREAR';
-};
-
 type ProdSearch = {
   id: string;
   name: string;
@@ -33,8 +10,37 @@ type ProdSearch = {
   priceUSD: number | null;
 };
 
+type Margins = {
+  client: number;
+  ally: number;
+  wholesale: number;
+};
+
+type PurchaseRow = {
+  id: string;
+  productId?: string | null;
+  code: string;
+  name: string;
+  quantity: number;
+  unitCostInput: string; // Valor ingresado en moneda de factura
+  costUSD: number; // Convertido a USD según moneda/tasa
+  marginClientPct: number;
+  marginAllyPct: number;
+  marginWholesalePct: number;
+  supplierCode?: string | null;
+  description?: string | null;
+  weightKg?: number | null;
+  soldBy?: "UNIT" | "PACKAGE" | "BOTH" | null;
+  unitsPerPackage?: number | null;
+  status?: "ACTIVE" | "REVIEW";
+  source: "EXISTING" | "NEW";
+  selected: boolean;
+};
+
+const randomId = () => Math.random().toString(36).slice(2, 9);
+const toMoney = (n: number) => Number(n || 0).toFixed(2);
+
 export default function PurchasePreviewTable({
-  items: initialItems,
   supplierId,
   currency,
   tasaVES,
@@ -45,44 +51,49 @@ export default function PurchasePreviewTable({
   paymentCurrency,
   bankAccountId,
   paymentReference,
-  onCancel,
+  notes,
+  defaultMargins,
 }: {
-  items: CompareItem[];
   supplierId?: string;
-  currency: 'USD' | 'VES';
+  currency: "USD" | "VES";
   tasaVES?: number;
   invoiceNumber?: string;
   invoiceDate?: string;
   invoiceImageUrl?: string;
   defaultIvaPercent: number;
-  paymentCurrency: 'USD' | 'VES' | 'USDT';
+  paymentCurrency: "USD" | "VES" | "USDT";
   bankAccountId?: string;
   paymentReference?: string;
-  onCancel?: () => void;
+  notes?: string;
+  defaultMargins: Margins;
 }) {
-  const [rows, setRows] = useState<(CompareItem & { selected: boolean })[]>(() =>
-    initialItems.map((it) => ({ ...it, selected: true })),
-  );
-
-  const [baseAmountUSD, setBaseAmountUSD] = useState<number>(() => {
-    const total = initialItems.reduce(
-      (a, r) => a + Number(r.quantity || 0) * Number(r.costUSD || 0),
-      0,
-    );
-    return Number(total.toFixed(2));
-  });
-  const [discountAmountUSD, setDiscountAmountUSD] = useState<number>(0);
-  const [ivaPercent, setIvaPercent] = useState<number>(defaultIvaPercent || 16);
-  const [paymentMode, setPaymentMode] = useState<
-    'CONTADO' | 'CREDITO_SIN_ABONO' | 'CREDITO_CON_ABONO'
-  >('CONTADO');
-  const [paidAmountUSD, setPaidAmountUSD] = useState<number | ''>('');
-  const [igtfAmountManualUSD, setIgtfAmountManualUSD] = useState<number>(0);
+  const rate = currency === "VES" ? Number(tasaVES || 0) : 1;
+  const [rows, setRows] = useState<PurchaseRow[]>([]);
   const [searchQ, setSearchQ] = useState<string>("");
   const [searchResults, setSearchResults] = useState<ProdSearch[]>([]);
+  const [newCode, setNewCode] = useState<string>("");
   const [newName, setNewName] = useState<string>("");
   const [newQuantity, setNewQuantity] = useState<number>(1);
-  const [newCostUSD, setNewCostUSD] = useState<number>(0);
+  const [newUnitCost, setNewUnitCost] = useState<string>("");
+  const [newUnitsPerPackage, setNewUnitsPerPackage] = useState<string>("");
+  const [newSoldBy, setNewSoldBy] = useState<"UNIT" | "PACKAGE" | "BOTH">(
+    "UNIT",
+  );
+  const [newWeightKg, setNewWeightKg] = useState<string>("");
+  const [markReview, setMarkReview] = useState<boolean>(false);
+
+  const [baseEdited, setBaseEdited] = useState(false);
+  const [baseAmountCurrency, setBaseAmountCurrency] = useState<number>(0);
+  const [discountAmountCurrency, setDiscountAmountCurrency] =
+    useState<number>(0);
+  const [ivaPercent, setIvaPercent] = useState<number>(defaultIvaPercent || 16);
+  const [ivaManual, setIvaManual] = useState<boolean>(false);
+  const [ivaAmountCurrency, setIvaAmountCurrency] = useState<number>(0);
+  const [paymentMode, setPaymentMode] = useState<
+    "CONTADO" | "CREDITO_SIN_ABONO" | "CREDITO_CON_ABONO"
+  >("CONTADO");
+  const [paidAmountUSD, setPaidAmountUSD] = useState<number | "">("");
+  const [igtfAmountManualUSD, setIgtfAmountManualUSD] = useState<number>(0);
 
   useEffect(() => {
     const t = setTimeout(async () => {
@@ -112,210 +123,266 @@ export default function PurchasePreviewTable({
           );
         }
       } catch {
-        // ignorar errores del buscador
+        // ignore search errors
       }
     }, 300);
     return () => clearTimeout(t);
   }, [searchQ]);
 
-  const setField = (idx: number, patch: Partial<CompareItem>) => {
-    setRows((prev) => {
-      const next = [...prev];
-      const current = { ...next[idx], ...patch } as any;
-      const cost = Number(current.costUSD || 0);
-      const mc = Number(current.marginClientPct || 0);
-      const ma = Number(current.marginAllyPct || 0);
-      const mw = Number(current.marginWholesalePct || 0);
-      current.priceClientUSD = Number((cost * (1 + mc / 100)).toFixed(2));
-      current.priceAllyUSD = Number((cost * (1 + ma / 100)).toFixed(2));
-      current.priceWholesaleUSD = Number((cost * (1 + mw / 100)).toFixed(2));
-      next[idx] = current;
-      return next;
-    });
-  };
+  // Recalcular costos en USD si cambia la tasa o moneda
+  useEffect(() => {
+    setRows((prev) =>
+      prev.map((r) => ({
+        ...r,
+        costUSD: computeCostUSD(r.unitCostInput),
+      })),
+    );
+  }, [currency, tasaVES]);
 
-  const setSelected = (idx: number, v: boolean) =>
-    setRows((prev) => {
-      const next = [...prev];
-      (next[idx] as any).selected = v;
-      return next;
-    });
+  const computeCostUSD = (value: string) => {
+    const parsed = Number((value || "").toString().replace(",", "."));
+    if (isNaN(parsed) || parsed < 0) return 0;
+    if (currency === "VES") {
+      return rate > 0 ? parsed / rate : 0;
+    }
+    return parsed;
+  };
+  const addRow = (row: Omit<PurchaseRow, "id">) => {
+    setRows((prev) => [...prev, { ...row, id: randomId() }]);
+  };
 
   const addExistingProduct = (p: ProdSearch) => {
-    const costUSD = Number(p.priceUSD || 0);
-    const marginClientPct = 40;
-    const marginAllyPct = 30;
-    const marginWholesalePct = 20;
-    const priceClientUSD = Number(
-      (costUSD * (1 + marginClientPct / 100)).toFixed(2),
-    );
-    const priceAllyUSD = Number(
-      (costUSD * (1 + marginAllyPct / 100)).toFixed(2),
-    );
-    const priceWholesaleUSD = Number(
-      (costUSD * (1 + marginWholesalePct / 100)).toFixed(2),
-    );
-
-    setRows((prev) => [
-      ...prev,
-      {
-        input: {
-          code: p.sku || null,
-          name: p.name,
-          quantity: 1,
-          unitCost: costUSD,
-        },
-        code: p.sku || null,
-        name: p.name,
-        quantity: 1,
-        costUSD,
-        marginClientPct,
-        marginAllyPct,
-        marginWholesalePct,
-        priceClientUSD,
-        priceAllyUSD,
-        priceWholesaleUSD,
-        product: { id: p.id, name: p.name },
-        supplierCode: null,
-        description: null,
-        weightKg: null,
-        soldBy: 'UNIT',
-        unitsPerPackage: null,
-        estadoIA: 'EXISTENTE',
-        accion: 'ACTUALIZAR',
-        selected: true,
-      },
-    ]);
+    const margins = {
+      client: Number(defaultMargins.client || 40),
+      ally: Number(defaultMargins.ally || 30),
+      wholesale: Number(defaultMargins.wholesale || 20),
+    };
+    addRow({
+      productId: p.id,
+      code: p.sku || "",
+      name: p.name,
+      quantity: 1,
+      unitCostInput: "",
+      costUSD: 0,
+      marginClientPct: margins.client,
+      marginAllyPct: margins.ally,
+      marginWholesalePct: margins.wholesale,
+      supplierCode: null,
+      description: null,
+      weightKg: null,
+      soldBy: "UNIT",
+      unitsPerPackage: null,
+      status: undefined,
+      source: "EXISTING",
+      selected: true,
+    });
     setSearchQ("");
     setSearchResults([]);
   };
 
-  const addManualProductFromQuery = () => {
-    const name = searchQ.trim();
-    if (!name) return;
-    const costUSD = 0;
-    const marginClientPct = 40;
-    const marginAllyPct = 30;
-    const marginWholesalePct = 20;
-
-    setRows((prev) => [
-      ...prev,
-      {
-        input: { code: null, name, quantity: 1, unitCost: costUSD },
-        code: null,
-        name,
-        quantity: 1,
-        costUSD,
-        marginClientPct,
-        marginAllyPct,
-        marginWholesalePct,
-        priceClientUSD: 0,
-        priceAllyUSD: 0,
-        priceWholesaleUSD: 0,
-        product: undefined,
-        supplierCode: null,
-        description: null,
-        weightKg: null,
-        soldBy: 'UNIT',
-        unitsPerPackage: null,
-        estadoIA: 'NUEVO',
-        accion: 'CREAR',
-        selected: true,
-      },
-    ]);
-    setSearchQ("");
-    setSearchResults([]);
-  };
-
-  const addNewProduct = () => {
+  const addManualProduct = () => {
     const name = newName.trim();
     if (!name) {
-      toast.error('Escribe un nombre para el producto nuevo');
+      toast.error("Escribe el nombre del producto");
       return;
     }
-    const quantity = newQuantity > 0 ? newQuantity : 1;
-    const costUSD = newCostUSD >= 0 ? newCostUSD : 0;
-
-    const marginClientPct = 40;
-    const marginAllyPct = 30;
-    const marginWholesalePct = 20;
-
-    setRows((prev) => [
-      ...prev,
-      {
-        input: { code: null, name, quantity, unitCost: costUSD },
-        code: null,
-        name,
-        quantity,
-        costUSD,
-        marginClientPct,
-        marginAllyPct,
-        marginWholesalePct,
-        priceClientUSD: 0,
-        priceAllyUSD: 0,
-        priceWholesaleUSD: 0,
-        product: undefined,
-        supplierCode: null,
-        description: null,
-        weightKg: null,
-        soldBy: 'UNIT',
-        unitsPerPackage: null,
-        estadoIA: 'NUEVO',
-        accion: 'CREAR',
-        selected: true,
-      },
-    ]);
-
+    if (!newUnitCost.trim()) {
+      toast.error("Ingresa el precio unitario de la factura");
+      return;
+    }
+    const margins = {
+      client: Number(defaultMargins.client || 40),
+      ally: Number(defaultMargins.ally || 30),
+      wholesale: Number(defaultMargins.wholesale || 20),
+    };
+    addRow({
+      productId: null,
+      code: newCode.trim(),
+      name,
+      quantity: Math.max(1, newQuantity || 1),
+      unitCostInput: newUnitCost,
+      costUSD: computeCostUSD(newUnitCost),
+      marginClientPct: margins.client,
+      marginAllyPct: margins.ally,
+      marginWholesalePct: margins.wholesale,
+      supplierCode: null,
+      description: null,
+      weightKg: newWeightKg ? Number(newWeightKg) : null,
+      soldBy: newSoldBy,
+      unitsPerPackage: newUnitsPerPackage
+        ? Number(newUnitsPerPackage)
+        : null,
+      status: markReview ? "REVIEW" : "ACTIVE",
+      source: "NEW",
+      selected: true,
+    });
+    setNewCode("");
     setNewName("");
     setNewQuantity(1);
-    setNewCostUSD(0);
+    setNewUnitCost("");
+    setNewUnitsPerPackage("");
+    setNewSoldBy("UNIT");
+    setNewWeightKg("");
+    setMarkReview(false);
   };
 
+  const updateRow = (id: string, patch: Partial<PurchaseRow>) => {
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        const next: PurchaseRow = { ...r, ...patch };
+        if ("unitCostInput" in patch) {
+          next.costUSD = computeCostUSD(patch.unitCostInput as any);
+        }
+        if ("marginClientPct" in patch || "costUSD" in patch) {
+          next.marginClientPct = Number(next.marginClientPct || 0);
+        }
+        if ("marginAllyPct" in patch || "costUSD" in patch) {
+          next.marginAllyPct = Number(next.marginAllyPct || 0);
+        }
+        if ("marginWholesalePct" in patch || "costUSD" in patch) {
+          next.marginWholesalePct = Number(next.marginWholesalePct || 0);
+        }
+        return next;
+      }),
+    );
+  };
+
+  const removeRow = (id: string) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const selectedRows = useMemo(
+    () => rows.filter((r) => r.selected),
+    [rows],
+  );
+
+  const baseFromItemsUSD = useMemo(
+    () =>
+      selectedRows.reduce(
+        (acc, r) => acc + Number(r.quantity || 0) * Number(r.costUSD || 0),
+        0,
+      ),
+    [selectedRows],
+  );
+
+  const baseFromItemsCurrency =
+    currency === "VES" ? baseFromItemsUSD * rate : baseFromItemsUSD;
+
+  useEffect(() => {
+    if (!baseEdited) {
+      setBaseAmountCurrency(Number(baseFromItemsCurrency.toFixed(2)));
+    }
+  }, [baseFromItemsCurrency, baseEdited]);
+
+  useEffect(() => {
+    if (!ivaManual) {
+      const taxable = Math.max(
+        0,
+        (baseEdited ? baseAmountCurrency : baseFromItemsCurrency) -
+          discountAmountCurrency,
+      );
+      setIvaAmountCurrency(
+        Number(((taxable * ivaPercent) / 100).toFixed(2)),
+      );
+    }
+  }, [
+    baseAmountCurrency,
+    baseEdited,
+    baseFromItemsCurrency,
+    discountAmountCurrency,
+    ivaManual,
+    ivaPercent,
+  ]);
+
+  const taxableBaseCurrency = useMemo(() => {
+    const base = baseEdited ? baseAmountCurrency : baseFromItemsCurrency;
+    return Number(Math.max(0, base - discountAmountCurrency).toFixed(2));
+  }, [baseAmountCurrency, baseEdited, baseFromItemsCurrency, discountAmountCurrency]);
+
+  const totalInvoiceCurrency = useMemo(
+    () =>
+      Number((taxableBaseCurrency + Number(ivaAmountCurrency || 0)).toFixed(2)),
+    [taxableBaseCurrency, ivaAmountCurrency],
+  );
+
+  const baseAmountUSD =
+    currency === "VES" ? (rate > 0 ? baseAmountCurrency / rate : 0) : baseAmountCurrency;
+  const discountAmountUSD =
+    currency === "VES"
+      ? rate > 0
+        ? discountAmountCurrency / rate
+        : 0
+      : discountAmountCurrency;
+  const ivaAmountUSD =
+    currency === "VES"
+      ? rate > 0
+        ? ivaAmountCurrency / rate
+        : 0
+      : ivaAmountCurrency;
+  const totalInvoiceUSD =
+    currency === "VES"
+      ? rate > 0
+        ? totalInvoiceCurrency / rate
+        : 0
+      : totalInvoiceCurrency;
+
   const totals = useMemo(() => {
-    const sel = rows.filter((r) => r.selected);
-    const qty = sel.reduce((a, r) => a + Number(r.quantity || 0), 0);
-    const usd = sel.reduce(
-      (a, r) => a + Number(r.quantity || 0) * Number(r.costUSD || 0),
+    const qty = selectedRows.reduce(
+      (acc, r) => acc + Number(r.quantity || 0),
       0,
     );
-    return { qty, usd };
-  }, [rows]);
+    return { qty, costUSD: baseFromItemsUSD };
+  }, [selectedRows, baseFromItemsUSD]);
 
-  const discountAmount = Number(discountAmountUSD || 0);
-  const taxableBase = useMemo(
-    () => Number((baseAmountUSD - discountAmount).toFixed(2)),
-    [baseAmountUSD, discountAmount],
-  );
-  const ivaAmountUSD = useMemo(
-    () => Number((taxableBase * (ivaPercent / 100)).toFixed(2)),
-    [taxableBase, ivaPercent],
-  );
   const igtfAmountUSD = useMemo(
-    () =>
-      paymentCurrency === 'USD'
-        ? Number(igtfAmountManualUSD || 0)
-        : 0,
+    () => (paymentCurrency === "USD" ? Number(igtfAmountManualUSD || 0) : 0),
     [paymentCurrency, igtfAmountManualUSD],
   );
-  const totalInvoiceUSD = useMemo(
-    () =>
-      Number((taxableBase + ivaAmountUSD + igtfAmountUSD).toFixed(2)),
-    [taxableBase, ivaAmountUSD, igtfAmountUSD],
-  );
-
-  const save = async (selectedOnly: boolean) => {
-    const pick = rows.filter((r) => (selectedOnly ? r.selected : true));
-    if (!pick.length) {
-      toast.error('No hay filas seleccionadas');
+  const save = async () => {
+    if (!supplierId) {
+      toast.error("Selecciona un proveedor");
       return;
+    }
+    if (!invoiceNumber) {
+      toast.error("Ingresa el número de factura");
+      return;
+    }
+    if (currency === "VES" && rate <= 0) {
+      toast.error("Coloca la tasa VES/USD de la factura");
+      return;
+    }
+    if (!selectedRows.length) {
+      toast.error("Agrega al menos un producto");
+      return;
+    }
+    for (const r of selectedRows) {
+      if (!r.name.trim()) {
+        toast.error("Un producto no tiene nombre");
+        return;
+      }
+      if (Number(r.quantity) <= 0) {
+        toast.error(`Cantidad inválida en ${r.name}`);
+        return;
+      }
+      if (!r.unitCostInput.trim() || Number(r.costUSD) <= 0) {
+        toast.error(`Coloca el precio unitario de ${r.name}`);
+        return;
+      }
     }
 
     const paid =
-      paymentMode === 'CONTADO'
+      paymentMode === "CONTADO"
         ? totalInvoiceUSD
-        : paymentMode === 'CREDITO_CON_ABONO' && typeof paidAmountUSD === 'number'
+        : paymentMode === "CREDITO_CON_ABONO" &&
+            typeof paidAmountUSD === "number"
           ? Math.max(0, Math.min(totalInvoiceUSD, paidAmountUSD))
           : 0;
+
+    const discountPercent =
+      baseAmountUSD > 0
+        ? Number(((discountAmountUSD / baseAmountUSD) * 100).toFixed(2))
+        : 0;
 
     const payload = {
       supplierId: supplierId || null,
@@ -324,26 +391,23 @@ export default function PurchasePreviewTable({
       invoiceNumber: invoiceNumber || null,
       invoiceDate: invoiceDate || null,
       invoiceImageUrl: invoiceImageUrl || null,
-      baseAmountUSD,
-      // Para compatibilidad, derivamos el % de descuento a partir del monto.
-      discountPercent:
-        baseAmountUSD > 0
-          ? Number(((discountAmount / baseAmountUSD) * 100).toFixed(2))
-          : 0,
-      discountAmountUSD: discountAmount,
-      ivaPercent,
-      ivaAmountUSD,
-      totalInvoiceUSD,
-      itemsCount: pick.length,
-      paymentCurrency,
+      baseAmountUSD: Number(baseAmountUSD.toFixed(2)),
+      discountAmountUSD: Number(discountAmountUSD.toFixed(2)),
+      discountPercent,
+      ivaPercent: Number(ivaPercent || 0),
+      ivaAmountUSD: Number(ivaAmountUSD.toFixed(2)),
+      totalInvoiceUSD: Number(totalInvoiceUSD.toFixed(2)),
+      itemsCount: selectedRows.length,
+      paymentCurrency: paymentCurrency || currency,
       bankAccountId: bankAccountId || null,
       paymentReference: paymentReference || null,
       igtfPercent: 0,
       igtfAmountUSD,
       paymentMode,
       paidAmountUSD: paid,
-      items: pick.map((r) => ({
-        productId: r.product?.id || null,
+      notes: notes || undefined,
+      items: selectedRows.map((r) => ({
+        productId: r.productId || null,
         code: r.code || null,
         name: r.name,
         quantity: Number(r.quantity || 0),
@@ -353,40 +417,46 @@ export default function PurchasePreviewTable({
         marginWholesalePct: Number(r.marginWholesalePct || 0),
         supplierCode: r.supplierCode || null,
         description: r.description || null,
-        weightKg: typeof r.weightKg === 'number' ? r.weightKg : null,
+        weightKg:
+          typeof r.weightKg === "number" && !isNaN(r.weightKg)
+            ? r.weightKg
+            : null,
         soldBy: r.soldBy || null,
         unitsPerPackage:
-          typeof r.unitsPerPackage === 'number' ? r.unitsPerPackage : null,
+          typeof r.unitsPerPackage === "number" && !isNaN(r.unitsPerPackage)
+            ? r.unitsPerPackage
+            : null,
+        status: r.status || undefined,
       })),
     };
 
     try {
-      const res = await fetch('/api/purchases/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/purchases/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        credentials: 'include',
+        credentials: "include",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Error');
-      toast.success('Compra guardada');
+      if (!res.ok) throw new Error(data?.error || "Error");
+      toast.success("Entrada guardada");
       window.location.href =
-        '/dashboard/admin/compras?message=Compra%20guardada';
+        "/dashboard/admin/compras?message=Entrada%20registrada";
     } catch (e: any) {
-      toast.error(e?.message || 'No se pudo guardar');
+      toast.error(e?.message || "No se pudo guardar la entrada");
     }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="space-y-2">
         <div className="text-sm font-semibold">
-          Agregar productos desde inventario
+          Buscar producto existente
         </div>
         <input
           value={searchQ}
           onChange={(e) => setSearchQ(e.target.value)}
-          placeholder="Buscar por nombre, SKU o código de barras"
+          placeholder="Buscar por nombre o código"
           className="w-full border rounded px-2 py-1 text-sm"
         />
         {searchResults.length > 0 && (
@@ -401,11 +471,11 @@ export default function PurchasePreviewTable({
                 <span>
                   {p.name}{" "}
                   <span className="text-gray-500">
-                    ({p.sku || "sin SKU"})
+                    ({p.sku || "sin código"})
                   </span>
                 </span>
                 <span className="text-gray-600">
-                  ${Number(p.priceUSD || 0).toFixed(2)}
+                  ${toMoney(Number(p.priceUSD || 0))}
                 </span>
               </button>
             ))}
@@ -413,18 +483,15 @@ export default function PurchasePreviewTable({
         )}
         {searchQ.trim() && searchResults.length === 0 && (
           <div className="text-xs text-gray-600">
-            No se encontraron productos con ese texto. Puedes crear un
-            producto nuevo en el formulario de abajo.
+            Sin resultados. Puedes crearlo abajo.
           </div>
         )}
       </div>
 
       <div className="space-y-2 border rounded p-3 bg-gray-50">
-        <div className="text-sm font-semibold">
-          Crear producto nuevo en esta factura
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
-          <div>
+        <div className="text-sm font-semibold">Crear producto nuevo</div>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-2 text-sm">
+          <div className="md:col-span-2">
             <label className="block text-xs text-gray-600">Nombre</label>
             <input
               value={newName}
@@ -435,8 +502,17 @@ export default function PurchasePreviewTable({
           </div>
           <div>
             <label className="block text-xs text-gray-600">
-              Cantidad
+              Código / SKU
             </label>
+            <input
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value)}
+              className="border rounded px-2 py-1 w-full"
+              placeholder="Opcional"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600">Cantidad</label>
             <input
               type="number"
               min={1}
@@ -451,23 +527,63 @@ export default function PurchasePreviewTable({
           </div>
           <div>
             <label className="block text-xs text-gray-600">
-              Costo USD
+              Precio unitario ({currency})
             </label>
             <input
-              type="number"
-              min={0}
-              step={0.01}
-              value={newCostUSD}
-              onChange={(e) =>
-                setNewCostUSD(Number(e.target.value || 0))
-              }
+              value={newUnitCost}
+              onChange={(e) => setNewUnitCost(e.target.value)}
               className="border rounded px-2 py-1 w-full"
+              placeholder="Costo en la factura"
             />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600">
+              Unidades por paquete
+            </label>
+            <input
+              value={newUnitsPerPackage}
+              onChange={(e) => setNewUnitsPerPackage(e.target.value)}
+              className="border rounded px-2 py-1 w-full"
+              placeholder="Opcional"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600">Unidad</label>
+            <select
+              value={newSoldBy}
+              onChange={(e) => setNewSoldBy(e.target.value as any)}
+              className="border rounded px-2 py-1 w-full"
+            >
+              <option value="UNIT">Pieza</option>
+              <option value="PACKAGE">Paquete/Caja</option>
+              <option value="BOTH">Ambos</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600">
+              Peso (kg)
+            </label>
+            <input
+              value={newWeightKg}
+              onChange={(e) => setNewWeightKg(e.target.value)}
+              className="border rounded px-2 py-1 w-full"
+              placeholder="Opcional"
+            />
+          </div>
+          <div className="flex items-end gap-2 md:col-span-2">
+            <label className="flex items-center gap-2 text-xs text-gray-700">
+              <input
+                type="checkbox"
+                checked={markReview}
+                onChange={(e) => setMarkReview(e.target.checked)}
+              />
+              <span>Marcar como pendiente (REVISIÓN)</span>
+            </label>
           </div>
           <div className="flex items-end">
             <button
               type="button"
-              onClick={addNewProduct}
+              onClick={addManualProduct}
               className="w-full bg-green-600 text-white px-3 py-1 rounded"
             >
               Agregar a la factura
@@ -475,192 +591,251 @@ export default function PurchasePreviewTable({
           </div>
         </div>
       </div>
-
       <div className="overflow-x-auto border rounded">
         <table className="w-full table-auto text-sm">
           <thead>
             <tr className="bg-gray-100">
               <th className="px-2 py-1"></th>
-              <th className="px-2 py-1 text-left">C��digo / Nombre / Detalles</th>
+              <th className="px-2 py-1 text-left">Producto</th>
               <th className="px-2 py-1">Cantidad</th>
-              <th className="px-2 py-1">Costo USD</th>
+              <th className="px-2 py-1">
+                Precio unitario ({currency})
+              </th>
+              <th className="px-2 py-1">
+                Total ({currency})
+              </th>
               <th className="px-2 py-1">% Cliente</th>
               <th className="px-2 py-1">% Aliado</th>
-              <th className="px-2 py-1">% Mayorista</th>
-              <th className="px-2 py-1">Precio Cliente</th>
-              <th className="px-2 py-1">Precio Aliado</th>
-              <th className="px-2 py-1">Precio Mayorista</th>
-              <th className="px-2 py-1">Estado IA</th>
-              <th className="px-2 py-1">Acci��n</th>
+              <th className="px-2 py-1">% Mayor</th>
+              <th className="px-2 py-1">Precio cliente USD</th>
+              <th className="px-2 py-1">Precio aliado USD</th>
+              <th className="px-2 py-1">Precio mayor USD</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, idx) => (
-              <tr key={`${r.code || r.name}-${idx}`}>
-                <td className="border px-2 py-1 text-center">
-                  <input
-                    type="checkbox"
-                    checked={r.selected}
-                    onChange={(e) => setSelected(idx, e.target.checked)}
-                  />
-                </td>
-                <td className="border px-2 py-1">
-                  <div className="font-medium truncate" title={r.name}>
-                    {r.name}
-                  </div>
-                  <div className="text-xs text-gray-500">{r.code || '�?"'}</div>
-                  <div className="mt-1 grid grid-cols-1 md:grid-cols-3 gap-1 text-[11px] text-gray-600">
-                    <label className="flex flex-col">
-                      <span>C�d. proveedor</span>
+            {rows.map((r) => {
+              const priceClientUSD =
+                Number(r.costUSD || 0) *
+                (1 + Number(r.marginClientPct || 0) / 100);
+              const priceAllyUSD =
+                Number(r.costUSD || 0) *
+                (1 + Number(r.marginAllyPct || 0) / 100);
+              const priceWholesaleUSD =
+                Number(r.costUSD || 0) *
+                (1 + Number(r.marginWholesalePct || 0) / 100);
+              const lineTotalCurrency =
+                Number(r.quantity || 0) *
+                Number(
+                  (r.unitCostInput || "0").toString().replace(",", "."),
+                );
+              return (
+                <tr key={r.id}>
+                  <td className="border px-2 py-1 text-center space-y-1">
+                    <input
+                      type="checkbox"
+                      checked={r.selected}
+                      onChange={(e) =>
+                        updateRow(r.id, { selected: e.target.checked })
+                      }
+                    />
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => removeRow(r.id)}
+                        className="text-xs text-red-600"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </td>
+                  <td className="border px-2 py-1">
+                    <div className="font-medium">
                       <input
-                        type="text"
-                        value={r.supplierCode || ''}
+                        value={r.name}
                         onChange={(e) =>
-                          setField(idx, {
+                          updateRow(r.id, { name: e.target.value })
+                        }
+                        className="w-full border rounded px-1 py-0.5 text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[11px] text-gray-700 mt-1">
+                      <input
+                        value={r.code}
+                        onChange={(e) =>
+                          updateRow(r.id, { code: e.target.value })
+                        }
+                        placeholder="Código/SKU"
+                        className="border rounded px-1 py-0.5"
+                      />
+                      <input
+                        value={r.supplierCode || ""}
+                        onChange={(e) =>
+                          updateRow(r.id, {
                             supplierCode: e.target.value || null,
                           })
                         }
-                        className="border rounded px-1 py-0.5 text-[11px]"
+                        placeholder="Código prov."
+                        className="border rounded px-1 py-0.5"
                       />
-                    </label>
-                    <label className="flex flex-col">
-                      <span>Peso (kg unidad)</span>
                       <input
-                        type="number"
-                        min={0}
-                        step={0.001}
-                        value={typeof r.weightKg === 'number' ? r.weightKg : ''}
+                        value={
+                          typeof r.unitsPerPackage === "number"
+                            ? r.unitsPerPackage
+                            : ""
+                        }
                         onChange={(e) =>
-                          setField(idx, {
-                            weightKg:
-                              e.target.value === ''
+                          updateRow(r.id, {
+                            unitsPerPackage:
+                              e.target.value === ""
                                 ? null
                                 : Number(e.target.value),
                           })
                         }
-                        className="border rounded px-1 py-0.5 text-[11px]"
+                        placeholder="Unidades pack"
+                        className="border rounded px-1 py-0.5"
                       />
-                    </label>
-                    <label className="flex flex-col">
-                      <span>Unidad venta</span>
                       <select
-                        value={r.soldBy || 'UNIT'}
+                        value={r.soldBy || "UNIT"}
                         onChange={(e) =>
-                          setField(idx, { soldBy: e.target.value as any })
+                          updateRow(r.id, { soldBy: e.target.value as any })
                         }
-                        className="border rounded px-1 py-0.5 text-[11px]"
+                        className="border rounded px-1 py-0.5"
                       >
                         <option value="UNIT">Pieza</option>
-                        <option value="PACKAGE">Paquete/Caja</option>
+                        <option value="PACKAGE">Paquete</option>
                         <option value="BOTH">Ambos</option>
                       </select>
-                    </label>
-                  </div>
-                </td>
-                <td className="border px-2 py-1 text-center">
-                  <input
-                    type="number"
-                    min={1}
-                    value={r.quantity}
-                    onChange={(e) =>
-                      setField(idx, {
-                        quantity: Math.max(
-                          1,
-                          parseInt(e.target.value || '1', 10),
-                        ),
-                      })
-                    }
-                    className="w-20 border rounded px-1 py-0.5"
-                  />
-                </td>
-                <td className="border px-2 py-1 text-center">
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={r.costUSD}
-                    onChange={(e) =>
-                      setField(idx, {
-                        costUSD: Math.max(
-                          0,
-                          parseFloat(e.target.value || '0'),
-                        ),
-                      })
-                    }
-                    className="w-24 border rounded px-1 py-0.5"
-                  />
-                </td>
-                <td className="border px-2 py-1 text-center">
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={r.marginClientPct}
-                    onChange={(e) =>
-                      setField(idx, {
-                        marginClientPct: Math.max(
-                          0,
-                          parseFloat(e.target.value || '0'),
-                        ),
-                      })
-                    }
-                    className="w-20 border rounded px-1 py-0.5"
-                  />
-                </td>
-                <td className="border px-2 py-1 text-center">
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={r.marginAllyPct}
-                    onChange={(e) =>
-                      setField(idx, {
-                        marginAllyPct: Math.max(
-                          0,
-                          parseFloat(e.target.value || '0'),
-                        ),
-                      })
-                    }
-                    className="w-20 border rounded px-1 py-0.5"
-                  />
-                </td>
-                <td className="border px-2 py-1 text-center">
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={r.marginWholesalePct}
-                    onChange={(e) =>
-                      setField(idx, {
-                        marginWholesalePct: Math.max(
-                          0,
-                          parseFloat(e.target.value || '0'),
-                        ),
-                      })
-                    }
-                    className="w-20 border rounded px-1 py-0.5"
-                  />
-                </td>
-                <td className="border px-2 py-1 text-right">
-                  {r.priceClientUSD.toFixed(2)}
-                </td>
-                <td className="border px-2 py-1 text-right">
-                  {r.priceAllyUSD.toFixed(2)}
-                </td>
-                <td className="border px-2 py-1 text-right">
-                  {r.priceWholesaleUSD.toFixed(2)}
-                </td>
-                <td className="border px-2 py-1 text-center">{r.estadoIA}</td>
-                <td className="border px-2 py-1 text-center">{r.accion}</td>
-              </tr>
-            ))}
+                      <input
+                        value={
+                          typeof r.weightKg === "number" ? r.weightKg : ""
+                        }
+                        onChange={(e) =>
+                          updateRow(r.id, {
+                            weightKg:
+                              e.target.value === ""
+                                ? null
+                                : Number(e.target.value),
+                          })
+                        }
+                        placeholder="Peso kg"
+                        className="border rounded px-1 py-0.5"
+                      />
+                      <input
+                        value={r.description || ""}
+                        onChange={(e) =>
+                          updateRow(r.id, {
+                            description: e.target.value || null,
+                          })
+                        }
+                        placeholder="Detalle"
+                        className="border rounded px-1 py-0.5"
+                      />
+                    </div>
+                    {r.source === "NEW" && r.status === "REVIEW" && (
+                      <div className="text-[11px] text-amber-700 mt-1">
+                        Marcado para completar datos luego.
+                      </div>
+                    )}
+                  </td>
+                  <td className="border px-2 py-1 text-center">
+                    <input
+                      type="number"
+                      min={1}
+                      value={r.quantity}
+                      onChange={(e) =>
+                        updateRow(r.id, {
+                          quantity: Math.max(
+                            1,
+                            parseInt(e.target.value || "1", 10),
+                          ),
+                        })
+                      }
+                      className="w-20 border rounded px-1 py-0.5"
+                    />
+                  </td>
+                  <td className="border px-2 py-1 text-center">
+                    <input
+                      value={r.unitCostInput}
+                      onChange={(e) =>
+                        updateRow(r.id, { unitCostInput: e.target.value })
+                      }
+                      className="w-24 border rounded px-1 py-0.5"
+                      placeholder="Costo"
+                    />
+                  </td>
+                  <td className="border px-2 py-1 text-center">
+                    {toMoney(lineTotalCurrency)}
+                  </td>
+                  <td className="border px-2 py-1 text-center">
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={r.marginClientPct}
+                      onChange={(e) =>
+                        updateRow(r.id, {
+                          marginClientPct: Math.max(
+                            0,
+                            parseFloat(e.target.value || "0"),
+                          ),
+                        })
+                      }
+                      className="w-20 border rounded px-1 py-0.5"
+                    />
+                  </td>
+                  <td className="border px-2 py-1 text-center">
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={r.marginAllyPct}
+                      onChange={(e) =>
+                        updateRow(r.id, {
+                          marginAllyPct: Math.max(
+                            0,
+                            parseFloat(e.target.value || "0"),
+                          ),
+                        })
+                      }
+                      className="w-20 border rounded px-1 py-0.5"
+                    />
+                  </td>
+                  <td className="border px-2 py-1 text-center">
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={r.marginWholesalePct}
+                      onChange={(e) =>
+                        updateRow(r.id, {
+                          marginWholesalePct: Math.max(
+                            0,
+                            parseFloat(e.target.value || "0"),
+                          ),
+                        })
+                      }
+                      className="w-20 border rounded px-1 py-0.5"
+                    />
+                  </td>
+                  <td className="border px-2 py-1 text-right">
+                    {toMoney(priceClientUSD)}
+                  </td>
+                  <td className="border px-2 py-1 text-right">
+                    {toMoney(priceAllyUSD)}
+                  </td>
+                  <td className="border px-2 py-1 text-right">
+                    {toMoney(priceWholesaleUSD)}
+                  </td>
+                </tr>
+              );
+            })}
             {rows.length === 0 && (
               <tr>
                 <td
                   className="px-2 py-2 text-sm text-gray-500"
-                  colSpan={12}
+                  colSpan={11}
                 >
-                  No hay productos detectados.
+                  No hay productos cargados.
                 </td>
               </tr>
             )}
@@ -670,82 +845,68 @@ export default function PurchasePreviewTable({
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="text-sm text-gray-600">
-          Seleccionados: {rows.filter((r) => r.selected).length} | Cantidad total:{" "}
-          {totals.qty} | Costo USD: ${totals.usd.toFixed(2)}
+          Seleccionados: {selectedRows.length} | Cantidad total: {totals.qty} |
+          Costo USD: ${toMoney(totals.costUSD)}
         </div>
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => save(true)}
-            className="bg-blue-600 text-white px-3 py-1 rounded"
-          >
-            Guardar seleccionado
-          </button>
-          <button
-            type="button"
-            onClick={() => save(false)}
+            onClick={save}
             className="bg-green-600 text-white px-3 py-1 rounded"
           >
-            Guardar todo
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="border px-3 py-1 rounded"
-          >
-            Cancelar
+            Guardar entrada
           </button>
         </div>
       </div>
 
       <div className="border rounded p-3 bg-gray-50 space-y-3 text-sm">
-        <div className="font-semibold">Datos de la factura</div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="font-semibold">Totales de la factura</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
           <div>
-            <div className="text-xs text-gray-600">Moneda factura</div>
-            <div className="font-semibold">{currency}</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-600">Tasa VES/USD</div>
-            <div className="font-semibold">
-              {currency === 'VES' ? (tasaVES || 0).toFixed(2) : '�?"'}
+            <label className="text-xs text-gray-600">
+              Base imponible ({currency})
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                className="w-full border rounded px-2 py-1"
+                value={baseEdited ? baseAmountCurrency : baseFromItemsCurrency}
+                onChange={(e) => {
+                  setBaseEdited(true);
+                  setBaseAmountCurrency(Number(e.target.value || 0));
+                }}
+              />
+              <button
+                type="button"
+                className="border px-2 py-1 rounded"
+                onClick={() => {
+                  setBaseEdited(false);
+                  setBaseAmountCurrency(
+                    Number(baseFromItemsCurrency.toFixed(2)),
+                  );
+                }}
+              >
+                Recalcular
+              </button>
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              Usa el total de items seleccionados. Se puede ajustar manualmente.
             </div>
           </div>
           <div>
-            <div className="text-xs text-gray-600">N�� factura</div>
-            <div className="font-semibold">{invoiceNumber || '�?"'}</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-600">Fecha factura</div>
-            <div className="font-semibold">{invoiceDate || '�?"'}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="border rounded p-3 bg-gray-50 space-y-2 text-sm">
-        <div className="font-semibold">Resumen de montos</div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-          <div>
-            <label className="text-xs text-gray-600">Base imponible USD</label>
+            <label className="text-xs text-gray-600">
+              Descuento ({currency})
+            </label>
             <input
               type="number"
               min={0}
               step={0.01}
               className="w-full border rounded px-2 py-1"
-              value={baseAmountUSD}
-              onChange={(e) => setBaseAmountUSD(Number(e.target.value || 0))}
-            />
-          </div>
-          <div>
-            <label className="text-xs text-gray-600">Descuento USD</label>
-            <input
-              type="number"
-              min={0}
-              step={0.01}
-              className="w-full border rounded px-2 py-1"
-              value={discountAmountUSD}
+              value={discountAmountCurrency}
               onChange={(e) =>
-                setDiscountAmountUSD(Number(e.target.value || 0))
+                setDiscountAmountCurrency(Number(e.target.value || 0))
               }
             />
           </div>
@@ -757,26 +918,65 @@ export default function PurchasePreviewTable({
               step={0.01}
               className="w-full border rounded px-2 py-1"
               value={ivaPercent}
-              onChange={(e) => setIvaPercent(Number(e.target.value || 0))}
+              onChange={(e) => {
+                setIvaManual(false);
+                setIvaPercent(Number(e.target.value || 0));
+              }}
             />
-            <div className="text-xs text-gray-500 mt-1">
-              Monto IVA: ${ivaAmountUSD.toFixed(2)}
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-gray-600">Total factura USD</label>
-            <div className="font-semibold mt-1">
-              ${totalInvoiceUSD.toFixed(2)}
+            <div className="flex gap-2 mt-1">
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                className="w-full border rounded px-2 py-1"
+                value={ivaAmountCurrency}
+                onChange={(e) => {
+                  setIvaManual(true);
+                  setIvaAmountCurrency(Number(e.target.value || 0));
+                }}
+              />
+              {ivaManual && (
+                <button
+                  type="button"
+                  className="border px-2 py-1 rounded"
+                  onClick={() => setIvaManual(false)}
+                >
+                  Auto
+                </button>
+              )}
             </div>
             <div className="text-xs text-gray-500">
-              Items seleccionados: {rows.filter((r) => r.selected).length}
+              IVA calculado sobre base - descuento. Se puede escribir manual.
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <div className="text-xs text-gray-600">Total factura ({currency})</div>
+            <div className="text-lg font-semibold">
+              {toMoney(totalInvoiceCurrency)}
+            </div>
+            {currency === "VES" && rate > 0 && (
+              <div className="text-xs text-gray-500">
+                Equiv. USD: ${toMoney(totalInvoiceUSD)}
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="text-xs text-gray-600">Base en USD</div>
+            <div className="font-semibold">${toMoney(baseAmountUSD)}</div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-600">Notas</div>
+            <div className="text-gray-700 text-sm whitespace-pre-line">
+              {notes || "Sin notas"}
             </div>
           </div>
         </div>
       </div>
 
       <div className="border rounded p-3 bg-gray-50 space-y-3 text-sm">
-        <div className="font-semibold">Condiciones de pago y IGTF</div>
+        <div className="font-semibold">Condiciones de pago</div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <div className="text-xs text-gray-600 mb-1">Tipo de pago</div>
@@ -785,28 +985,28 @@ export default function PurchasePreviewTable({
                 <input
                   type="radio"
                   name="paymentMode"
-                  checked={paymentMode === 'CONTADO'}
-                  onChange={() => setPaymentMode('CONTADO')}
+                  checked={paymentMode === "CONTADO"}
+                  onChange={() => setPaymentMode("CONTADO")}
                 />
-                <span>Contado (pago completo)</span>
+                <span>Pago inmediato (pago completo)</span>
               </label>
               <label className="flex items-center gap-2 text-xs">
                 <input
                   type="radio"
                   name="paymentMode"
-                  checked={paymentMode === 'CREDITO_SIN_ABONO'}
-                  onChange={() => setPaymentMode('CREDITO_SIN_ABONO')}
+                  checked={paymentMode === "CREDITO_SIN_ABONO"}
+                  onChange={() => setPaymentMode("CREDITO_SIN_ABONO")}
                 />
-                <span>Cr�dito (sin abono)</span>
+                <span>Crédito (sin abono inicial)</span>
               </label>
               <label className="flex items-center gap-2 text-xs">
                 <input
                   type="radio"
                   name="paymentMode"
-                  checked={paymentMode === 'CREDITO_CON_ABONO'}
-                  onChange={() => setPaymentMode('CREDITO_CON_ABONO')}
+                  checked={paymentMode === "CREDITO_CON_ABONO"}
+                  onChange={() => setPaymentMode("CREDITO_CON_ABONO")}
                 />
-                <span>Cr�dito con abono inicial</span>
+                <span>Crédito con abono inicial</span>
               </label>
             </div>
           </div>
@@ -819,21 +1019,21 @@ export default function PurchasePreviewTable({
               type="number"
               min={0}
               step={0.01}
-              disabled={paymentMode !== 'CREDITO_CON_ABONO'}
+              disabled={paymentMode !== "CREDITO_CON_ABONO"}
               className="w-full border rounded px-2 py-1 disabled:opacity-60"
-              value={paidAmountUSD === '' ? '' : paidAmountUSD}
+              value={paidAmountUSD === "" ? "" : paidAmountUSD}
               onChange={(e) => {
                 const v = e.target.value;
                 if (!v) {
-                  setPaidAmountUSD('');
+                  setPaidAmountUSD("");
                   return;
                 }
                 const n = Number(v);
-                setPaidAmountUSD(isNaN(n) ? '' : n);
+                setPaidAmountUSD(isNaN(n) ? "" : n);
               }}
             />
             <div className="text-xs text-gray-500 mt-1">
-              Se usa para crear el abono inicial en cuentas por pagar.
+              Se usa solo para registrar el abono inicial.
             </div>
           </div>
 
@@ -845,18 +1045,31 @@ export default function PurchasePreviewTable({
               type="number"
               min={0}
               step={0.01}
-              disabled={paymentCurrency !== 'USD'}
+              disabled={paymentCurrency !== "USD"}
               className="w-full border rounded px-2 py-1 disabled:opacity-60"
-              value={paymentCurrency === 'USD' ? igtfAmountManualUSD : 0}
+              value={paymentCurrency === "USD" ? igtfAmountManualUSD : 0}
               onChange={(e) =>
                 setIgtfAmountManualUSD(Number(e.target.value || 0))
               }
             />
             <div className="text-xs text-gray-500 mt-1">
-              Este monto se suma a la factura solo cuando la moneda de pago es USD.
+              Se suma al total financiero cuando el pago es en USD.
             </div>
           </div>
         </div>
+        {invoiceImageUrl && (
+          <div className="text-xs text-gray-700">
+            Soporte de pago:{" "}
+            <a
+              href={invoiceImageUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-600 underline break-all"
+            >
+              Ver recibo
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

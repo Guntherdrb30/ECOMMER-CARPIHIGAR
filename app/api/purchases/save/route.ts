@@ -20,6 +20,7 @@ type SaveItem = {
   weightKg?: number | null;
   soldBy?: 'UNIT' | 'PACKAGE' | 'BOTH' | null;
   unitsPerPackage?: number | null;
+  status?: 'ACTIVE' | 'INACTIVE' | 'REVIEW' | 'WHOLESALE_ONLY' | 'CLEARANCE';
 };
 
 export async function POST(req: Request) {
@@ -68,6 +69,10 @@ export async function POST(req: Request) {
           weightKg: z.coerce.number().optional().nullable(),
           soldBy: z.enum(['UNIT', 'PACKAGE', 'BOTH']).optional().nullable(),
           unitsPerPackage: z.coerce.number().optional().nullable(),
+          status: z
+            .enum(['ACTIVE', 'INACTIVE', 'REVIEW', 'WHOLESALE_ONLY', 'CLEARANCE'])
+            .optional()
+            .nullable(),
         }),
       ).min(1),
     });
@@ -227,6 +232,7 @@ export async function POST(req: Request) {
               unitsPerPackage: (typeof it.unitsPerPackage === 'number'
                 ? it.unitsPerPackage
                 : (p as any).unitsPerPackage) as any,
+              status: (it as any).status ? ((it as any).status as any) : (p as any).status,
               stock: { increment: Number(it.quantity) },
             },
           });
@@ -261,6 +267,7 @@ export async function POST(req: Request) {
             unitsPerPackage: (typeof it.unitsPerPackage === 'number'
               ? it.unitsPerPackage
               : null) as any,
+            status: ((it as any)?.status as any) || ('ACTIVE' as any),
           },
           select: { id: true },
         });

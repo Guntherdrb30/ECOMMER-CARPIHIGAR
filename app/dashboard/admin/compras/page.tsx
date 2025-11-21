@@ -42,7 +42,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams?: S
         <h1 className="text-2xl font-bold">Órdenes de Compra</h1>
         <div className="flex gap-2">
           <a href="/dashboard/admin/compras/carga" className="bg-emerald-600 text-white px-3 py-1 rounded">Carga CSV</a>
-          <a href="/dashboard/admin/compras/registro" className="bg-green-600 text-white px-3 py-1 rounded">Registrar compra (IA)</a>
+          <a href="/dashboard/admin/compras/registro" className="bg-green-600 text-white px-3 py-1 rounded">Entrada de productos</a>
           <a href="/dashboard/admin/compras/nueva" className="bg-blue-600 text-white px-3 py-1 rounded">Nueva OC</a>
         </div>
       </div>
@@ -134,7 +134,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams?: S
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-2">Compras registradas (IA)</h2>
+        <h2 className="text-lg font-semibold mb-2">Compras registradas</h2>
         <div className="overflow-x-auto">
           <table className="w-full table-auto text-sm">
             <thead>
