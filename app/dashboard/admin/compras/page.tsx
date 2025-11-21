@@ -149,6 +149,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams?: S
                 <th className="px-3 py-2">Items</th>
                 <th className="px-3 py-2">Total USD</th>
                 <th className="px-3 py-2">Fecha registro</th>
+                <th className="px-3 py-2"></th>
               </tr>
             </thead>
             <tbody>
@@ -181,6 +182,14 @@ export default async function PurchasesPage({ searchParams }: { searchParams?: S
                   <td className="border px-3 py-2 text-center">{p.items?.length || 0}</td>
                   <td className="border px-3 py-2 text-right">{Number(p.totalUSD || p.subtotalUSD || 0).toFixed(2)}</td>
                   <td className="border px-3 py-2">{new Date(p.createdAt).toLocaleString()}</td>
+                  <td className="border px-3 py-2 text-right">
+                    <a
+                      className="text-blue-600 hover:underline text-xs"
+                      href={`/dashboard/admin/compras/ia/${p.id}`}
+                    >
+                      Ver / Editar
+                    </a>
+                  </td>
                 </tr>
               ))}
               {purchases.length === 0 && (

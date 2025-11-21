@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getSettings } from '@/server/actions/settings';
+import { getSettings, getDeleteSecret } from '@/server/actions/settings';
 
 function parseCsv(text: string, delimiter?: string): Array<Record<string,string>> {
   const dl = delimiter && delimiter.length ? delimiter : (text.indexOf(';') > -1 ? ';' : ',');
@@ -172,6 +172,21 @@ export async function getPurchases(filters?: { q?: string; supplierId?: string; 
   }
 }
 
+export async function getPurchaseById(id: string) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') throw new Error('Not authorized');
+  const purchase = await prisma.purchase.findUnique({
+    where: { id },
+    include: {
+      supplier: true,
+      items: { include: { product: true } },
+      createdBy: true,
+      bankTransactions: true,
+    },
+  });
+  return purchase;
+}
+
 export async function getSuppliers() {
   try {
     const session = await getServerSession(authOptions);
@@ -181,6 +196,129 @@ export async function getSuppliers() {
     console.error("Error fetching suppliers:", error);
     return [];
   }
+}
+
+export async function updatePurchaseHeader(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') {
+    throw new Error('Not authorized');
+  }
+  const id = String(formData.get('purchaseId') || '').trim();
+  if (!id) {
+    throw new Error('Compra inválida');
+  }
+  const invoiceNumberRaw = String(formData.get('invoiceNumber') || '').trim();
+  const invoiceNumber = invoiceNumberRaw || null;
+  const invoiceDateStr = String(formData.get('invoiceDate') || '').trim();
+  let invoiceDate: Date | null = null;
+  if (invoiceDateStr) {
+    const d = new Date(invoiceDateStr);
+    if (!isNaN(d.getTime())) invoiceDate = d;
+  }
+  const notesRaw = String(formData.get('notes') || '').trim();
+  const notes = notesRaw || null;
+
+  await prisma.purchase.update({
+    where: { id },
+    data: {
+      invoiceNumber,
+      invoiceDate: invoiceDate as any,
+      notes,
+    },
+  });
+
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId: (session?.user as any)?.id,
+        action: 'PURCHASE_UPDATE_HEADER',
+        details: id,
+      },
+    });
+  } catch {}
+
+  try { revalidatePath('/dashboard/admin/compras'); } catch {}
+  try { revalidatePath(`/dashboard/admin/compras/ia/${id}`); } catch {}
+  redirect(`/dashboard/admin/compras/ia/${id}?message=Datos%20actualizados`);
+}
+
+export async function deletePurchaseByForm(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') {
+    throw new Error('Not authorized');
+  }
+  const id = String(formData.get('purchaseId') || '').trim();
+  if (!id) {
+    throw new Error('Compra inválida');
+  }
+  const secret = String(formData.get('secret') || '').trim();
+  const configured = await getDeleteSecret();
+  if (!configured) {
+    throw new Error('Falta configurar la clave de eliminación');
+  }
+  if (secret !== configured) {
+    throw new Error('Clave secreta inválida');
+  }
+
+  const purchase = await prisma.purchase.findUnique({
+    where: { id },
+    include: {
+      items: true,
+      bankTransactions: true,
+    },
+  });
+  if (!purchase) {
+    throw new Error('Compra no encontrada');
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Revertir stock con un movimiento de SALIDA y decremento de stock
+    for (const it of purchase.items as any[]) {
+      try {
+        await tx.stockMovement.create({
+          data: {
+            productId: it.productId,
+            type: 'SALIDA' as any,
+            quantity: Number(it.quantity),
+            reason: `PURCHASE_DELETE ${id}`,
+            userId: (session?.user as any)?.id,
+          },
+        });
+      } catch {}
+      try {
+        await tx.product.update({
+          where: { id: it.productId },
+          data: {
+            stock: { decrement: Number(it.quantity) },
+            stockUnits: { decrement: Number(it.quantity) } as any,
+          },
+        });
+      } catch {}
+    }
+
+    // Eliminar registros dependientes: items, movimientos bancarios y CxP
+    await tx.purchaseItem.deleteMany({ where: { purchaseId: id } });
+    await tx.bankTransaction.deleteMany({ where: { purchaseId: id } });
+    await tx.payableEntry.deleteMany({
+      where: { payable: { purchaseId: id } },
+    });
+    await tx.payable.deleteMany({ where: { purchaseId: id } });
+
+    await tx.purchase.delete({ where: { id } });
+  });
+
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId: (session?.user as any)?.id,
+        action: 'PURCHASE_DELETE',
+        details: id,
+      },
+    });
+  } catch {}
+
+  try { revalidatePath('/dashboard/admin/compras'); } catch {}
+  redirect('/dashboard/admin/compras?message=Compra%20eliminada');
 }
 
 export async function createSupplier(formData: FormData) {
