@@ -6,6 +6,7 @@ import {
   markSaleReviewed,
 } from "@/server/actions/sales";
 import { getAllyPendingSalesCount } from "@/server/actions/ally-admin";
+import PdfCopyMenu from "@/components/pdf-copy-menu";
 
 export default async function AdminSalesPage({
   searchParams,
@@ -255,19 +256,47 @@ export default async function AdminSalesPage({
                       </td>
                       <td className="px-2 py-1 align-top text-sm">
                         {canShowDocs ? (
-                          <div className="flex flex-wrap gap-2">
-                            <a
-                              className="text-blue-600 hover:underline"
-                              href={`/dashboard/admin/ventas/${o.id}/print?tipo=recibo`}
-                            >
-                              Recibo (Bs)
-                            </a>
-                            <a
-                              className="text-blue-600 hover:underline"
-                              href={`/dashboard/admin/ventas/${o.id}/print?tipo=factura`}
-                            >
-                              Factura (Bs)
-                            </a>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-gray-600">Ver:</span>
+                              <a
+                                className="px-2 py-0.5 border rounded"
+                                target="_blank"
+                                href={`/dashboard/admin/ventas/${o.id}/print?tipo=recibo`}
+                              >
+                                Recibo
+                              </a>
+                              <a
+                                className="px-2 py-0.5 border rounded"
+                                target="_blank"
+                                href={`/dashboard/admin/ventas/${o.id}/print?tipo=factura`}
+                              >
+                                Factura
+                              </a>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-gray-600">PDF:</span>
+                              <a
+                                className="px-2 py-0.5 border rounded"
+                                target="_blank"
+                                href={`/api/orders/${o.id}/pdf?tipo=recibo&moneda=VES`}
+                              >
+                                Recibo
+                              </a>
+                              <a
+                                className="px-2 py-0.5 border rounded"
+                                target="_blank"
+                                href={`/api/orders/${o.id}/pdf?tipo=factura&moneda=VES`}
+                              >
+                                Factura
+                              </a>
+                              <PdfCopyMenu
+                                orderId={o.id}
+                                defaultMoneda="VES"
+                                hasPhone={!!o.user?.phone}
+                                backTo="/dashboard/admin/ventas"
+                              />
+                            </div>
                           </div>
                         ) : (
                           <span className="text-gray-400 text-xs">
@@ -351,4 +380,3 @@ export default async function AdminSalesPage({
     </div>
   );
 }
-

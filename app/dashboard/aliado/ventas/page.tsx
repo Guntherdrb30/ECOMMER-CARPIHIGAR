@@ -77,7 +77,7 @@ export default async function VentasAliadoPage({ searchParams }: { searchParams?
                         <a className="px-2 py-0.5 border rounded" target="_blank" href={`/api/orders/${o.id}/pdf?tipo=recibo&moneda=USD`}>Recibo</a>
                         <a className="px-2 py-0.5 border rounded" target="_blank" href={`/api/orders/${o.id}/pdf?tipo=nota&moneda=USD`}>Nota</a>
                         <a className="px-2 py-0.5 border rounded" target="_blank" href={`/api/orders/${o.id}/pdf?tipo=factura&moneda=USD`}>Factura</a>
-                        <PdfCopyMenu orderId={o.id} hasPhone={!!o.user?.phone} />
+                        <PdfCopyMenu orderId={o.id} hasPhone={!!o.user?.phone} backTo="/dashboard/aliado/ventas" />
                       </div>
                       {o.user?.phone && (
                         <div className="flex items-center gap-2 text-sm">
