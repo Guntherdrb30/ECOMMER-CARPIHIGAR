@@ -59,3 +59,19 @@ export async function runPurchaseFlowStep(step: string, context: Context, input:
   }
 }
 
+export async function validateTokenOrYes(_context: Context, input: { orderId: string; token?: string; confirmText?: string }) {
+  try {
+    const res = await ValidateToken.run({
+      orderId: String(input?.orderId || ''),
+      token: String(input?.token || ''),
+      confirmText: String(input?.confirmText || ''),
+    });
+    return {
+      success: !!res?.success,
+      message: res?.message || (res?.success ? 'Autorizado' : 'Token inválido'),
+      data: res?.data ?? null,
+    };
+  } catch (e: any) {
+    return { success: false, message: e?.message || 'No se pudo validar el token' };
+  }
+}
