@@ -31,6 +31,17 @@ export default async function PrintSalePage({
   const toMoney = (v: number) => v * tasaVES;
   const fmt = (v: number) => `Bs ${v.toFixed(2)}`;
 
+  const invoiceNumber = (order as any).invoiceNumber as number | null | undefined;
+  const receiptNumber = (order as any).receiptNumber as number | null | undefined;
+  const code =
+    tipo === "factura"
+      ? invoiceNumber
+        ? String(invoiceNumber).padStart(6, "0")
+        : order.id.slice(-6)
+      : receiptNumber
+      ? String(receiptNumber).padStart(6, "0")
+      : order.id.slice(-6);
+
   const titleMap: any = { recibo: 'Recibo', factura: 'Factura' };
   const title = titleMap[tipo] || 'Comprobante';
 
@@ -58,7 +69,7 @@ export default async function PrintSalePage({
         <div className="flex justify-between mb-4">
           <div>
             <div className="font-semibold">{title}</div>
-            <div className="text-gray-600">No.: {order.id}</div>
+            <div className="text-gray-600">N°: {code}</div>
             <div className="text-gray-600">Fecha: {new Date(order.createdAt as any).toLocaleString()}</div>
             <div className="text-gray-600">Moneda: {moneda}</div>
             <div className="text-gray-600">IVA: {ivaPercent}%</div>
