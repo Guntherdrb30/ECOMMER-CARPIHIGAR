@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { basicTemplate, sendMail } from '@/lib/mailer';
 
 export async function searchProducts(q: string) {
   const where: any = q ? { OR: [ { name: { contains: q, mode: 'insensitive' } }, { sku: { contains: q, mode: 'insensitive' } } ] } : {};
@@ -44,7 +45,10 @@ export async function markSaleReviewed(formData: FormData) {
   }
   const orderId = String(formData.get('orderId') || '');
   if (!orderId) throw new Error('orderId requerido');
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { user: true },
+  });
   if (!order) throw new Error('Orden no encontrada');
 
   await prisma.order.update({
@@ -63,6 +67,53 @@ export async function markSaleReviewed(formData: FormData) {
         details: order.id,
       },
     });
+  } catch {}
+
+  // Notificación por correo al cliente (best-effort)
+  try {
+    const to = (order as any).user?.email as string | undefined;
+    if (to) {
+      const code = order.id.slice(-6);
+      const brand = process.env.BRAND_NAME || 'Carpihogar.ai';
+      const base =
+        (process.env.NEXT_PUBLIC_URL || '').replace(/\/$/, '') ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '');
+      let docsHtml = '';
+      if (base) {
+        const reciboUrl = `${base}/api/orders/${order.id}/pdf?tipo=recibo&moneda=VES`;
+        const facturaUrl = `${base}/api/orders/${order.id}/pdf?tipo=factura&moneda=VES`;
+        docsHtml = `<p>Puedes descargar tus documentos en PDF aquí:</p>
+<ul>
+  <li><a href="${reciboUrl}">Recibo (Bs)</a></li>
+  <li><a href="${facturaUrl}">Factura (Bs)</a></li>
+</ul>`;
+      }
+      const title = 'Tu pedido fue revisado';
+      const bodyHtml = [
+        `<p>Hola ${(order as any).user?.name || 'cliente'},</p>`,
+        `<p>Hemos revisado tu pago de la orden <strong>${code}</strong>.</p>`,
+        `<p>Tu pedido será despachado a la brevedad. Te avisaremos cuando tu envío esté en camino.</p>`,
+        docsHtml,
+        `<p>Gracias por comprar en ${brand}.</p>`,
+      ]
+        .filter(Boolean)
+        .join('');
+      const html = basicTemplate(title, bodyHtml);
+      await sendMail({
+        to,
+        subject: `${brand} – tu pedido ${code} fue revisado`,
+        html,
+      });
+      try {
+        await prisma.auditLog.create({
+          data: {
+            userId: (session?.user as any)?.id,
+            action: 'ORDER_REVIEWED_EMAIL_SENT',
+            details: order.id,
+          },
+        });
+      } catch {}
+    }
   } catch {}
 
   revalidatePath('/dashboard/admin/ventas');

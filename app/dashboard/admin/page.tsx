@@ -1,15 +1,33 @@
 
 import { getAllOrders } from "@/server/actions/orders";
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function AdminDashboard() {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as any)?.role;
+
+  if (!session?.user || role !== "ADMIN") {
+    redirect("/auth/login?callbackUrl=/dashboard/admin");
+  }
+
   const orders = await getAllOrders();
 
-  const totalSales = orders.reduce((acc, order) => acc + order.totalUSD.toNumber(), 0);
-  const pendingPayment = orders.filter((order) => order.status === "PENDIENTE").length;
-  const shipped = orders.filter((order) => order.status === "ENVIADO").length;
+  const totalSales = orders.reduce(
+    (acc, order) => acc + Number(order.totalUSD || 0),
+    0,
+  );
+  const pendingPayment = orders.filter(
+    (order) => order.status === "PENDIENTE",
+  ).length;
+  const shipped = orders.filter(
+    // considera tanto ENVIADO como COMPLETADO como "enviados"
+    (order) =>
+      order.status === "ENVIADO" ||
+      order.status === "COMPLETADO" ||
+      order.status === "PAGADO",
+  ).length;
 
   return (
     <div className="container mx-auto p-4">
