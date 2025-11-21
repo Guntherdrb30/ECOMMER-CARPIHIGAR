@@ -1,4 +1,4 @@
-﻿{
+{
   "crons": [
     {
       "path": "/api/cron/update-bcv",
@@ -6,4 +6,3 @@
     }
   ]
 }
-
