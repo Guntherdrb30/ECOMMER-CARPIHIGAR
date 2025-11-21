@@ -205,11 +205,11 @@ export async function POST(req: Request) {
       if (it.productId) {
         const p = await prisma.product.findUnique({ where: { id: it.productId } });
         if (p) {
-          const oldStock = Number(p.stock || 0);
+          const oldStockUnits = Number(((p as any).stockUnits ?? p.stock ?? 0));
           const oldAvg = Number(p.avgCost || p.costUSD || it.costUSD || 0);
           const newAvg =
-            (oldStock * oldAvg + Number(it.quantity) * Number(it.costUSD)) /
-            Math.max(1, oldStock + Number(it.quantity));
+            (oldStockUnits * oldAvg + Number(it.quantity) * Number(it.costUSD)) /
+            Math.max(1, oldStockUnits + Number(it.quantity));
 
           await prisma.product.update({
             where: { id: p.id },
@@ -234,6 +234,7 @@ export async function POST(req: Request) {
                 : (p as any).unitsPerPackage) as any,
               status: (it as any).status ? ((it as any).status as any) : (p as any).status,
               stock: { increment: Number(it.quantity) },
+              stockUnits: { increment: Number(it.quantity) } as any,
             },
           });
         }
@@ -251,6 +252,7 @@ export async function POST(req: Request) {
             supplierCode: (it.supplierCode ?? null) as any,
             description: (it.description ?? null) as any,
             stock: Number(it.quantity),
+            stockUnits: Number(it.quantity) as any,
             supplierId: supplierId || null,
             costUSD: it.costUSD as any,
             lastCost: it.costUSD as any,

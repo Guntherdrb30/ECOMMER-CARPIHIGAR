@@ -337,6 +337,12 @@ model Order {
   createdAt         DateTime    @default(now())
   status            OrderStatus @default(PENDIENTE)
   saleType          SaleType    @default(CONTADO)
+  // Origen de la venta (ONLINE = web, ERP = cargada por admin/aliado)
+  originChannel     String?     @default("ONLINE")
+  // Control interno de revisión administrativa
+  reviewedAt        DateTime?
+  reviewedById      String?
+  reviewedBy        User?       @relation("OrderReviewedBy", fields: [reviewedById], references: [id])
   creditDueDate     DateTime?
   shippingAddressId String?
   shippingAddress   Address?    @relation(fields: [shippingAddressId], references: [id])

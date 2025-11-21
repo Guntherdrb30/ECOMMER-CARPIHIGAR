@@ -29,8 +29,44 @@ export async function getSales(params?: { sellerId?: string; invoice?: string; c
       { email: { contains: params.cliente, mode: 'insensitive' } as any },
     ] } } as any;
   }
-  const orders = await prisma.order.findMany({ where, include: { user: true, seller: true, payment: true }, orderBy: { createdAt: 'desc' } });
+  const orders = await prisma.order.findMany({
+    where,
+    include: { user: true, seller: true, payment: true, reviewedBy: true },
+    orderBy: { createdAt: 'desc' },
+  });
   return orders;
+}
+
+export async function markSaleReviewed(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') {
+    throw new Error('Not authorized');
+  }
+  const orderId = String(formData.get('orderId') || '');
+  if (!orderId) throw new Error('orderId requerido');
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new Error('Orden no encontrada');
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      reviewedAt: new Date() as any,
+      reviewedById: (session?.user as any)?.id || null,
+    },
+  });
+
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId: (session?.user as any)?.id,
+        action: 'ORDER_REVIEWED',
+        details: order.id,
+      },
+    });
+  } catch {}
+
+  revalidatePath('/dashboard/admin/ventas');
+  revalidatePath('/dashboard/admin/envios');
 }
 
 export async function getOrderById(id: string) {
@@ -380,7 +416,6 @@ export async function rejectAllySaleByForm(formData: FormData) {
   try { revalidatePath('/dashboard/aliado/ventas'); } catch {}
   redirect('/dashboard/admin/ventas/aliados?message=' + encodeURIComponent('Venta rechazada'));
 }
-
 
 
 

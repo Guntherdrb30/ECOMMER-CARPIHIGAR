@@ -2,15 +2,18 @@ import { NextResponse } from "next/server";
 import { refreshTasaFromBCVCron } from "@/server/actions/settings";
 
 export async function GET(req: Request) {
-  const token = process.env.CRON_SECRET_BCV || "";
-  const url = new URL(req.url);
-  const provided =
-    url.searchParams.get("token") ||
-    req.headers.get("x-cron-token") ||
-    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const secret = process.env.CRON_SECRET_BCV;
 
-  if (!token || token !== provided) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (secret) {
+    const url = new URL(req.url);
+    const provided =
+      url.searchParams.get("token") ||
+      req.headers.get("x-cron-token") ||
+      req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+
+    if (!provided || provided !== secret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   try {
