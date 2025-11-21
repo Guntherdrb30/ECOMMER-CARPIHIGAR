@@ -71,6 +71,7 @@ model User {
   addresses    Address[]
   orders       Order[]      @relation("OrderCustomer")
   sellerOrders Order[]      @relation("OrderSeller")
+  reviewedOrders Order[]    @relation("OrderReviewedBy")
   commissions  Commission[]
   quotes       Quote[]      @relation("QuoteCustomer")
   quotesAsSeller Quote[]    @relation("QuoteSeller")
