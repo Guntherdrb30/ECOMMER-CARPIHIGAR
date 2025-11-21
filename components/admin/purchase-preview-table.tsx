@@ -82,6 +82,9 @@ export default function PurchasePreviewTable({
   );
   const [searchQ, setSearchQ] = useState<string>("");
   const [searchResults, setSearchResults] = useState<ProdSearch[]>([]);
+  const [newName, setNewName] = useState<string>("");
+  const [newQuantity, setNewQuantity] = useState<number>(1);
+  const [newCostUSD, setNewCostUSD] = useState<number>(0);
 
   useEffect(() => {
     const t = setTimeout(async () => {
@@ -224,6 +227,50 @@ export default function PurchasePreviewTable({
     ]);
     setSearchQ("");
     setSearchResults([]);
+  };
+
+  const addNewProduct = () => {
+    const name = newName.trim();
+    if (!name) {
+      toast.error('Escribe un nombre para el producto nuevo');
+      return;
+    }
+    const quantity = newQuantity > 0 ? newQuantity : 1;
+    const costUSD = newCostUSD >= 0 ? newCostUSD : 0;
+
+    const marginClientPct = 40;
+    const marginAllyPct = 30;
+    const marginWholesalePct = 20;
+
+    setRows((prev) => [
+      ...prev,
+      {
+        input: { code: null, name, quantity, unitCost: costUSD },
+        code: null,
+        name,
+        quantity,
+        costUSD,
+        marginClientPct,
+        marginAllyPct,
+        marginWholesalePct,
+        priceClientUSD: 0,
+        priceAllyUSD: 0,
+        priceWholesaleUSD: 0,
+        product: undefined,
+        supplierCode: null,
+        description: null,
+        weightKg: null,
+        soldBy: 'UNIT',
+        unitsPerPackage: null,
+        estadoIA: 'NUEVO',
+        accion: 'CREAR',
+        selected: true,
+      },
+    ]);
+
+    setNewName("");
+    setNewQuantity(1);
+    setNewCostUSD(0);
   };
 
   const totals = useMemo(() => {
@@ -370,17 +417,68 @@ export default function PurchasePreviewTable({
           </div>
         )}
         {searchQ.trim() && searchResults.length === 0 && (
-          <div className="flex items-center justify-between text-xs text-gray-600">
-            <span>No se encontraron productos con ese texto.</span>
-            <button
-              type="button"
-              className="px-2 py-1 bg-green-600 text-white rounded"
-              onClick={addManualProductFromQuery}
-            >
-              Crear producto nuevo en esta factura
-            </button>
+          <div className="text-xs text-gray-600">
+            No se encontraron productos con ese texto. Puedes crear un
+            producto nuevo en el formulario de abajo.
           </div>
         )}
+      </div>
+
+      <div className="space-y-2 border rounded p-3 bg-gray-50">
+        <div className="text-sm font-semibold">
+          Crear producto nuevo en esta factura
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
+          <div>
+            <label className="block text-xs text-gray-600">Nombre</label>
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className="border rounded px-2 py-1 w-full"
+              placeholder="Nombre del producto"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600">
+              Cantidad
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={newQuantity}
+              onChange={(e) =>
+                setNewQuantity(
+                  Math.max(1, parseInt(e.target.value || "1", 10)),
+                )
+              }
+              className="border rounded px-2 py-1 w-full"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600">
+              Costo USD
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={newCostUSD}
+              onChange={(e) =>
+                setNewCostUSD(Number(e.target.value || 0))
+              }
+              className="border rounded px-2 py-1 w-full"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={addNewProduct}
+              className="w-full bg-green-600 text-white px-3 py-1 rounded"
+            >
+              Agregar a la factura
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto border rounded">
