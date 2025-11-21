@@ -135,7 +135,7 @@ export default async function AdminSalesPage({
                   <th className="px-2 py-1 text-left w-40">Estado</th>
                   <th className="px-2 py-1 text-left w-56">Pago</th>
                   <th className="px-2 py-1 text-left w-40">Revisión</th>
-                  <th className="px-2 py-1 text-left">Imprimir</th>
+                  <th className="px-2 py-1 text-left">Soportes</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,6 +152,7 @@ export default async function AdminSalesPage({
                   }
                   const canPrint =
                     o.status === "PAGADO" || o.status === "COMPLETADO";
+                  const canShowDocs = canPrint && isReviewed;
 
                   return (
                     <tr key={o.id} className="border-t align-top">
@@ -184,7 +185,22 @@ export default async function AdminSalesPage({
                         {Number(o.totalUSD).toFixed(2)}
                       </td>
                       <td className="px-2 py-1 align-top">
-                        <div className="text-sm">{o.status}</div>
+                        {(() => {
+                          const status = String(o.status || "").toUpperCase();
+                          let badgeClass =
+                            "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-700";
+                          if (status === "PENDIENTE" || status === "CONFIRMACION") {
+                            badgeClass =
+                              "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700";
+                          } else if (status === "PAGADO" || status === "COMPLETADO") {
+                            badgeClass =
+                              "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-700";
+                          } else if (status === "CANCELADO" || status === "RECHAZADO") {
+                            badgeClass =
+                              "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700";
+                          }
+                          return <span className={badgeClass}>{status}</span>;
+                        })()}
                       </td>
                       <td className="px-2 py-1 align-top">
                         {o.payment ? (
@@ -238,7 +254,7 @@ export default async function AdminSalesPage({
                         </div>
                       </td>
                       <td className="px-2 py-1 align-top text-sm">
-                        {canPrint ? (
+                        {canShowDocs ? (
                           <div className="flex flex-wrap gap-2">
                             <a
                               className="text-blue-600 hover:underline"
@@ -254,7 +270,11 @@ export default async function AdminSalesPage({
                             </a>
                           </div>
                         ) : (
-                          <span className="text-gray-400">Sin documentos</span>
+                          <span className="text-gray-400 text-xs">
+                            {canPrint
+                              ? "Marque la venta como revisada para ver soportes."
+                              : "Sin documentos disponibles."}
+                          </span>
                         )}
                       </td>
                     </tr>
