@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getPurchaseById, updatePurchaseHeader, deletePurchaseByForm } from '@/server/actions/procurement';
+import { getPurchaseById, updatePurchaseByForm, deletePurchaseByForm } from '@/server/actions/procurement';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 import SecretDeleteButton from '@/components/admin/secret-delete-button';
 
@@ -39,7 +39,7 @@ export default async function PurchaseIADetailPage({
       <ShowToastFromSearch successParam="message" errorParam="error" />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">
-          Compra IA {purchase.id.slice(-6)}
+          Factura de entrada {purchase.id.slice(-6)}
         </h1>
         <a
           href="/dashboard/admin/compras"
@@ -61,8 +61,8 @@ export default async function PurchaseIADetailPage({
       )}
 
       <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-2">Datos de la factura</h2>
-        <form action={updatePurchaseHeader} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <h2 className="text-lg font-semibold mb-2">Datos de la factura de entrada</h2>
+        <form action={updatePurchaseByForm} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <input type="hidden" name="purchaseId" value={purchase.id} />
           <div>
             <div className="text-sm text-gray-600">Proveedor</div>
@@ -99,6 +99,88 @@ export default async function PurchaseIADetailPage({
               className="form-input"
               rows={2}
               defaultValue={purchase.notes || ''}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">Base imponible USD</label>
+            <input
+              name="baseAmountUSD"
+              type="number"
+              step="0.01"
+              className="form-input"
+              defaultValue={
+                (purchase as any).baseAmountUSD
+                  ? String(Number((purchase as any).baseAmountUSD))
+                  : subtotalUSD.toFixed(2)
+              }
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">% Descuento</label>
+            <input
+              name="discountPercent"
+              type="number"
+              step="0.01"
+              className="form-input"
+              defaultValue={
+                (purchase as any).discountPercent != null
+                  ? String(Number((purchase as any).discountPercent))
+                  : ''
+              }
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">% IVA</label>
+            <input
+              name="ivaPercent"
+              type="number"
+              step="0.01"
+              className="form-input"
+              defaultValue={ivaPercent.toFixed(2)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">Monto IVA USD</label>
+            <input
+              name="ivaAmountUSD"
+              type="number"
+              step="0.01"
+              className="form-input"
+              defaultValue={ivaAmountUSD.toFixed(2)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">Total factura USD</label>
+            <input
+              name="totalUSD"
+              type="number"
+              step="0.01"
+              className="form-input"
+              defaultValue={totalUSD.toFixed(2)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">% IGTF</label>
+            <input
+              name="igtfPercent"
+              type="number"
+              step="0.01"
+              className="form-input"
+              defaultValue={
+                igtfPercent ? igtfPercent.toFixed(2) : ''
+              }
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700">Monto IGTF USD</label>
+            <input
+              name="igtfAmountUSD"
+              type="number"
+              step="0.01"
+              className="form-input"
+              defaultValue={
+                igtfAmountUSD ? igtfAmountUSD.toFixed(2) : ''
+              }
             />
           </div>
           <div className="md:col-span-3 flex justify-end">
@@ -200,4 +282,3 @@ export default async function PurchaseIADetailPage({
     </div>
   );
 }
-

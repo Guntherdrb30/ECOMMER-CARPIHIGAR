@@ -198,7 +198,7 @@ export async function getSuppliers() {
   }
 }
 
-export async function updatePurchaseHeader(formData: FormData) {
+export async function updatePurchaseByForm(formData: FormData) {
   const session = await getServerSession(authOptions);
   if ((session?.user as any)?.role !== 'ADMIN') {
     throw new Error('Not authorized');
@@ -217,6 +217,21 @@ export async function updatePurchaseHeader(formData: FormData) {
   }
   const notesRaw = String(formData.get('notes') || '').trim();
   const notes = notesRaw || null;
+  const baseAmountRaw = String(formData.get('baseAmountUSD') || '').trim();
+  const discountPercentRaw = String(formData.get('discountPercent') || '').trim();
+  const ivaPercentRaw = String(formData.get('ivaPercent') || '').trim();
+  const ivaAmountRaw = String(formData.get('ivaAmountUSD') || '').trim();
+  const totalUsdRaw = String(formData.get('totalUSD') || '').trim();
+  const igtfPercentRaw = String(formData.get('igtfPercent') || '').trim();
+  const igtfAmountRaw = String(formData.get('igtfAmountUSD') || '').trim();
+
+  const baseAmountUSD = baseAmountRaw ? Number(baseAmountRaw) : undefined;
+  const discountPercent = discountPercentRaw ? Number(discountPercentRaw) : undefined;
+  const ivaPercent = ivaPercentRaw ? Number(ivaPercentRaw) : undefined;
+  const ivaAmountUSD = ivaAmountRaw ? Number(ivaAmountRaw) : undefined;
+  const totalUSD = totalUsdRaw ? Number(totalUsdRaw) : undefined;
+  const igtfPercent = igtfPercentRaw ? Number(igtfPercentRaw) : undefined;
+  const igtfAmountUSD = igtfAmountRaw ? Number(igtfAmountRaw) : undefined;
 
   await prisma.purchase.update({
     where: { id },
@@ -224,6 +239,13 @@ export async function updatePurchaseHeader(formData: FormData) {
       invoiceNumber,
       invoiceDate: invoiceDate as any,
       notes,
+      ...(baseAmountUSD !== undefined ? { baseAmountUSD: baseAmountUSD as any } : {}),
+      ...(discountPercent !== undefined ? { discountPercent: discountPercent as any } : {}),
+      ...(ivaPercent !== undefined ? { ivaPercent: ivaPercent as any } : {}),
+      ...(ivaAmountUSD !== undefined ? { ivaAmountUSD: ivaAmountUSD as any } : {}),
+      ...(totalUSD !== undefined ? { totalUSD: totalUSD as any } : {}),
+      ...(igtfPercent !== undefined ? { igtfPercent: igtfPercent as any } : {}),
+      ...(igtfAmountUSD !== undefined ? { igtfAmountUSD: igtfAmountUSD as any } : {}),
     },
   });
 
@@ -231,7 +253,7 @@ export async function updatePurchaseHeader(formData: FormData) {
     await prisma.auditLog.create({
       data: {
         userId: (session?.user as any)?.id,
-        action: 'PURCHASE_UPDATE_HEADER',
+        action: 'PURCHASE_UPDATE',
         details: id,
       },
     });
