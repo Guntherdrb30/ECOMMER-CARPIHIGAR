@@ -139,10 +139,11 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
       });
     }
 
-    // Logo: first configured one, then fallback static Trends172 image
+    // Logo: configured one (settings), then Trends172, luego logo genérico de Carpihogar
     const logoBuf =
       (await fetchLogoBuffer((settings as any)?.logoUrl)) ||
-      (await fetchLogoBuffer("/trends172-logo.png"));
+      (await fetchLogoBuffer("/trends172-logo.png")) ||
+      (await fetchLogoBuffer("/logo-default.svg"));
 
     const doc = new PDFDocument({ size: "A4", margin: 40 });
     const chunks: Uint8Array[] = [];
@@ -209,7 +210,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
       doc.text(`RIF: ${legalRif}`, logoBuf ? 100 : 40);
       doc.text(legalAddress, logoBuf ? 100 : 40, doc.y);
       if (legalPhone) {
-        doc.text(`Telefono: ${legalPhone}`, logoBuf ? 100 : 40, doc.y);
+        doc.text(`Teléfono: ${legalPhone}`, logoBuf ? 100 : 40, doc.y);
       }
       const rightX = 420;
       const numStr = invoiceNumber ? padLeft(invoiceNumber, 6) : "000000";
@@ -238,22 +239,22 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
 
     // Operation info ------------------------------------------------
     doc.moveDown(0.5);
-    doc.fontSize(11).fillColor("#111").text("Datos de la operacion", 40, doc.y);
+    doc.fontSize(11).fillColor("#111").text("Datos de la operación", 40, doc.y);
     doc.moveDown(0.5);
     doc.fontSize(9).fillColor("#333");
 
     doc.text(`Cliente: ${user?.name || user?.email || "-"}`);
     if (order.customerTaxId) {
-      doc.text(`Cedula/RIF: ${order.customerTaxId}`);
+      doc.text(`Cédula/RIF: ${order.customerTaxId}`);
     }
     if (order.customerFiscalAddress) {
-      doc.text(`Direccion fiscal: ${order.customerFiscalAddress}`);
+      doc.text(`Dirección fiscal: ${order.customerFiscalAddress}`);
     }
 
     const phone =
       (order as any)?.shippingAddress?.phone || (user?.phone as string | undefined) || "";
     if (phone) {
-      doc.text(`Telefono: ${phone}`);
+      doc.text(`Teléfono: ${phone}`);
     }
 
     if (seller) {
@@ -367,7 +368,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     doc.moveDown(0.2);
 
     doc.font("Helvetica-Bold");
-    doc.text("Total operacion:", totalsLabelX, doc.y);
+    doc.text("Total operación:", totalsLabelX, doc.y);
     doc.text(money(totalOperacionBs), totalsValueX, doc.y, {
       align: "right",
       width: totalsWidth,
@@ -380,7 +381,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
 
     if (tipo === "factura") {
       doc.text(
-        "Documento generado por sistemas Carpihogar / Trends172, C.A. SOLO EL ORIGINAL DA DERECHO A CREDITO FISCAL.",
+        "Documento generado por sistemas Carpihogar / Trends172, C.A. SOLO EL ORIGINAL DA DERECHO A CRÉDITO FISCAL.",
         40,
         doc.y,
         { width: 515 },
@@ -416,4 +417,3 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     return new NextResponse(`Error: ${String(e)}`, { status: 500 });
   }
 }
-
