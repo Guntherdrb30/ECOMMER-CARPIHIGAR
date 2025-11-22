@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
+
+import prisma from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
 
 // Ensure Node.js runtime for pdfkit on Vercel/Next.js
 export const runtime = "nodejs";
@@ -12,12 +13,14 @@ export const revalidate = 0;
 async function fetchLogoBuffer(logoUrl?: string): Promise<Buffer | null> {
   try {
     if (!logoUrl) return null;
+
     if (logoUrl.startsWith("http")) {
       const res = await fetch(logoUrl);
       if (!res.ok) return null;
       const arr = await res.arrayBuffer();
       return Buffer.from(arr);
     }
+
     const trimmed = logoUrl.startsWith("/") ? logoUrl.slice(1) : logoUrl;
     const fs = await import("fs");
     const path = await import("path");
@@ -26,7 +29,7 @@ async function fetchLogoBuffer(logoUrl?: string): Promise<Buffer | null> {
       return fs.readFileSync(p);
     }
   } catch {
-    // ignore
+    // ignore logo errors
   }
   return null;
 }
@@ -40,52 +43,67 @@ function padLeft(num: number, width: number) {
   return s.length >= width ? s : "0".repeat(width - s.length) + s;
 }
 
-function buildBaseUrl() {
-  const direct = process.env.NEXT_PUBLIC_URL;
-  if (direct) return direct.replace(/\/$/, "");
-  const vercel = process.env.VERCEL_URL;
-  if (vercel) return `https://${vercel.replace(/\/$/, "")}`;
-  return "";
-}
-
 export async function GET(req: Request, { params }: { params: { orderId: string } }) {
   const session = await getServerSession(authOptions);
+
+  // If not logged in, redirect to login with callback to this PDF
   if (!session?.user) {
     const url = new URL(req.url);
     const tipoRaw = (url.searchParams.get("tipo") || "recibo").toLowerCase();
-    const monedaRaw = (url.searchParams.get("moneda") || "USD").toUpperCase();
+    const monedaRaw = (url.searchParams.get("moneda") || "VES").toUpperCase();
+
     const login = new URL("/auth/login", url.origin);
     const callbackUrl = new URL(`/api/orders/${params.orderId}/pdf`, url.origin);
     callbackUrl.searchParams.set("tipo", tipoRaw);
     callbackUrl.searchParams.set("moneda", monedaRaw);
     login.searchParams.set("callbackUrl", callbackUrl.toString());
+
     return NextResponse.redirect(login);
   }
 
   const url = new URL(req.url);
   const tipoRaw = (url.searchParams.get("tipo") || "recibo").toLowerCase();
-  const allowedDocs = ["recibo", "factura"];
-  const tipo = (allowedDocs.includes(tipoRaw) ? tipoRaw : "recibo") as "recibo" | "factura";
+  const allowedDocs = ["recibo", "factura"] as const;
+  const tipo = (allowedDocs as readonly string[]).includes(tipoRaw)
+    ? (tipoRaw as "recibo" | "factura")
+    : "recibo";
+
+  // For now we always generate in VES
   const moneda: "VES" = "VES";
 
   const orderId = params.orderId;
+
   try {
-    // Allow: owner (userId), seller (sellerId), ADMIN/VENDEDOR/ALIADO (checked after fetch)
     const userId = (session.user as any)?.id;
-    const role = (session.user as any)?.role;
+    const role = String((session.user as any)?.role || "");
+
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { user: true, seller: true, items: true, payment: true, shipping: true },
+      include: {
+        user: true,
+        seller: true,
+        items: true,
+        payment: true,
+        shipping: true,
+        shippingAddress: true,
+      },
     });
-    if (!order) return new NextResponse("Not Found", { status: 404 });
+
+    if (!order) {
+      return new NextResponse("Not Found", { status: 404 });
+    }
+
     const isOwner = order.userId === userId;
     const isSeller = String(order.sellerId || "") === String(userId || "");
-    const isAdminLike = ["ADMIN", "VENDEDOR", "ALIADO"].includes(String(role || ""));
-    if (!(isOwner || isSeller || isAdminLike)) return new NextResponse("Forbidden", { status: 403 });
+    const isAdminLike = ["ADMIN", "VENDEDOR", "ALIADO"].includes(role.toUpperCase());
+
+    if (!(isOwner || isSeller || isAdminLike)) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
 
     const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
 
-    // Asignar correlativos de factura/recibo si aún no existen
+    // Correlatives (only assigned first time)
     let invoiceNumber = (order as any).invoiceNumber as number | null | undefined;
     let receiptNumber = (order as any).receiptNumber as number | null | undefined;
 
@@ -121,7 +139,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
       });
     }
 
-    // Logo: primero el configurado, luego intentamos uno fijo de Trends172
+    // Logo: first configured one, then fallback static Trends172 image
     const logoBuf =
       (await fetchLogoBuffer((settings as any)?.logoUrl)) ||
       (await fetchLogoBuffer("/trends172-logo.png"));
@@ -139,7 +157,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     const toMoney = (v: number) => v * tasaVES;
     const money = (v: number) => `Bs ${formatAmount(v)}`;
 
-    // Totales base (en USD)
+    // Base totals in USD
     let subtotalUSD = 0;
     for (const it of order.items as any[]) {
       const p = Number((it as any).priceUSD || 0);
@@ -156,6 +174,11 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     const igtfUSD = isDivisa ? totalSinIgtfUSD * 0.03 : 0;
     const totalOperacionUSD = totalSinIgtfUSD + igtfUSD;
 
+    const subtotalBs = toMoney(subtotalUSD);
+    const ivaBs = toMoney(ivaUSD);
+    const igtfBs = toMoney(igtfUSD);
+    const totalOperacionBs = toMoney(totalOperacionUSD);
+
     const user = order.user as any;
     const seller = order.seller as any;
 
@@ -170,30 +193,28 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     const contactPhone = (settings as any)?.contactPhone || "";
     const contactEmail = (settings as any)?.contactEmail || "";
 
-    const baseUrl = buildBaseUrl();
-
-    // Header
+    // Header --------------------------------------------------------
     if (logoBuf) {
       try {
         doc.image(logoBuf, 40, 30, { height: 40 });
       } catch {
-        // ignore
+        // ignore image error
       }
     }
 
     if (tipo === "factura") {
-      // Encabezado legal Trends172
+      // Legal header for Trends172
       doc.fontSize(14).fillColor("#111").text(legalName, logoBuf ? 100 : 40, 30);
       doc.fontSize(10).fillColor("#444");
       doc.text(`RIF: ${legalRif}`, logoBuf ? 100 : 40);
       doc.text(legalAddress, logoBuf ? 100 : 40, doc.y);
       if (legalPhone) {
-        doc.text(`Teléfono: ${legalPhone}`, logoBuf ? 100 : 40, doc.y);
+        doc.text(`Telefono: ${legalPhone}`, logoBuf ? 100 : 40, doc.y);
       }
       const rightX = 420;
       const numStr = invoiceNumber ? padLeft(invoiceNumber, 6) : "000000";
       doc.fontSize(10).fillColor("#111").text("FORMA LIBRE", rightX, 30);
-      doc.text(`N° DE CONTROL: 00-${numStr}`, rightX, doc.y);
+      doc.text(`NRO DE CONTROL: 00-${numStr}`, rightX, doc.y);
       doc.text(`FACTURA ${numStr}`, rightX, doc.y + 10);
       doc.text(
         `Fecha: ${new Date(order.createdAt as any).toLocaleDateString("es-VE")}`,
@@ -201,7 +222,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
         doc.y,
       );
     } else {
-      // Recibo simple con datos de Carpihogar
+      // Simple receipt header with Carpihogar branding
       doc.fontSize(18).fillColor("#111").text(String(brandName), logoBuf ? 90 : 40, 35);
       doc.fontSize(10).fillColor("#444");
       if (contactEmail) doc.text(contactEmail, logoBuf ? 90 : 40);
@@ -215,20 +236,30 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     doc.moveDown();
     doc.moveTo(40, 90).lineTo(555, 90).strokeColor("#ddd").stroke();
 
-    // Datos de la venta
+    // Operation info ------------------------------------------------
     doc.moveDown(0.5);
-    doc.fontSize(11).fillColor("#111").text("Datos de la operación", 40, doc.y);
+    doc.fontSize(11).fillColor("#111").text("Datos de la operacion", 40, doc.y);
     doc.moveDown(0.5);
     doc.fontSize(9).fillColor("#333");
+
     doc.text(`Cliente: ${user?.name || user?.email || "-"}`);
-    if (order.customerTaxId) doc.text(`Cédula/RIF: ${order.customerTaxId}`);
-    if (order.customerFiscalAddress) doc.text(`Dirección fiscal: ${order.customerFiscalAddress}`);
+    if (order.customerTaxId) {
+      doc.text(`Cedula/RIF: ${order.customerTaxId}`);
+    }
+    if (order.customerFiscalAddress) {
+      doc.text(`Direccion fiscal: ${order.customerFiscalAddress}`);
+    }
+
     const phone =
       (order as any)?.shippingAddress?.phone || (user?.phone as string | undefined) || "";
-    if (phone) doc.text(`Teléfono: ${phone}`);
+    if (phone) {
+      doc.text(`Telefono: ${phone}`);
+    }
+
     if (seller) {
       doc.text(`Vendedor: ${seller.name || seller.email || ""}`);
     }
+
     doc.text(
       `Fecha: ${new Date(order.createdAt as any).toLocaleString("es-VE", {
         dateStyle: "short",
@@ -248,19 +279,22 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
       );
     }
 
+    // Products ------------------------------------------------------
     doc.moveDown(0.8);
     doc.fontSize(11).fillColor("#111").text("Productos", 40, doc.y);
     doc.moveDown(0.3);
 
     const startX = 40;
-    const colWidths = [40, 80, 230, 70, 70, 70];
-    const headers = ["Cant", "Código", "Descripción del Producto", "Precio", "Total", "Kg/Und"];
+    // Usable width: from 40 (margin) to 555 -> 515 points
+    const colWidths = [30, 70, 240, 60, 60, 55]; // sum = 515
+    const headers = ["Cant", "Codigo", "Descripcion del Producto", "Precio", "Total", "Kg/Und"];
+
     doc.fontSize(9).fillColor("#333");
     headers.forEach((h, i) => {
-      doc.text(h, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), doc.y, {
-        width: colWidths[i],
-      });
+      const offset = colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+      doc.text(h, startX + offset, doc.y, { width: colWidths[i] });
     });
+
     doc.moveDown(0.3);
     doc.moveTo(startX, doc.y).lineTo(555, doc.y).strokeColor("#eee").stroke();
 
@@ -270,20 +304,19 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
       const sub = p * q;
       const code =
         (it as any).product?.code || (it as any).product?.sku || (it as any).productId || "";
+
       const cols = [
         String(q),
         String(code || ""),
         (it as any).name || (it as any).product?.name || "Producto",
         money(toMoney(p)),
         money(toMoney(sub)),
-        "", // Peso / unidad (no disponible por ahora)
+        "", // weight/unit (not available yet)
       ];
+
       cols.forEach((c, i) => {
-        doc
-          .fillColor("#111")
-          .text(c, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), doc.y, {
-            width: colWidths[i],
-          });
+        const offset = colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+        doc.fillColor("#111").text(c, startX + offset, doc.y, { width: colWidths[i] });
       });
       doc.moveDown(0.2);
     }
@@ -298,38 +331,56 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
         "",
       ];
       cols.forEach((c, i) => {
-        doc
-          .fillColor("#111")
-          .text(c, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), doc.y, {
-            width: colWidths[i],
-          });
+        const offset = colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+        doc.fillColor("#111").text(c, startX + offset, doc.y, { width: colWidths[i] });
       });
       doc.moveDown(0.2);
     }
 
+    // Totals --------------------------------------------------------
     doc.moveDown(1);
 
-    // Totales (en Bs)
-    const subtotalBs = toMoney(subtotalUSD);
-    const ivaBs = toMoney(ivaUSD);
-    const igtfBs = toMoney(igtfUSD);
-    const totalOperacionBs = toMoney(totalOperacionUSD);
+    const totalsLabelX = 400;
+    const totalsValueX = 495;
+    const totalsWidth = 90;
 
     doc.fontSize(10).fillColor("#111");
-    doc.text(`Base imponible: ${money(subtotalBs)}`, { align: "right" });
-    doc.text(`I.V.A. (${ivaPercent}%): ${money(ivaBs)}`, { align: "right" });
-    doc.text(`I.G.T.F. 3%: ${money(igtfBs)}`, { align: "right" });
-    doc
-      .font("Helvetica-Bold")
-      .text(`Total operación: ${money(totalOperacionBs)}`, { align: "right" })
-      .font("Helvetica");
+    doc.text("Base imponible:", totalsLabelX, doc.y);
+    doc.text(money(subtotalBs), totalsValueX, doc.y, {
+      align: "right",
+      width: totalsWidth,
+    });
+    doc.moveDown(0.2);
 
+    doc.text(`I.V.A. (${ivaPercent}%):`, totalsLabelX, doc.y);
+    doc.text(money(ivaBs), totalsValueX, doc.y, {
+      align: "right",
+      width: totalsWidth,
+    });
+    doc.moveDown(0.2);
+
+    doc.text("I.G.T.F. 3%:", totalsLabelX, doc.y);
+    doc.text(money(igtfBs), totalsValueX, doc.y, {
+      align: "right",
+      width: totalsWidth,
+    });
+    doc.moveDown(0.2);
+
+    doc.font("Helvetica-Bold");
+    doc.text("Total operacion:", totalsLabelX, doc.y);
+    doc.text(money(totalOperacionBs), totalsValueX, doc.y, {
+      align: "right",
+      width: totalsWidth,
+    });
+    doc.font("Helvetica");
+
+    // Footer --------------------------------------------------------
     doc.moveDown(1);
     doc.fontSize(9).fillColor("#555");
 
     if (tipo === "factura") {
       doc.text(
-        "Documento generado por sistemas Carpihogar / Trends172, C.A. SOLO EL ORIGINAL DA DERECHO A CRÉDITO FISCAL.",
+        "Documento generado por sistemas Carpihogar / Trends172, C.A. SOLO EL ORIGINAL DA DERECHO A CREDITO FISCAL.",
         40,
         doc.y,
         { width: 515 },
@@ -345,10 +396,12 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
 
     doc.end();
     const pdfBuf = await done;
+
     const fname =
       tipo === "factura" && invoiceNumber
         ? `factura_${padLeft(invoiceNumber, 6)}.pdf`
         : `${tipo}_${order.id}.pdf`;
+
     const resp = new NextResponse(new Uint8Array(pdfBuf), {
       headers: {
         "Content-Type": "application/pdf",
@@ -356,6 +409,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
         "Cache-Control": "no-store",
       },
     });
+
     return resp;
   } catch (e) {
     console.error("[orders/pdf] Error generating PDF:", e);

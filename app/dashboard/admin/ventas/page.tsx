@@ -4,9 +4,9 @@ import {
   getSellers,
   markCommissionPaid,
   markSaleReviewed,
+  sendOrderWhatsAppPdfByForm,
 } from "@/server/actions/sales";
 import { getAllyPendingSalesCount } from "@/server/actions/ally-admin";
-import PdfCopyMenu from "@/components/pdf-copy-menu";
 
 export default async function AdminSalesPage({
   searchParams,
@@ -126,17 +126,17 @@ export default async function AdminSalesPage({
             Ver ventas
           </summary>
           <div className="overflow-x-auto">
-            <table className="w-full table-fixed text-sm">
+            <table className="w-full table-auto text-sm">
               <thead>
                 <tr className="bg-gray-100 text-gray-700">
-                  <th className="px-2 py-1 text-left w-40">Fecha</th>
-                  <th className="px-2 py-1 text-left w-56">Cliente</th>
-                  <th className="px-2 py-1 text-left w-40">Vendedor</th>
-                  <th className="px-2 py-1 text-left w-28">Total USD</th>
-                  <th className="px-2 py-1 text-left w-40">Estado</th>
-                  <th className="px-2 py-1 text-left w-56">Pago</th>
-                  <th className="px-2 py-1 text-left w-40">Revisión</th>
-                  <th className="px-2 py-1 text-left">Soportes</th>
+                  <th className="px-2 py-1 text-left">Fecha</th>
+                  <th className="px-2 py-1 text-left">Cliente</th>
+                  <th className="px-2 py-1 text-left">Vendedor</th>
+                  <th className="px-2 py-1 text-right w-24">Total USD</th>
+                  <th className="px-2 py-1 text-left w-28">Estado</th>
+                  <th className="px-2 py-1 text-left">Pago</th>
+                  <th className="px-2 py-1 text-left w-32">Revisión</th>
+                  <th className="px-2 py-1 text-left w-40">Soportes</th>
                 </tr>
               </thead>
               <tbody>
@@ -146,25 +146,42 @@ export default async function AdminSalesPage({
                   let originLabel = "Online";
                   let originClass =
                     "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700";
+
                   if (origin === "ERP") {
                     originLabel = "ERP / Aliado";
                     originClass =
                       "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700";
                   }
+
                   const canPrint =
                     o.status === "PAGADO" || o.status === "COMPLETADO";
                   const canShowDocs = canPrint && isReviewed;
 
+                  const invoiceNumber = (o as any).invoiceNumber as
+                    | number
+                    | null
+                    | undefined;
+                  const invoiceLabel = invoiceNumber
+                    ? `Factura: ${invoiceNumber.toString().padStart(6, "0")}`
+                    : o.id
+                    ? `Orden: ${String(o.id).slice(-6)}`
+                    : "";
+
                   return (
                     <tr key={o.id} className="border-t align-top">
-                      <td className="px-2 py-1 align-top">
-                        {new Date(o.createdAt).toLocaleString()}
+                      <td className="px-2 py-1 align-top whitespace-nowrap text-xs sm:text-sm">
+                        <div>{new Date(o.createdAt).toLocaleString()}</div>
+                        {invoiceLabel && (
+                          <div className="text-[11px] text-gray-500">
+                            {invoiceLabel}
+                          </div>
+                        )}
                       </td>
                       <td className="px-2 py-1 align-top">
                         <div className="font-medium">
                           {o.user?.name || o.user?.email}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 break-words">
                           {o.user?.email}
                         </div>
                       </td>
@@ -172,17 +189,19 @@ export default async function AdminSalesPage({
                         {o.seller ? (
                           <>
                             <div>{o.seller.name || o.seller.email}</div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-500 mt-0.5">
                               {origin && (
                                 <span className={originClass}>{originLabel}</span>
                               )}
                             </div>
                           </>
                         ) : (
-                          <span className="text-xs text-gray-500">Sin vendedor</span>
+                          <span className="text-xs text-gray-500">
+                            Sin vendedor
+                          </span>
                         )}
                       </td>
-                      <td className="px-2 py-1 align-top">
+                      <td className="px-2 py-1 align-top text-right">
                         {Number(o.totalUSD).toFixed(2)}
                       </td>
                       <td className="px-2 py-1 align-top">
@@ -190,6 +209,7 @@ export default async function AdminSalesPage({
                           const status = String(o.status || "").toUpperCase();
                           let badgeClass =
                             "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-700";
+
                           if (status === "PENDIENTE" || status === "CONFIRMACION") {
                             badgeClass =
                               "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700";
@@ -200,13 +220,14 @@ export default async function AdminSalesPage({
                             badgeClass =
                               "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700";
                           }
+
                           return <span className={badgeClass}>{status}</span>;
                         })()}
                       </td>
                       <td className="px-2 py-1 align-top">
                         {o.payment ? (
-                          <div className="space-y-1">
-                            <div className="text-sm">
+                          <div className="space-y-1 text-xs sm:text-sm max-w-xs break-words">
+                            <div>
                               {o.payment.method} ({o.payment.currency})
                             </div>
                             <div className="text-xs text-gray-600">
@@ -254,49 +275,45 @@ export default async function AdminSalesPage({
                           )}
                         </div>
                       </td>
-                      <td className="px-2 py-1 align-top text-sm">
+                      <td className="px-2 py-1 align-top text-xs">
                         {canShowDocs ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="text-gray-600">Ver:</span>
-                              <a
-                                className="px-2 py-0.5 border rounded"
-                                target="_blank"
-                                href={`/dashboard/admin/ventas/${o.id}/print?tipo=recibo`}
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                            <span className="text-gray-600">PDF:</span>
+                            <a
+                              className="px-2 py-0.5 border rounded whitespace-nowrap"
+                              target="_blank"
+                              href={`/api/orders/${o.id}/pdf?tipo=recibo&moneda=VES`}
+                            >
+                              Recibo
+                            </a>
+                            <a
+                              className="px-2 py-0.5 border rounded whitespace-nowrap"
+                              target="_blank"
+                              href={`/api/orders/${o.id}/pdf?tipo=factura&moneda=VES`}
+                            >
+                              Factura
+                            </a>
+                            {o.user?.phone && (
+                              <form
+                                action={sendOrderWhatsAppPdfByForm}
+                                className="inline-flex"
                               >
-                                Recibo
-                              </a>
-                              <a
-                                className="px-2 py-0.5 border rounded"
-                                target="_blank"
-                                href={`/dashboard/admin/ventas/${o.id}/print?tipo=factura`}
-                              >
-                                Factura
-                              </a>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="text-gray-600">PDF:</span>
-                              <a
-                                className="px-2 py-0.5 border rounded"
-                                target="_blank"
-                                href={`/api/orders/${o.id}/pdf?tipo=recibo&moneda=VES`}
-                              >
-                                Recibo
-                              </a>
-                              <a
-                                className="px-2 py-0.5 border rounded"
-                                target="_blank"
-                                href={`/api/orders/${o.id}/pdf?tipo=factura&moneda=VES`}
-                              >
-                                Factura
-                              </a>
-                              <PdfCopyMenu
-                                orderId={o.id}
-                                defaultMoneda="VES"
-                                hasPhone={!!o.user?.phone}
-                                backTo="/dashboard/admin/ventas"
-                              />
-                            </div>
+                                <input type="hidden" name="orderId" value={o.id} />
+                                <input type="hidden" name="tipo" value="factura" />
+                                <input type="hidden" name="moneda" value="VES" />
+                                <input
+                                  type="hidden"
+                                  name="backTo"
+                                  value="/dashboard/admin/ventas"
+                                />
+                                <button
+                                  type="submit"
+                                  className="px-2 py-0.5 border rounded text-green-700 whitespace-nowrap"
+                                >
+                                  WhatsApp PDF
+                                </button>
+                              </form>
+                            )}
                           </div>
                         ) : (
                           <span className="text-gray-400 text-xs">
@@ -322,7 +339,7 @@ export default async function AdminSalesPage({
             Ver comisiones
           </summary>
           <div className="overflow-x-auto">
-            <table className="w-full table-fixed text-sm">
+            <table className="w-full table-auto text-sm">
               <thead>
                 <tr className="bg-gray-100 text-gray-700">
                   <th className="px-2 py-1 text-left w-40">Fecha</th>
@@ -380,3 +397,4 @@ export default async function AdminSalesPage({
     </div>
   );
 }
+
