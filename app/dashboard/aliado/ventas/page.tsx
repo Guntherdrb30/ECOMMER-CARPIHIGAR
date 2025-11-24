@@ -68,16 +68,44 @@ export default async function VentasAliadoPage({ searchParams }: { searchParams?
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-gray-600">Ver:</span>
-                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/dashboard/aliado/ventas/${o.id}/print?tipo=recibo&moneda=USD`}>Recibo</a>
-                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/dashboard/aliado/ventas/${o.id}/print?tipo=nota&moneda=USD`}>Nota</a>
-                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/dashboard/aliado/ventas/${o.id}/print?tipo=factura&moneda=USD`}>Factura</a>
+                        <a
+                          className="px-2 py-0.5 border rounded"
+                          target="_blank"
+                          href={`/dashboard/aliado/ventas/${o.id}/print?tipo=recibo`}
+                        >
+                          Recibo
+                        </a>
+                        <a
+                          className="px-2 py-0.5 border rounded"
+                          target="_blank"
+                          href={`/dashboard/aliado/ventas/${o.id}/print?tipo=factura`}
+                        >
+                          Factura
+                        </a>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-gray-600">PDF:</span>
-                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/api/orders/${o.id}/pdf?tipo=recibo&moneda=USD`}>Recibo</a>
-                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/api/orders/${o.id}/pdf?tipo=nota&moneda=USD`}>Nota</a>
-                        <a className="px-2 py-0.5 border rounded" target="_blank" href={`/api/orders/${o.id}/pdf?tipo=factura&moneda=USD`}>Factura</a>
-                        <PdfCopyMenu orderId={o.id} hasPhone={!!o.user?.phone} backTo="/dashboard/aliado/ventas" />
+                        <a
+                          className="px-2 py-0.5 border rounded"
+                          target="_blank"
+                          href={`/api/orders/${o.id}/pdf?tipo=recibo&moneda=VES`}
+                        >
+                          Recibo
+                        </a>
+                        <a
+                          className="px-2 py-0.5 border rounded"
+                          target="_blank"
+                          href={`/api/orders/${o.id}/pdf?tipo=factura&moneda=VES`}
+                        >
+                          Factura
+                        </a>
+                        <PdfCopyMenu
+                          orderId={o.id}
+                          defaultTipo="factura"
+                          defaultMoneda="VES"
+                          hasPhone={!!o.user?.phone}
+                          backTo="/dashboard/aliado/ventas"
+                        />
                       </div>
                       {o.user?.phone && (
                         <div className="flex items-center gap-2 text-sm">
@@ -86,7 +114,7 @@ export default async function VentasAliadoPage({ searchParams }: { searchParams?
                             className="px-2 py-0.5 border rounded text-green-700"
                             target="_blank"
                             href={(function(){
-                              const pdf = `${process.env.NEXT_PUBLIC_URL || ''}/api/orders/${o.id}/pdf?tipo=factura&moneda=USD`;
+                              const pdf = `${process.env.NEXT_PUBLIC_URL || ''}/api/orders/${o.id}/pdf?tipo=factura&moneda=VES`;
                               const code = o.id.slice(-6);
                               const body = `Hola ${o.user?.name || 'cliente'}! Te comparto tu factura #${code}: ${pdf}`;
                               const phone = String(o.user?.phone || '').replace(/[^0-9]/g,'');

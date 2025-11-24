@@ -29,7 +29,7 @@ export default async function PrintQuotePage({ params }: { params: Promise<{ id:
 
         <div className="flex justify-between mb-4">
           <div>
-            <div className="font-semibold">Presupuesto</div>
+            <div className="font-semibold">Presupuesto Cliente (P1)</div>
             <div className="text-gray-600">ID: {quote.id}</div>
             <div className="text-gray-600">Fecha: {new Date(quote.createdAt as any).toLocaleString()}</div>
             <div className="text-gray-600">IVA: {Number(quote.ivaPercent).toFixed(2)}%</div>
@@ -46,7 +46,7 @@ export default async function PrintQuotePage({ params }: { params: Promise<{ id:
           <thead>
             <tr className="bg-gray-100">
               <th className="text-left px-2 py-1">Producto</th>
-              <th className="text-right px-2 py-1">Precio</th>
+              <th className="text-right px-2 py-1">Precio P1 (Cliente)</th>
               <th className="text-right px-2 py-1">Cant.</th>
               <th className="text-right px-2 py-1">Subtotal</th>
             </tr>
@@ -80,4 +80,3 @@ export default async function PrintQuotePage({ params }: { params: Promise<{ id:
     </div>
   );
 }
-

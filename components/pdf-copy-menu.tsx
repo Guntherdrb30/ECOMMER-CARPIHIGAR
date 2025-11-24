@@ -3,13 +3,13 @@
 import { useMemo, useState } from "react";
 import { sendOrderWhatsAppPdfByForm } from "@/server/actions/sales";
 
-type DocType = "recibo" | "nota" | "factura";
-type Moneda = "USD" | "VES";
+type DocType = "recibo" | "factura";
+type Moneda = "VES";
 
 export default function PdfCopyMenu({
   orderId,
   defaultTipo = "factura",
-  defaultMoneda = "USD",
+  defaultMoneda = "VES",
   className,
   hasPhone = false,
   backTo = "/dashboard/aliado/ventas",
@@ -23,7 +23,7 @@ export default function PdfCopyMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [tipo, setTipo] = useState<DocType>(defaultTipo);
-  const [moneda, setMoneda] = useState<Moneda>(defaultMoneda);
+  const [moneda] = useState<Moneda>(defaultMoneda);
   const [copied, setCopied] = useState(false);
 
   const link = useMemo(() => {
@@ -55,12 +55,12 @@ export default function PdfCopyMenu({
       {open && (
         <div className="absolute z-10 mt-2 w-64 bg-white border rounded shadow p-3">
           <div className="text-xs text-gray-600 mb-2">
-            Selecciona documento y moneda:
+            Selecciona documento (siempre en Bs):
           </div>
           <div className="mb-2">
             <div className="text-xs text-gray-700 mb-1">Documento</div>
             <div className="flex gap-2">
-              {(["recibo", "nota", "factura"] as DocType[]).map((t) => (
+              {(["recibo", "factura"] as DocType[]).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -70,23 +70,6 @@ export default function PdfCopyMenu({
                   }`}
                 >
                   {t[0].toUpperCase() + t.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="mb-2">
-            <div className="text-xs text-gray-700 mb-1">Moneda</div>
-            <div className="flex gap-2">
-              {(["USD", "VES"] as Moneda[]).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMoneda(m)}
-                  className={`px-2 py-0.5 rounded border text-xs ${
-                    moneda === m ? "bg-gray-800 text-white" : ""
-                  }`}
-                >
-                  {m}
                 </button>
               ))}
             </div>
@@ -138,4 +121,3 @@ export default function PdfCopyMenu({
     </div>
   );
 }
-

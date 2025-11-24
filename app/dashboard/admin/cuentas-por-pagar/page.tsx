@@ -184,55 +184,75 @@ export default async function CuentasPorPagarPage({
                     </td>
                     <td className="px-3 py-2">
                       {balanceUSD <= 0.01 ? (
-                        <span className="text-xs text-gray-400">Sin saldo</span>
+                        <div className="flex flex-col gap-1 text-xs">
+                          <span className="text-gray-400">Sin saldo</span>
+                          <a
+                            className="px-2 py-0.5 border rounded text-center"
+                            href={`/dashboard/admin/cuentas-por-pagar/${p.id}`}
+                          >
+                            Ver cuenta por pagar
+                          </a>
+                        </div>
                       ) : (
-                        <form
-                          action={addPayablePayment}
-                          className="grid grid-cols-1 gap-1 text-xs"
-                        >
-                          <input type="hidden" name="payableId" value={p.id} />
-                          <div className="flex gap-2">
+                        <div className="flex flex-col gap-1 text-xs">
+                          <form
+                            action={addPayablePayment}
+                            className="grid grid-cols-1 gap-1"
+                          >
                             <input
-                              name="amount"
-                              type="number"
-                              min={0}
-                              step={0.01}
-                              defaultValue={balanceUSD.toFixed(2)}
-                              className="border rounded px-1 py-0.5 w-24"
+                              type="hidden"
+                              name="payableId"
+                              value={p.id}
                             />
-                            <select
-                              name="currency"
-                              defaultValue="USD"
-                              className="border rounded px-1 py-0.5 w-20 bg-white"
-                            >
-                              <option value="USD">USD</option>
-                              <option value="VES">Bs</option>
-                              <option value="USDT">USDT</option>
-                            </select>
-                          </div>
-                          <div className="flex gap-2">
-                            <select
-                              name="bankAccountId"
-                              defaultValue=""
-                              className="border rounded px-1 py-0.5 flex-1 bg-white"
-                            >
-                              <option value="">Sin banco</option>
-                              {banks.map((b: any) => (
-                                <option key={b.id} value={b.id}>
-                                  {b.name} ({b.currency})
-                                </option>
-                              ))}
-                            </select>
-                            <input
-                              name="reference"
-                              placeholder="Ref."
-                              className="border rounded px-1 py-0.5 w-24"
-                            />
-                          </div>
-                          <button className="mt-1 bg-brand text-white px-2 py-0.5 rounded">
-                            Abonar
-                          </button>
-                        </form>
+                            <div className="flex gap-2">
+                              <input
+                                name="amount"
+                                type="number"
+                                min={0}
+                                step={0.01}
+                                defaultValue={balanceUSD.toFixed(2)}
+                                className="border rounded px-1 py-0.5 w-24"
+                              />
+                              <select
+                                name="currency"
+                                defaultValue="USD"
+                                className="border rounded px-1 py-0.5 w-20 bg-white"
+                              >
+                                <option value="USD">USD</option>
+                                <option value="VES">Bs</option>
+                                <option value="USDT">USDT</option>
+                              </select>
+                            </div>
+                            <div className="flex gap-2">
+                              <select
+                                name="bankAccountId"
+                                defaultValue=""
+                                className="border rounded px-1 py-0.5 flex-1 bg-white"
+                              >
+                                <option value="">Sin banco</option>
+                                {banks.map((b: any) => (
+                                  <option key={b.id} value={b.id}>
+                                    {b.name} ({b.currency})
+                                  </option>
+                                ))}
+                              </select>
+                              <input
+                                name="reference"
+                                placeholder="Ref."
+                                className="border rounded px-1 py-0.5 w-24"
+                              />
+                            </div>
+                            <button className="mt-1 bg-brand text-white px-2 py-0.5 rounded">
+                              Abonar
+                            </button>
+                          </form>
+                          <a
+                            className="px-2 py-0.5 border rounded text-center"
+                            href={`/dashboard/admin/cuentas-por-pagar/${p.id}`}
+                          >
+                            Ver cuenta por pagar
+                          </a>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -256,4 +276,3 @@ export default async function CuentasPorPagarPage({
     </div>
   );
 }
-
