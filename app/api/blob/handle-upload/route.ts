@@ -28,14 +28,20 @@ export async function POST(request: Request) {
       token,
       onBeforeGenerateToken: async () => {
         return {
-          allowedContentTypes: isRegistration ? ['image/*'] : ['image/*', 'video/*', 'application/pdf', 'text/csv'],
-          maximumSizeInBytes: isRegistration ? 8 * 1024 * 1024 : 100 * 1024 * 1024,
+          allowedContentTypes: isRegistration
+            ? ['image/*']
+            : ['image/*', 'video/*', 'application/pdf', 'text/csv'],
+          // Para admin/ajustes permitimos videos de alta calidad (hasta ~500MB).
+          // Para registros p�blicos seguimos con 8MB.
+          maximumSizeInBytes: isRegistration ? 8 * 1024 * 1024 : 500 * 1024 * 1024,
           addRandomSuffix: true,
           cacheControlMaxAge: 60 * 60 * 24 * 365, // 1 year
         };
       },
       onUploadCompleted: async ({ blob }) => {
-        try { console.log('[blob] upload completed', blob.pathname); } catch {}
+        try {
+          console.log('[blob] upload completed', blob.pathname);
+        } catch {}
       },
     });
     return NextResponse.json(res);
