@@ -3,14 +3,59 @@
 import { useEffect, useMemo, useState } from "react";
 import { venezuelaData } from "@/lib/venezuela-data";
 
-type Prod = { id: string; name: string; sku: string | null; priceUSD: number; priceAllyUSD?: number | null };
-type Line = { productId: string; name: string; p1: number; p2?: number | null; priceUSD: number; quantity: number };
+type Prod = {
+  id: string;
+  name: string;
+  sku: string | null;
+  priceUSD: number;
+  priceAllyUSD?: number | null;
+  priceWholesaleUSD?: number | null;
+};
+type Line = {
+  productId: string;
+  name: string;
+  p1: number;
+  p2?: number | null;
+  p3?: number | null;
+  priceUSD: number;
+  quantity: number;
+};
 
-export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent, tasaVES, action, initialItems, fixedSellerId, initialShippingLocalOption, originQuoteId, initialPriceMode = 'P1', allowCredit = true, unlockCreditWithDeleteSecret = false }: { sellers: Array<{ id: string; name?: string; email: string }>, commissionPercent: number, ivaPercent: number, tasaVES: number, action: (formData: FormData) => void, initialItems?: Line[], fixedSellerId?: string, initialShippingLocalOption?: 'RETIRO_TIENDA' | 'DELIVERY' | '', originQuoteId?: string, initialPriceMode?: 'P1' | 'P2', allowCredit?: boolean, unlockCreditWithDeleteSecret?: boolean }) {
+type PriceMode = "P1" | "P2" | "P3";
+
+export default function OfflineSaleForm({
+  sellers,
+  commissionPercent,
+  ivaPercent,
+  tasaVES,
+  action,
+  initialItems,
+  fixedSellerId,
+  initialShippingLocalOption,
+  originQuoteId,
+  initialPriceMode = "P1",
+  maxPriceMode = "P2",
+  allowCredit = true,
+  unlockCreditWithDeleteSecret = false,
+}: {
+  sellers: Array<{ id: string; name?: string; email: string }>;
+  commissionPercent: number;
+  ivaPercent: number;
+  tasaVES: number;
+  action: (formData: FormData) => void;
+  initialItems?: Line[];
+  fixedSellerId?: string;
+  initialShippingLocalOption?: "RETIRO_TIENDA" | "DELIVERY" | "";
+  originQuoteId?: string;
+  initialPriceMode?: PriceMode;
+  maxPriceMode?: PriceMode;
+  allowCredit?: boolean;
+  unlockCreditWithDeleteSecret?: boolean;
+}) {
   const [q, setQ] = useState("");
   const [found, setFound] = useState<Prod[]>([]);
   const [items, setItems] = useState<Line[]>(() => initialItems || []);
-  const [globalMode, setGlobalMode] = useState<'P1'|'P2'>(initialPriceMode);
+  const [globalMode, setGlobalMode] = useState<PriceMode>(initialPriceMode === "P3" ? "P3" : initialPriceMode);
   const [sellerId, setSellerId] = useState<string>(fixedSellerId || "");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -28,7 +73,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
   const [sendEmail, setSendEmail] = useState(false);
   const [docType, setDocType] = useState<'recibo' | 'nota' | 'factura'>('factura');
   const [shippingLocalOption, setShippingLocalOption] = useState<'RETIRO_TIENDA' | 'DELIVERY' | ''>(initialShippingLocalOption || '');
-  const [saleType, setSaleType] = useState<'CONTADO' | 'CREDITO'>('CONTADO');
+  const [saleType, setSaleType] = useState<"CONTADO" | "CREDITO">("CONTADO");
   const [allowCreditUi, setAllowCreditUi] = useState<boolean>(!!allowCredit);
   const [deleteSecret, setDeleteSecret] = useState<string>("");
   useEffect(() => { if (!allowCreditUi && saleType !== 'CONTADO') setSaleType('CONTADO'); }, [allowCreditUi, saleType]);
@@ -107,7 +152,7 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
     return { subtotal, iva, totalUSD, totalVES };
   }, [items, ivaPercent, tasaVES]);
 
-  const addItem = (p: Prod, mode: 'P1' | 'P2' = 'P1') => {
+  const addItem = (p: Prod, mode: PriceMode = "P1") => {
     setItems((prev) => {
       const idx = prev.findIndex((x) => x.productId === p.id);
       if (idx >= 0) {
@@ -117,14 +162,28 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
       }
       const p1 = Number(p.priceUSD);
       const p2 = p.priceAllyUSD != null ? Number(p.priceAllyUSD) : undefined;
-      const selected = mode === 'P2' && p2 != null ? p2 : p1;
-      return [...prev, { productId: p.id, name: p.name, p1, p2, priceUSD: selected, quantity: 1 }];
+      const p3 = p.priceWholesaleUSD != null ? Number(p.priceWholesaleUSD) : undefined;
+      let selected = p1;
+      if (mode === "P3" && p3 != null) selected = p3;
+      else if (mode === "P2" && p2 != null) selected = p2;
+      return [...prev, { productId: p.id, name: p.name, p1, p2, p3, priceUSD: selected, quantity: 1 }];
     });
   };
 
-  // Sincroniza todas las filas cuando cambia el modo global P1/P2
+  // Sincroniza todas las filas cuando cambia el modo global P1/P2/P3
   useEffect(() => {
-    setItems((prev) => prev.map((l) => ({ ...l, priceUSD: (globalMode === 'P2' && l.p2 != null) ? Number(l.p2) : Number(l.p1) })));
+    setItems((prev) =>
+      prev.map((l) => {
+        let price = Number(l.p1);
+        if (globalMode === "P2" && l.p2 != null) {
+          price = Number(l.p2);
+        } else if (globalMode === "P3") {
+          if (l.p3 != null) price = Number(l.p3);
+          else if (l.p2 != null) price = Number(l.p2);
+        }
+        return { ...l, priceUSD: price };
+      })
+    );
   }, [globalMode]);
 
   const updateQty = (id: string, qty: number) => {
@@ -248,12 +307,39 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
         </div>
       </div>
 
-      <div className="bg-white p-3 rounded border">
-        <div className="flex items-center justify-between mb-2">
+        <div className="bg-white p-3 rounded border">
+          <div className="flex items-center justify-between mb-2">
           <div className="text-sm text-gray-700">Modo de precio</div>
           <div className="flex items-center gap-3">
-            <label className="text-sm flex items-center gap-1"><input type="radio" name="_priceMode" checked={globalMode==='P1'} onChange={() => setGlobalMode('P1')} /> P1 (Cliente)</label>
-            <label className="text-sm flex items-center gap-1"><input type="radio" name="_priceMode" checked={globalMode==='P2'} onChange={() => setGlobalMode('P2')} /> P2 (Aliado)</label>
+            <label className="text-sm flex items-center gap-1">
+              <input
+                type="radio"
+                name="_priceMode"
+                checked={globalMode === 'P1'}
+                onChange={() => setGlobalMode('P1')}
+              />{' '}
+              P1 (Cliente)
+            </label>
+            <label className="text-sm flex items-center gap-1">
+              <input
+                type="radio"
+                name="_priceMode"
+                checked={globalMode === 'P2'}
+                onChange={() => setGlobalMode('P2')}
+              />{' '}
+              P2 (Aliado)
+            </label>
+            {maxPriceMode === 'P3' && (
+              <label className="text-sm flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="_priceMode"
+                  checked={globalMode === 'P3'}
+                  onChange={() => setGlobalMode('P3')}
+                />{' '}
+                P3 (Mayorista)
+              </label>
+            )}
           </div>
         </div>
         <h3 className="font-semibold mb-2">Dirección de envío</h3>
@@ -321,8 +407,31 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
                   <div className="text-xs text-gray-500">P1: ${Number(p.priceUSD).toFixed(2)}{p.priceAllyUSD != null ? ` · P2: $${Number(p.priceAllyUSD).toFixed(2)}` : ''}</div>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => addItem(p, 'P1')} className="px-2 py-0.5 border rounded text-sm">P1</button>
-                  <button type="button" disabled={p.priceAllyUSD == null} onClick={() => addItem(p, 'P2')} className="px-2 py-0.5 border rounded text-sm disabled:opacity-50">P2</button>
+                  <button
+                    type="button"
+                    onClick={() => addItem(p, 'P1')}
+                    className="px-2 py-0.5 border rounded text-sm"
+                  >
+                    P1
+                  </button>
+                  <button
+                    type="button"
+                    disabled={p.priceAllyUSD == null}
+                    onClick={() => addItem(p, 'P2')}
+                    className="px-2 py-0.5 border rounded text-sm disabled:opacity-50"
+                  >
+                    P2
+                  </button>
+                  {maxPriceMode === 'P3' && (
+                    <button
+                      type="button"
+                      disabled={p.priceWholesaleUSD == null}
+                      onClick={() => addItem(p, 'P3')}
+                      className="px-2 py-0.5 border rounded text-sm disabled:opacity-50"
+                    >
+                      P3
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -347,15 +456,46 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
                 <td className="border px-2 py-1">{l.name}</td>
                 <td className="border px-2 py-1">
                   <select
-                    value={(l.p2 != null && l.priceUSD === l.p2) ? 'P2' : 'P1'}
+                    value={
+                      l.p3 != null && l.priceUSD === l.p3
+                        ? 'P3'
+                        : l.p2 != null && l.priceUSD === l.p2
+                        ? 'P2'
+                        : 'P1'
+                    }
                     onChange={(e) => {
-                      const mode = e.target.value as 'P1' | 'P2';
-                      setItems((prev) => prev.map((x) => x.productId === l.productId ? { ...x, priceUSD: (mode === 'P2' && l.p2 != null) ? Number(l.p2) : Number(l.p1) } : x));
+                      const mode = e.target.value as PriceMode;
+                      setItems((prev) =>
+                        prev.map((x) =>
+                          x.productId === l.productId
+                            ? {
+                                ...x,
+                                priceUSD:
+                                  mode === 'P3' && l.p3 != null
+                                    ? Number(l.p3)
+                                    : mode === 'P2' && l.p2 != null
+                                    ? Number(l.p2)
+                                    : Number(l.p1),
+                              }
+                            : x
+                        )
+                      );
                     }}
                     className="border rounded px-1 py-0.5"
                   >
                     <option value="P1">P1 ${l.p1.toFixed(2)}</option>
-                    <option value="P2" disabled={l.p2 == null}>P2 {l.p2 != null ? `$${Number(l.p2).toFixed(2)}` : '(N/A)'}</option>
+                    <option
+                      value="P2"
+                      disabled={l.p2 == null || maxPriceMode === 'P1'}
+                    >
+                      P2 {l.p2 != null ? `$${Number(l.p2).toFixed(2)}` : '(N/A)'}
+                    </option>
+                    {maxPriceMode === 'P3' && (
+                      <option value="P3" disabled={l.p3 == null}>
+                        P3{' '}
+                        {l.p3 != null ? `$${Number(l.p3).toFixed(2)}` : '(N/A)'}
+                      </option>
+                    )}
                   </select>
                 </td>
                 <td className="border px-2 py-1">
@@ -478,5 +618,3 @@ export default function OfflineSaleForm({ sellers, commissionPercent, ivaPercent
     </form>
   );
 }
-
-

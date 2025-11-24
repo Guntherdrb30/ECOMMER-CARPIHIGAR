@@ -15,6 +15,7 @@ export default function AdminSidebar() {
   const isAdmin = role === 'ADMIN';
   const isRoot = isAdmin && email === rootEmail;
   const [allyPending, setAllyPending] = React.useState(0);
+  const [salesPending, setSalesPending] = React.useState(0);
   const [unreadMsgs, setUnreadMsgs] = React.useState(0);
 
   React.useEffect(() => {
@@ -29,6 +30,21 @@ export default function AdminSidebar() {
       active = false;
     };
   }, []);
+
+  // Ventas (todas) con pago por revisar
+  React.useEffect(() => {
+    if (!isAdmin) return;
+    let alive = true;
+    fetch('/api/admin/pending-sales-count')
+      .then((r) => (r.ok ? r.json() : { count: 0 }))
+      .then((d) => {
+        if (alive && typeof d?.count === 'number') setSalesPending(d.count);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [isAdmin]);
 
   // Poll unread messages for Mensajería
   React.useEffect(() => {
@@ -95,6 +111,11 @@ export default function AdminSidebar() {
             >
               <span className="inline-flex items-center gap-2">
                 <span>{l.label}</span>
+                {l.href === '/dashboard/admin/ventas' && salesPending > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[11px] px-1.5 min-w-[1.25rem]">
+                    {salesPending}
+                  </span>
+                )}
                 {l.href === '/dashboard/admin/ventas/aliados' && allyPending > 0 && (
                   <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[11px] px-1.5 min-w-[1.25rem]">
                     {allyPending}

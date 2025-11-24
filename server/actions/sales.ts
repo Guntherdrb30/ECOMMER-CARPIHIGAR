@@ -19,6 +19,20 @@ export async function getSellers() {
   return users;
 }
 
+// Cantidad de ventas con pago por revisar (cualquier origen)
+export async function getPendingSalesCount() {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== 'ADMIN') return 0;
+  const count = await prisma.order.count({
+    where: {
+      reviewedAt: null,
+      // solo ventas que ya tienen un pago registrado (algo que revisar)
+      payment: { isNot: null },
+    },
+  });
+  return count;
+}
+
 export async function getSales(params?: { sellerId?: string; invoice?: string; cliente?: string; rif?: string }) {
   const where: any = {};
   if (params?.sellerId) where.sellerId = params.sellerId;
@@ -188,6 +202,41 @@ export async function createOfflineSale(formData: FormData) {
   if ((session?.user as any)?.role === 'ALIADO') {
     sellerId = String((session?.user as any)?.id || '');
   }
+  // Detecta si el vendedor est�� usando precios especiales (P2/P3) respecto al P1 del producto
+  let usesSpecialPrice = false;
+  if (role === 'VENDEDOR') {
+    try {
+      const productIds = Array.from(new Set(items.map((it) => it.productId)));
+      if (productIds.length) {
+        const products = await prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, priceUSD: true, priceAllyUSD: true, priceWholesaleUSD: true },
+        });
+        const map = new Map(products.map((p) => [p.id, p]));
+        for (const it of items) {
+          const p = map.get(it.productId);
+          if (!p) continue;
+          const p1 = Number((p as any).priceUSD);
+          const p2 = (p as any).priceAllyUSD != null ? Number((p as any).priceAllyUSD) : null;
+          const p3 = (p as any).priceWholesaleUSD != null ? Number((p as any).priceWholesaleUSD) : null;
+          const linePrice = Number(it.priceUSD);
+          const isP1 = Math.abs(linePrice - p1) < 0.0001;
+          const isP2 = p2 != null && Math.abs(linePrice - p2) < 0.0001;
+          const isP3 = p3 != null && Math.abs(linePrice - p3) < 0.0001;
+          if (!isP1 && (isP2 || isP3)) {
+            usesSpecialPrice = true;
+            break;
+          }
+          if (!isP1 && !isP2 && !isP3) {
+            usesSpecialPrice = true;
+            break;
+          }
+        }
+      }
+    } catch {
+      usesSpecialPrice = false;
+    }
+  }
 
   if (!items.length) {
     try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_VALIDATION_FAILED', details: 'No hay items' } }); } catch {}
@@ -242,6 +291,53 @@ export async function createOfflineSale(formData: FormData) {
       redirect(`${backNewSale}?error=${encodeURIComponent('Clave de eliminación inválida para venta a crédito')}`);
     }
     try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'OFFLINE_SALE_CREDIT_APPROVED', details: 'Vendor credit authorized via deleteSecret' } }); } catch {}
+  }
+  // Si un VENDEDOR usa precios especiales (P2/P3), tambi��n requiere la clave de supervisor
+  if (role === 'VENDEDOR' && usesSpecialPrice) {
+    const configuredSecret = String(settings?.deleteSecret || '');
+    if (saleType !== 'CREDITO') {
+      if (!configuredSecret) {
+        try {
+          await prisma.auditLog.create({
+            data: {
+              userId: (session?.user as any)?.id,
+              action: 'OFFLINE_SALE_PRICE_OVERRIDE_DENIED',
+              details: 'No deleteSecret configured',
+            },
+          });
+        } catch {}
+        redirect(
+          `${backNewSale}?error=${encodeURIComponent(
+            'Clave de supervisor no configurada para usar precios P2/P3. Contacta al admin.'
+          )}`
+        );
+      }
+      if (deleteSecretInput !== configuredSecret) {
+        try {
+          await prisma.auditLog.create({
+            data: {
+              userId: (session?.user as any)?.id,
+              action: 'OFFLINE_SALE_PRICE_OVERRIDE_DENIED',
+              details: 'Clave inv��lida',
+            },
+          });
+        } catch {}
+        redirect(
+          `${backNewSale}?error=${encodeURIComponent(
+            'Clave de supervisor inv��lida para usar precios P2/P3'
+          )}`
+        );
+      }
+    }
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: (session?.user as any)?.id,
+          action: 'OFFLINE_SALE_PRICE_OVERRIDE_APPROVED',
+          details: `Items:${items.length}`,
+        },
+      });
+    } catch {}
   }
   let commissionPercent = Number((settings as any)?.sellerCommissionPercent || 5);
   let sellerRole: string | null = null;

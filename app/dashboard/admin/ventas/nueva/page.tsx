@@ -18,6 +18,7 @@ export default async function NuevaVentaPage({ searchParams }: { searchParams?: 
   const role = String((session?.user as any)?.role || '');
   const allowCredit = role === 'ADMIN';
   const unlockWithDeleteSecret = role === 'VENDEDOR';
+  const maxPriceMode: 'P1' | 'P2' | 'P3' = 'P3';
 
   return (
     <div className="container mx-auto p-4 space-y-4">
@@ -26,7 +27,17 @@ export default async function NuevaVentaPage({ searchParams }: { searchParams?: 
         <div className="border border-red-200 bg-red-50 text-red-800 px-3 py-2 rounded">{sp.error}</div>
       )}
       <div className="bg-white p-4 rounded-lg shadow">
-        <OfflineSaleForm sellers={sellers} commissionPercent={commission} ivaPercent={iva} tasaVES={tasa} action={createOfflineSale} allowCredit={allowCredit} unlockCreditWithDeleteSecret={unlockWithDeleteSecret} />
+        <OfflineSaleForm
+          sellers={sellers}
+          commissionPercent={commission}
+          ivaPercent={iva}
+          tasaVES={tasa}
+          action={createOfflineSale}
+          allowCredit={allowCredit}
+          unlockCreditWithDeleteSecret={unlockWithDeleteSecret}
+          initialPriceMode="P1"
+          maxPriceMode={maxPriceMode}
+        />
       </div>
     </div>
   );
