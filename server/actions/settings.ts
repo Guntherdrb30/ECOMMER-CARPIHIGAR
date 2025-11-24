@@ -308,12 +308,41 @@ export async function refreshTasaFromBCV() {
 }
 
 // Cron/automático (protegido por token en /api/cron/update-bcv)
-export async function refreshTasaFromBCVCron() {
+export async function refreshTasaFromBCVCron(): Promise<{
+  ok: boolean;
+  tasaVES?: number;
+  error?: string;
+}> {
   await ensureSiteSettingsColumns();
-  const rate = await fetchBcvRate();
-  if (!rate) throw new Error("No se pudo obtener la tasa del BCV");
-  await applyBcvRate({ rate, auditAction: "BCV_RATE_CRON", userId: null });
-  return { ok: true, tasaVES: rate };
+  try {
+    const rate = await fetchBcvRate();
+    if (!rate) {
+      try {
+        await prisma.auditLog.create({
+          data: {
+            userId: null,
+            action: "BCV_RATE_CRON_FAILED",
+            details: "fetchBcvRate() devolvi\u00f3 null",
+          },
+        });
+      } catch {}
+      return { ok: false, error: "No se pudo obtener la tasa del BCV" };
+    }
+    await applyBcvRate({ rate, auditAction: "BCV_RATE_CRON", userId: null });
+    return { ok: true, tasaVES: rate };
+  } catch (e: any) {
+    const msg = String(e?.message || e || "Error desconocido");
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: null,
+          action: "BCV_RATE_CRON_FAILED",
+          details: msg,
+        },
+      });
+    } catch {}
+    return { ok: false, error: msg };
+  }
 }
 
 // Carga manual de emergencia (campo en ajustes)

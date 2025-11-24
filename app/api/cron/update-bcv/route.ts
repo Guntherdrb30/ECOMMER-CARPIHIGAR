@@ -4,7 +4,12 @@ import { refreshTasaFromBCVCron } from "@/server/actions/settings";
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET_BCV;
 
-  if (secret) {
+  // Requests coming from Vercel Cron include this header by default.
+  // We allow them even if CRON_SECRET_BCV is definido, para que el cron
+  // configurado en vercel.json funcione sin tener que pasar el token.
+  const isVercelCron = !!req.headers.get("x-vercel-cron");
+
+  if (secret && !isVercelCron) {
     const url = new URL(req.url);
     const provided =
       url.searchParams.get("token") ||
@@ -16,10 +21,11 @@ export async function GET(req: Request) {
     }
   }
 
-  try {
-    const res = await refreshTasaFromBCVCron();
-    return NextResponse.json({ ok: true, tasa: res.tasaVES });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Error" }, { status: 500 });
-  }
+  const res = await refreshTasaFromBCVCron();
+  // Nunca devolvemos 500 para que Vercel Cron no marque el job como fallo,
+  // pero en el JSON puedes ver si ok=false y el mensaje de error.
+  return NextResponse.json(
+    res.ok ? { ok: true, tasa: res.tasaVES } : { ok: false, error: res.error },
+    { status: 200 }
+  );
 }

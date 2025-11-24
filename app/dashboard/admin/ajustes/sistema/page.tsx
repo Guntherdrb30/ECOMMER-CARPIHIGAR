@@ -1,4 +1,4 @@
-ï»¿import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import {
   getDeleteSecret,
@@ -44,8 +44,8 @@ export default async function SystemSettingsPage() {
       <div className="bg-white p-4 rounded-lg shadow space-y-3">
         <h2 className="text-lg font-semibold">Tasa oficial BCV (Bs/USD)</h2>
         <p className="text-sm text-gray-600">
-          Esta tasa se usa para convertir ventas y compras en bolÃ­vares. Puedes refrescarla manualmente,
-          cargar un valor de emergencia o dejar que Vercel Cron la actualice automÃ¡ticamente.
+          Esta tasa se usa para convertir ventas y compras en bolívares. Puedes refrescarla manualmente,
+          cargar un valor de emergencia o dejar que Vercel Cron la actualice automáticamente.
         </p>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between max-w-3xl">
           <div className="text-sm text-gray-700">
@@ -101,24 +101,25 @@ export default async function SystemSettingsPage() {
           </div>
         </div>
         <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded border">
-          <div className="font-semibold mb-1">AutomÃ¡tico con Vercel Cron</div>
+          <div className="font-semibold mb-1">Automático con Vercel Cron</div>
           <p>
-            Configura un cron en Vercel que llame <code>/api/cron/update-bcv?token=&lt;CRON_SECRET_BCV&gt;</code> a diario.
-            Define la variable <code>CRON_SECRET_BCV</code> en Vercel y usa el mismo valor en la URL o cabecera
-            <code> x-cron-token</code>.
+            Este proyecto ya puede usar un cron en <code>vercel.json</code> que llama <code>/api/cron/update-bcv</code> varias veces al d. Las ejecuciones que vienen desde Vercel Cron se aceptan automticamente (encabezado <code>x-vercel-cron</code>).
+          </p>
+          <p className= mt-1>
+            Si quieres exponer esta ruta a otros sistemas externos, define <code>CRON_SECRET_BCV</code> en Vercel y llama la URL como <code>/api/cron/update-bcv?token=&lt;CRON_SECRET_BCV&gt;</code> o enviando el mismo valor en la cabecera <code>x-cron-token</code>.
           </p>
           <p className="mt-1">
-            Ejemplo (Dashboard Vercel): Add Cron Job â†’ Schedule <code>@daily</code> â†’ Target
+            Ejemplo (Dashboard Vercel): Add Cron Job ? Schedule <code>@daily</code> ? Target
             <code> https://tu-proyecto.vercel.app/api/cron/update-bcv?token=&lt;CRON_SECRET_BCV&gt;</code>.
           </p>
         </div>
       </div>
 
-      {/* Clave de eliminaciÃ³n */}
+      {/* Clave de eliminación */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-2">Clave de eliminaciÃ³n</h2>
+        <h2 className="text-lg font-semibold mb-2">Clave de eliminación</h2>
         <p className="text-sm text-gray-600 mb-3">
-          Esta clave se usa para autorizar eliminaciones sensibles (abonos, productos, categorÃ­as, etc.).
+          Esta clave se usa para autorizar eliminaciones sensibles (abonos, productos, categorías, etc.).
         </p>
         <div className="mb-3 text-sm text-gray-700">Estado: {current ? "Configurada" : "No configurada"}</div>
         <form
@@ -136,7 +137,7 @@ export default async function SystemSettingsPage() {
         >
           <div>
             <label className="block text-sm text-gray-700">Nueva clave</label>
-            <input name="newSecret" type="password" minLength={6} required className="border rounded px-2 py-1 w-full" placeholder="MÃ­nimo 6 caracteres" />
+            <input name="newSecret" type="password" minLength={6} required className="border rounded px-2 py-1 w-full" placeholder="Mínimo 6 caracteres" />
           </div>
           <div>
             <label className="block text-sm text-gray-700">Confirmar clave</label>
@@ -153,11 +154,11 @@ export default async function SystemSettingsPage() {
         </form>
       </div>
 
-      {/* RecuperaciÃ³n de root por WhatsApp */}
+      {/* Recuperación de root por WhatsApp */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-2">RecuperaciÃ³n de Root por WhatsApp</h2>
+        <h2 className="text-lg font-semibold mb-2">Recuperación de Root por WhatsApp</h2>
         <p className="text-sm text-gray-600 mb-3">
-          Configura cÃ³mo se valida que el usuario root reciba cÃ³digos de recuperaciÃ³n por WhatsApp.
+          Configura cómo se valida que el usuario root reciba códigos de recuperación por WhatsApp.
         </p>
         <form
           action={async (formData) => {
@@ -172,7 +173,7 @@ export default async function SystemSettingsPage() {
           className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl"
         >
           <div>
-            <label className="block text-sm text-gray-700">TelÃ©fono root (WhatsApp)</label>
+            <label className="block text-sm text-gray-700">Teléfono root (WhatsApp)</label>
             <input
               name="rootPhone"
               defaultValue={(siteSettings as any).whatsappPhone || ""}
@@ -182,7 +183,7 @@ export default async function SystemSettingsPage() {
           </div>
           <div className="md:col-span-2 flex gap-2">
             <PendingButton className="px-3 py-2 bg-blue-600 text-white rounded" pendingText="Guardando...">
-              Guardar configuraciÃ³n
+              Guardar configuración
             </PendingButton>
           </div>
         </form>
@@ -192,7 +193,7 @@ export default async function SystemSettingsPage() {
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-2">Instrucciones de pago</h2>
         <p className="text-sm text-gray-600 mb-3">
-          Estos datos se usan en el checkout y comprobantes para mostrar al cliente cÃ³mo pagar (Zelle, Pago MÃ³vil, Banesco, Mercantil).
+          Estos datos se usan en el checkout y comprobantes para mostrar al cliente cómo pagar (Zelle, Pago Móvil, Banesco, Mercantil).
         </p>
         <form
           action={async (formData) => {
@@ -206,7 +207,7 @@ export default async function SystemSettingsPage() {
           }}
           className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl"
         >
-          <div className="md:col-span-3 font-semibold">USD â†’ Zelle</div>
+          <div className="md:col-span-3 font-semibold">USD ? Zelle</div>
           <div>
             <label className="block text-sm text-gray-700">Correo Zelle</label>
             <input
@@ -217,9 +218,9 @@ export default async function SystemSettingsPage() {
             />
           </div>
 
-          <div className="md:col-span-3 font-semibold mt-4">VES â†’ Pago MÃ³vil</div>
+          <div className="md:col-span-3 font-semibold mt-4">VES ? Pago Móvil</div>
           <div>
-            <label className="block text-sm text-gray-700">TelÃ©fono</label>
+            <label className="block text-sm text-gray-700">Teléfono</label>
             <input
               name="paymentPmPhone"
               defaultValue={(siteSettings as any).paymentPmPhone || ""}
@@ -246,7 +247,7 @@ export default async function SystemSettingsPage() {
             />
           </div>
 
-          <div className="md:col-span-3 font-semibold mt-4">DepÃ³sitos/Transferencias â†’ Banesco</div>
+          <div className="md:col-span-3 font-semibold mt-4">Depósitos/Transferencias ? Banesco</div>
           <div>
             <label className="block text-sm text-gray-700">Nombre del titular</label>
             <input
@@ -257,7 +258,7 @@ export default async function SystemSettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-700">NÃºmero de cuenta</label>
+            <label className="block text-sm text-gray-700">Número de cuenta</label>
             <input
               name="paymentBanescoAccount"
               defaultValue={(siteSettings as any).paymentBanescoAccount || ""}
@@ -275,7 +276,7 @@ export default async function SystemSettingsPage() {
             />
           </div>
 
-          <div className="md:col-span-3 font-semibold mt-4">DepÃ³sitos/Transferencias â†’ Mercantil</div>
+          <div className="md:col-span-3 font-semibold mt-4">Depósitos/Transferencias ? Mercantil</div>
           <div>
             <label className="block text-sm text-gray-700">Nombre del titular</label>
             <input
@@ -286,7 +287,7 @@ export default async function SystemSettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-700">NÃºmero de cuenta</label>
+            <label className="block text-sm text-gray-700">Número de cuenta</label>
             <input
               name="paymentMercantilAccount"
               defaultValue={(siteSettings as any).paymentMercantilAccount || ""}
@@ -315,9 +316,9 @@ export default async function SystemSettingsPage() {
         </form>
       </div>
 
-      {/* MÃ¡rgenes por defecto */}
+      {/* Márgenes por defecto */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-2">Ganancias de productos (mÃ¡rgenes %)</h2>
+        <h2 className="text-lg font-semibold mb-2">Ganancias de productos (márgenes %)</h2>
         <p className="text-sm text-gray-600 mb-3">
           Se usan para calcular precios a partir del costo al importar compras o productos por CSV.
         </p>
@@ -368,7 +369,7 @@ export default async function SystemSettingsPage() {
           </div>
           <div className="md:col-span-3 flex gap-2">
             <PendingButton className="px-3 py-2 bg-blue-600 text-white rounded" pendingText="Guardando...">
-              Guardar mÃ¡rgenes
+              Guardar márgenes
             </PendingButton>
             <a className="px-3 py-2 border rounded" href="/dashboard/admin/ajustes">
               Volver a ajustes
@@ -377,10 +378,10 @@ export default async function SystemSettingsPage() {
         </form>
       </div>
 
-      {/* Datos legales y correlativos de facturaciÃ³n (root) */}
+      {/* Datos legales y correlativos de facturación (root) */}
       {isRoot && (
         <div className="bg-white p-4 rounded-lg shadow space-y-3">
-          <h2 className="text-lg font-semibold">Datos legales / FacturaciÃ³n (Trends172, C.A)</h2>
+          <h2 className="text-lg font-semibold">Datos legales / Facturación (Trends172, C.A)</h2>
           <p className="text-sm text-gray-600">
             Estos datos se usan en las facturas legales y para llevar el correlativo de facturas y
             recibos. Solo el usuario root puede modificarlos.
@@ -419,7 +420,7 @@ export default async function SystemSettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-700">TelÃ©fono</label>
+              <label className="block text-sm text-gray-700">Teléfono</label>
               <input
                 name="legalCompanyPhone"
                 defaultValue={(siteSettings as any).legalCompanyPhone || "04245192679"}
@@ -428,7 +429,7 @@ export default async function SystemSettingsPage() {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm text-gray-700">DirecciÃ³n fiscal</label>
+              <label className="block text-sm text-gray-700">Dirección fiscal</label>
               <textarea
                 name="legalCompanyAddress"
                 defaultValue={
@@ -440,7 +441,7 @@ export default async function SystemSettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-700">PrÃ³ximo nÃºmero de factura</label>
+              <label className="block text-sm text-gray-700">Próximo número de factura</label>
               <input
                 name="invoiceNextNumber"
                 type="number"
@@ -449,11 +450,11 @@ export default async function SystemSettingsPage() {
                 className="border rounded px-2 py-1 w-full"
               />
               <p className="text-xs text-gray-500">
-                El sistema usarÃ¡ este valor como siguiente correlativo de factura.
+                El sistema usará este valor como siguiente correlativo de factura.
               </p>
             </div>
             <div>
-              <label className="block text-sm text-gray-700">PrÃ³ximo nÃºmero de recibo</label>
+              <label className="block text-sm text-gray-700">Próximo número de recibo</label>
               <input
                 name="receiptNextNumber"
                 type="number"
@@ -462,7 +463,7 @@ export default async function SystemSettingsPage() {
                 className="border rounded px-2 py-1 w-full"
               />
               <p className="text-xs text-gray-500">
-                Los recibos comenzarÃ¡n en 0000001 y el sistema irÃ¡ incrementando.
+                Los recibos comenzarán en 0000001 y el sistema irá incrementando.
               </p>
             </div>
             <div className="md:col-span-2 flex gap-2 mt-2">
@@ -479,3 +480,4 @@ export default async function SystemSettingsPage() {
     </div>
   );
 }
+
