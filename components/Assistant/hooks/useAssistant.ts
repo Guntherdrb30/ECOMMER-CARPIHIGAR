@@ -123,7 +123,7 @@ export function useAssistant() {
             content: {
               type: "text",
               message:
-                "Hola, soy tu asistente Carpihogar. ��QuǸ deseas comprar hoy?",
+                "Hola, soy tu asistente Carpihogar. ¿Qué deseas comprar hoy?",
             },
           },
         ],
@@ -198,7 +198,7 @@ export function useAssistant() {
               type: "text",
               message:
                 msg ||
-                "Hubo un problema procesando tu mensaje. ��Puedes intentar de nuevo?",
+                "Hubo un problema procesando tu mensaje. ¿Puedes intentar de nuevo?",
             },
           });
           return;
@@ -212,7 +212,7 @@ export function useAssistant() {
             at: Date.now(),
             content: {
               type: "text",
-              message: msg || "Estoy aqu�� para ayudarte.",
+              message: msg || "Estoy aquí para ayudarte.",
             },
           });
         } else {
@@ -251,7 +251,7 @@ export function useAssistant() {
                       (content as any).products.length
                     ) {
                       speak(
-                        "Aqu�� tienes algunas opciones disponibles. ��Quieres que te ayude a elegir?"
+                        "Aquí tienes algunas opciones disponibles. ¿Quieres que te ayude a elegir?"
                       );
                     } else if ((content as any)?.cart) {
                       speak("Te muestro tu carrito actualizado.");
@@ -273,7 +273,7 @@ export function useAssistant() {
               content: {
                 type: "text",
                 message:
-                  "Recib�� tu mensaje, estoy aqu�� para ayudarte.",
+                  "Recibí tu mensaje, estoy aquí para ayudarte.",
               },
             });
           }
@@ -285,7 +285,7 @@ export function useAssistant() {
           at: Date.now(),
           content: {
             type: "text",
-            message: "Hubo un error. ��Puedes intentar de nuevo?",
+            message: "Hubo un error. ¿Puedes intentar de nuevo?",
           },
         });
       } finally {
@@ -349,7 +349,7 @@ export function useAssistant() {
                       (content as any).products.length
                     ) {
                       speak(
-                        "Aqu�� tienes algunas opciones disponibles. ��Quieres que te ayude a elegir?"
+                        "Aquí tienes algunas opciones disponibles. ¿Quieres que te ayude a elegir?"
                       );
                     } else if ((content as any)?.cart) {
                       speak("Te muestro tu carrito actualizado.");
@@ -371,7 +371,7 @@ export function useAssistant() {
               content: {
                 type: "text",
                 message:
-                  "Recib�� tu audio, estoy aqu�� para ayudarte.",
+                  "Recibí tu audio, estoy aquí para ayudarte.",
               },
             });
           }
@@ -392,7 +392,7 @@ export function useAssistant() {
               const c: any = content;
               if (c?.products && Array.isArray(c.products) && c.products.length) {
                 speak(
-                  "Aqu�� tienes algunas opciones disponibles. ��Quieres que te ayude a elegir?"
+                  "Aquí tienes algunas opciones disponibles. ¿Quieres que te ayude a elegir?"
                 );
               } else if (c?.cart) {
                 speak("Te muestro tu carrito actualizado.");
@@ -433,7 +433,7 @@ export function useAssistant() {
           content: {
             type: "text",
             message:
-              "Hola, soy tu asistente Carpihogar. ��QuǸ deseas comprar hoy?",
+              "Hola, soy tu asistente Carpihogar. ¿Qué deseas comprar hoy?",
           },
         },
       ],
@@ -457,4 +457,3 @@ export function useAssistant() {
     [state, setOpen, sendMessage, sendAudio, reset, append]
   );
 }
-

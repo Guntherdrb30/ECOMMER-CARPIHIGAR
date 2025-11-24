@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   const { sessionId, setCookieHeader } = getOrCreateAssistantSession(req);
 
   if (!text) {
-    const res = NextResponse.json({ type: 'text', message: '��Puedes escribir tu consulta?' });
+    const res = NextResponse.json({ type: 'text', message: '¿Puedes escribir tu consulta?' });
     if (setCookieHeader) res.headers.append('Set-Cookie', setCookieHeader);
     return res;
   }
@@ -63,18 +63,18 @@ export async function POST(req: Request) {
           // Busqueda de productos (fallback)
           const res = await ProductsSearch.run({ q: text });
           if (res?.success && Array.isArray(res.data) && res.data.length) {
-            emit({ type: 'text', message: 'Perfecto, aqu�� tienes algunas opciones:' });
+            emit({ type: 'text', message: 'Perfecto, aquí tienes algunas opciones:' });
             emit({ type: 'products', products: res.data } as any);
           } else {
             emit({
               type: 'text',
-              message: 'No encontr�� coincidencias exactas. ��Puedes darme m��s detalles? (marca, tipo, color, medida)',
+              message: 'No encontré coincidencias exactas. ¿Puedes darme más detalles? (marca, tipo, color, medida)',
             });
           }
         } catch (e) {
           emit({
             type: 'text',
-            message: 'Tu mensaje fue recibido, pero hubo un problema proces��ndolo.',
+            message: 'Tu mensaje fue recibido, pero hubo un problema procesándolo.',
           });
         } finally {
           try {
@@ -94,4 +94,3 @@ export async function POST(req: Request) {
   if (setCookieHeader) response.headers.append('Set-Cookie', setCookieHeader);
   return response;
 }
-
