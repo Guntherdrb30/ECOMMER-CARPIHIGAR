@@ -6,7 +6,7 @@ import AudioRecorder from './AudioRecorder';
 import MicButton from './voice/MicButton';
 
 export default function Toolbar() {
-  const { sendText, sendAudioBase64 } = useAssistant();
+  const { sendText, sendAudioBase64, setView } = useAssistant();
   const [text, setText] = useState('');
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -60,6 +60,27 @@ export default function Toolbar() {
           </svg>
         </label>
         <AudioRecorder onSend={(b64) => sendAudioBase64(b64)} />
+        <button
+          type="button"
+          onClick={() => setView('cart')}
+          className="p-2 rounded bg-gray-100 text-gray-800 hover:bg-gray-200"
+          title="Ver carrito"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="w-5 h-5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M2.25 3.75h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25h9.75m-9.75 0L6 6.75m1.5 7.5L5.106 5.022A1.125 1.125 0 0 0 4 4.125H2.25M7.5 14.25 6 17.25m11.25-3h1.386c.51 0 .955-.343 1.087-.835l1.277-4.788A1.125 1.125 0 0 0 20.95 6.75H6m11.25 7.5 1.5 3m-12-3-1.5 3m3.75 0a1.125 1.125 0 1 1-2.25 0m9.75 0a1.125 1.125 0 1 1-2.25 0"
+            />
+          </svg>
+        </button>
         <button className="px-3 py-2 rounded bg-[#E62C1A] text-white hover:scale-105 transition-transform">
           Enviar
         </button>
@@ -70,4 +91,3 @@ export default function Toolbar() {
     </div>
   );
 }
-
