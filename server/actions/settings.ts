@@ -43,6 +43,33 @@ async function ensureSiteSettingsColumns() {
 // Obtiene la tasa BCV (Bs/USD) desde la página oficial
 async function fetchBcvRate(): Promise<number | null> {
   try {
+    // 1) Intentar primero una API externa (pydolarve) para obtener la tasa BCV en JSON
+    try {
+      const apiRes = await fetch(
+        "https://pydolarve.org/api/v1/dollar?page=bcv",
+        { cache: "no-store" }
+      );
+      if (apiRes.ok) {
+        const data: any = await apiRes.json();
+        const candidates: any[] = [];
+        if (data?.monitors?.bcv?.price != null)
+          candidates.push(data.monitors.bcv.price);
+        if (data?.monitors?.BCV?.price != null)
+          candidates.push(data.monitors.BCV.price);
+        if (data?.bcv?.price != null) candidates.push(data.bcv.price);
+        if (data?.BCV?.price != null) candidates.push(data.BCV.price);
+        const num = candidates.find(
+          (v) => typeof v === "number" && isFinite(v) && v > 0
+        );
+        if (typeof num === "number") {
+          return Number(num);
+        }
+      }
+    } catch {
+      // Si falla esta fuente, seguimos con el HTML oficial del BCV
+    }
+
+    // 2) Fallback: scrapping directo de la p�gina del BCV
     const res = await fetch("https://www.bcv.org.ve", { cache: "no-store" });
     if (!res.ok) return null;
     const html = await res.text();
