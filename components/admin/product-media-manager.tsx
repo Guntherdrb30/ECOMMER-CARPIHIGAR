@@ -52,7 +52,7 @@ export default function ProductMediaManager({
   };
 
   return (
-    <div className="md:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
       {/* Columna de actuales */}
       <div className="border rounded p-3 bg-white">
         <h3 className="font-semibold mb-2">Actuales</h3>
@@ -141,4 +141,3 @@ export default function ProductMediaManager({
     </div>
   );
 }
-
