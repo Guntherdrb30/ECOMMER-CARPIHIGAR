@@ -26,6 +26,7 @@ type SiteSettingsLike = {
   tasaVES: number;
   instagramHandle?: string | null;
   tiktokHandle?: string | null;
+  whatsappPhone?: string | null;
 };
 
 type RelatedProductWithCategory = ProductWithExtras;
@@ -263,6 +264,7 @@ export default function ProductDetailClient({
                 avgCost: product.avgCost ?? null,
                 lastCost: product.lastCost ?? null,
               }}
+              whatsappPhone={(settings as any).whatsappPhone || undefined}
             />
 
             {Boolean((product as any).showSocialButtons) &&
@@ -308,4 +310,3 @@ export default function ProductDetailClient({
     </>
   );
 }
-

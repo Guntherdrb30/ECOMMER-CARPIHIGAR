@@ -16,7 +16,13 @@ import {
   TelegramIcon,
 } from 'react-share';
 
-export function ProductActions({ product }: { product: Omit<Product, 'priceUSD' | 'stockUnits'> & { priceUSD: number; stockUnits?: number | null } }) {
+export function ProductActions({
+  product,
+  whatsappPhone,
+}: {
+  product: Omit<Product, 'priceUSD' | 'stockUnits'> & { priceUSD: number; stockUnits?: number | null };
+  whatsappPhone?: string;
+}) {
   const [quantity, setQuantity] = useState(1);
   const [liveStock, setLiveStock] = useState<number | null>(null);
   const stock = useMemo(() => {
@@ -42,6 +48,11 @@ export function ProductActions({ product }: { product: Omit<Product, 'priceUSD' 
   }, [product.id]);
   const addItem = useCartStore((state) => state.addItem);
 
+  const whatsappNumber = useMemo(() => {
+    const raw = (whatsappPhone || process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '').replace(/\D+/g, '');
+    return raw || null;
+  }, [whatsappPhone]);
+
   const handleAddToCart = () => {
     if (stock <= 0) {
       toast.error('Producto agotado');
@@ -66,6 +77,20 @@ export function ProductActions({ product }: { product: Omit<Product, 'priceUSD' 
   };
 
   const shareUrl = `${process.env.NEXTAUTH_URL}/productos/${product.slug}`;
+
+  const handleWhatsApp = () => {
+    if (!whatsappNumber) return;
+    let baseUrl = '';
+    if (typeof window !== 'undefined') {
+      baseUrl = window.location.origin;
+    }
+    const productUrl = baseUrl ? `${baseUrl}/productos/${product.slug}` : '';
+    const text = `Hola, estoy interesado en el producto "${product.name}"${productUrl ? ` (${productUrl})` : ''}. ��Me puedes dar mǭs informaci��n y opciones de compra?`;
+    const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
+    if (typeof window !== 'undefined') {
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <>
@@ -94,6 +119,15 @@ export function ProductActions({ product }: { product: Omit<Product, 'priceUSD' 
       >
         {stock > 0 ? 'Agregar al Carrito' : 'Agotado'}
       </button>
+      {whatsappNumber && (
+        <button
+          type="button"
+          onClick={handleWhatsApp}
+          className="w-full mt-3 bg-[#25D366] hover:bg-[#1ebe57] text-white font-bold text-lg py-3 px-8 rounded-full transition-colors"
+        >
+          Comprar por WhatsApp
+        </button>
+      )}
       <div className="mt-8">
         <p className="text-center text-sm font-medium text-gray-600 mb-4">
           ¡Comparte este producto con tus amigos!
