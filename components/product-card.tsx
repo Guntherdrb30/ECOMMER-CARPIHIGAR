@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { STOCK_POLL_MS } from '@/lib/constants';
 import { useCartStore } from '@/store/cart';
 import { toast } from 'sonner';
+import React from 'react';
 
 type ProductWithCategory = Product & {
     category: {
@@ -15,7 +16,19 @@ type ProductWithCategory = Product & {
     } | null;
 };
 
-const ProductCard = ({ product, tasa, isWishlisted = false, compact = false }: { product: ProductWithCategory, tasa: number, isWishlisted?: boolean, compact?: boolean }) => {
+const ProductCard = ({
+  product,
+  tasa,
+  isWishlisted = false,
+  compact = false,
+  whatsappPhone,
+}: {
+  product: ProductWithCategory;
+  tasa: number;
+  isWishlisted?: boolean;
+  compact?: boolean;
+  whatsappPhone?: string;
+}) => {
   const [liveStock, setLiveStock] = useState<number | null>(null);
   const stock = useMemo(() => {
     const base = typeof (product as any).stockUnits === 'number' && (product as any).stockUnits != null && !isNaN((product as any).stockUnits)
@@ -42,12 +55,33 @@ const ProductCard = ({ product, tasa, isWishlisted = false, compact = false }: {
 
   const addItem = useCartStore((s) => s.addItem);
 
+  const whatsappNumber = useMemo(() => {
+    const raw = (whatsappPhone || process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '').replace(/\D+/g, '');
+    return raw || null;
+  }, [whatsappPhone]);
+
   const onAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (stock <= 0) { toast.error('Producto agotado'); return; }
     addItem({ id: product.id, name: product.name, priceUSD: product.priceUSD, stock, image: (product as any).images?.[0] }, 1);
     toast.success('Producto agregado al carrito');
+  };
+
+  const onWhatsAppClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!whatsappNumber) return;
+    let baseUrl = '';
+    if (typeof window !== 'undefined') {
+      baseUrl = window.location.origin;
+    }
+    const productUrl = baseUrl ? `${baseUrl}/productos/${product.slug}` : '';
+    const text = `Hola, estoy interesado en el producto "${product.name}"${productUrl ? ` (${productUrl})` : ''}. ¿Me puedes dar más información y opciones de compra?`;
+    const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
+    if (typeof window !== 'undefined') {
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -81,6 +115,14 @@ const ProductCard = ({ product, tasa, isWishlisted = false, compact = false }: {
         >
           {stock > 0 ? 'Agregar al Carrito' : 'Agotado'}
         </button>
+        {whatsappNumber && (
+          <button
+            onClick={onWhatsAppClick}
+            className={`mt-2 w-full rounded-md ${compact ? 'py-1 text-xs' : 'py-2 text-sm'} font-semibold flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#1ebe57]`}
+          >
+            Comprar por WhatsApp
+          </button>
+        )}
       </div>
     </div>
   );

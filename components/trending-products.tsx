@@ -16,7 +16,12 @@ export default async function TrendingProducts() {
         <h2 className="text-3xl font-bold mb-6">Tendencias</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 lg:gap-8">
           {products.slice(0, 9).map((product: any) => (
-            <ProductCard key={product.id} product={product} tasa={(settings as any).tasaVES} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              tasa={(settings as any).tasaVES}
+              whatsappPhone={(settings as any).whatsappPhone}
+            />
           ))}
         </div>
       </div>

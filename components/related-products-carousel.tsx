@@ -58,7 +58,11 @@ export default function RelatedProductsCarousel({ products, settings }: RelatedP
         >
           {products.map((product) => (
             <SwiperSlide key={product.id}>
-              <ProductCard product={product} tasa={settings.tasaVES} />
+              <ProductCard
+                product={product}
+                tasa={settings.tasaVES}
+                whatsappPhone={(settings as any).whatsappPhone}
+              />
             </SwiperSlide>
           ))}
         </Swiper>

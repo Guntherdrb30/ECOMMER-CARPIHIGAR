@@ -91,6 +91,7 @@ export default async function ProductosPage({
               key={product.id} 
               product={product} 
               tasa={(settings as any).tasaVES} 
+              whatsappPhone={(settings as any).whatsappPhone}
               isWishlisted={wishlistedProductIds.has(product.id)}
             />
           ))}
@@ -107,4 +108,3 @@ export default async function ProductosPage({
     </div>
   );
 }
-

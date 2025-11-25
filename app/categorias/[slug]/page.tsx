@@ -59,7 +59,12 @@ export default async function CategoryLanding({ params }: { params: Promise<{ sl
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Productos destacados</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {products.slice(0, 12).map((product: any) => (
-                <ProductCard key={product.id} product={product} tasa={tasa} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  tasa={tasa}
+                  whatsappPhone={(settings as any).whatsappPhone}
+                />
               ))}
             </div>
             <div className="mt-6">
@@ -73,4 +78,3 @@ export default async function CategoryLanding({ params }: { params: Promise<{ sl
     </div>
   );
 }
-

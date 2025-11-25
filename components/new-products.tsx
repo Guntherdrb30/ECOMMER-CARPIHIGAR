@@ -40,7 +40,14 @@ export default async function NewProducts() {
         <h2 className="text-3xl font-bold text-center mb-8">Nuevos Productos</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 gap-4 lg:gap-6">
           {serializableProducts.slice(0, 20).map((product: any) => (
-            <ProductCard key={product.id} product={product} tasa={(serializableSettings as any).tasaVES} compact isWishlisted={false} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              tasa={(serializableSettings as any).tasaVES}
+              whatsappPhone={(serializableSettings as any).whatsappPhone}
+              compact
+              isWishlisted={false}
+            />
           ))}
         </div>
       </div>

@@ -17,8 +17,9 @@ export default async function WishlistPage() {
           {wishlistItems.map(item => (
             <ProductCard 
               key={item.product.id} 
-              product={item.product as any} 
-              tasa={settings.tasaVES} 
+              product={item.product as any}
+              tasa={settings.tasaVES}
+              whatsappPhone={(settings as any).whatsappPhone}
               isWishlisted={true} 
             />
           ))}
