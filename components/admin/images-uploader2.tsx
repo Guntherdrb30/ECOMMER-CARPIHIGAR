@@ -26,10 +26,11 @@ export default function ImagesUploader({
   const onFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
+    let mode: 'keep' | 'replace' | null = null;
     try {
-      onBeforeFirstUpload?.();
+      mode = onBeforeFirstUpload?.() ?? null;
     } catch {
-      // Ignoramos errores de confirmación.
+      // Ignoramos errores de confirmación para no romper la carga.
     }
 
     setError(null);
@@ -37,8 +38,19 @@ export default function ImagesUploader({
     const next: string[] = [];
     try {
       const filesArr = Array.from(files);
-      const already = urls.length + initialCount;
+      const effectiveInitial = mode === 'replace' ? 0 : initialCount;
+      const already = urls.length + effectiveInitial;
       const available = typeof max === 'number' ? Math.max(0, max - already) : filesArr.length;
+
+      if (typeof max === 'number' && available <= 0) {
+        setError(
+          mode === 'replace'
+            ? 'No se pudieron agregar más imágenes. Intenta subir menos archivos.'
+            : 'Límite de imágenes alcanzado. Elimina alguna imagen actual o elige reemplazarlas.',
+        );
+        return;
+      }
+
       const limited = filesArr.slice(0, available);
 
       const tryServerFallback = async (file: File) => {
@@ -52,7 +64,7 @@ export default function ImagesUploader({
       };
 
       for (const file of limited) {
-        if (max && (urls.length + next.length + initialCount) >= max) break;
+        if (max && (urls.length + next.length + effectiveInitial) >= max) break;
         const now = new Date();
         const year = String(now.getFullYear());
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -148,19 +160,18 @@ export default function ImagesUploader({
           type="file"
           accept="image/*"
           multiple
-          disabled={reached}
           onChange={(e) => onFiles(e.target.files)}
           className="hidden"
         />
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          disabled={busy || reached}
+          disabled={busy || (reached && !onBeforeFirstUpload)}
           className="px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {busy ? 'Subiendo...' : 'Subir archivo'}
         </button>
-        {reached && (
+        {reached && !onBeforeFirstUpload && (
           <span className="text-xs text-gray-500">Límite alcanzado</span>
         )}
       </div>
