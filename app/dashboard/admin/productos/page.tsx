@@ -284,36 +284,87 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
       <div className="bg-white p-4 rounded-lg shadow mt-4">
         <h2 className="text-lg font-bold mb-2">Todos los Productos</h2>
         <details className="rounded border border-gray-200" open>
-          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700">Ver productos</summary>
-          <div className="overflow-x-auto">
-            <table className="w-full table-fixed text-sm">
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700">
+            Ver productos
+          </summary>
+          <div className="mt-2">
+            <table className="w-full text-sm border-t border-gray-200">
               <thead>
                 <tr className="bg-gray-100 text-gray-700">
-                  <th className="px-2 py-1 text-left w-64">Nombre</th>
-                  <th className="px-2 py-1 text-left w-48">Slug</th>
-                  <th className="px-2 py-1 text-left w-24">Precio USD</th>
-                  <th className="px-2 py-1 text-left w-28">Precio Aliado</th>
-                  <th className="px-2 py-1 text-left w-20">Stock</th>
-                  <th className="px-2 py-1 text-left w-40">Categoria</th>
-                  <th className="px-2 py-1 text-left w-40">Proveedor</th>
-                  <th className="px-2 py-1 text-left w-16">Nuevo</th>
-                  <th className="px-2 py-1 text-left">Acciones</th>
+                  <th className="px-2 py-1 text-left w-[40%]">Producto</th>
+                  <th className="px-2 py-1 text-left w-[18%]">Precios (USD)</th>
+                  <th className="px-2 py-1 text-left w-[18%]">Stock / Categoría</th>
+                  <th className="px-2 py-1 text-left w-[24%]">Proveedor / Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {products.map((product: any) => (
-                  <tr key={product.id} className="border-t">
-                    <td className="px-2 py-1 align-top">{product.name}</td>
-                    <td className="px-2 py-1 align-top">{product.slug}</td>
-                    <td className="px-2 py-1 align-top">{Number(product.priceUSD).toFixed ? Number(product.priceUSD).toFixed(2) : String(product.priceUSD)}</td>
-                    <td className="px-2 py-1 align-top">{product.priceAllyUSD != null ? (Number(product.priceAllyUSD).toFixed ? Number(product.priceAllyUSD).toFixed(2) : String(product.priceAllyUSD)) : ''}</td>
-                    <td className={`px-2 py-1 align-top ${product.stock <= lowStock ? 'bg-red-50 text-red-700 font-semibold' : ''}`}>{product.stock}</td>
-                    <td className="px-2 py-1 align-top">{product.category?.name}</td>
-                    <td className="px-2 py-1 align-top">{product.supplier?.name || '-'}</td>
-                    <td className="px-2 py-1 align-top">{product.isNew ? 'Si' : 'No'}</td>
-                    <td className="px-2 py-1 align-top space-y-2">
-                      <ProductActionsMenu product={product} lowStock={lowStock} isRoot={isRoot} />
-                      <StockHistory productId={product.id} />
+                  <tr key={product.id} className="border-t align-top">
+                    <td className="px-2 py-2">
+                      <div className="font-medium text-gray-900 leading-snug">
+                        {product.name}
+                      </div>
+                      <div className="text-xs text-gray-500 break-all">
+                        {product.slug}
+                      </div>
+                      {product.isNew && (
+                        <span className="inline-flex mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Nuevo
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 text-xs leading-snug">
+                      <div>
+                        Cliente:{' '}
+                        <span className="font-medium">
+                          {Number(product.priceUSD).toFixed
+                            ? Number(product.priceUSD).toFixed(2)
+                            : String(product.priceUSD)}
+                        </span>
+                      </div>
+                      <div className="mt-0.5">
+                        Aliado:{' '}
+                        <span className="font-medium">
+                          {product.priceAllyUSD != null
+                            ? Number(product.priceAllyUSD).toFixed
+                              ? Number(product.priceAllyUSD).toFixed(2)
+                              : String(product.priceAllyUSD)
+                            : '-'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-2 py-2 text-xs leading-snug">
+                      <div
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                          product.stock <= lowStock
+                            ? 'bg-red-50 text-red-700 border-red-200'
+                            : 'bg-gray-50 text-gray-700 border-gray-200'
+                        }`}
+                      >
+                        Stock:&nbsp;{product.stock}
+                      </div>
+                      <div className="mt-1 text-gray-700">
+                        <span className="font-medium">Categoría:</span>{' '}
+                        <span className="text-xs">{product.category?.name || '-'}</span>
+                      </div>
+                    </td>
+                    <td className="px-2 py-2 text-xs leading-snug">
+                      <div className="text-gray-700 mb-1">
+                        <span className="font-medium">Proveedor:</span>{' '}
+                        <span className="text-xs">{product.supplier?.name || '-'}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <div>
+                          <ProductActionsMenu
+                            product={product}
+                            lowStock={lowStock}
+                            isRoot={isRoot}
+                          />
+                        </div>
+                        <div>
+                          <StockHistory productId={product.id} />
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ))}
