@@ -5,6 +5,7 @@ import { getConfigurableProducts, setProductEcpdConfig } from '@/server/actions/
 import { getProducts, createProduct } from '@/server/actions/products';
 import { getCategoriesFlattened } from '@/server/actions/categories';
 import HeroMediaUploader from '@/components/admin/hero-media-uploader';
+import ImagesUploader from '@/components/admin/images-uploader2';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 const defaultSchema = {
@@ -112,11 +113,9 @@ export default async function ConfigurableProductsPage() {
       String(formData.get('brand') || '').trim() || 'Carpihogar';
     const description = String(formData.get('description') || '').trim();
     const priceUSD = parseFloat(String(formData.get('priceUSD') || '0'));
-    const stockUnits = parseInt(
-      String(formData.get('stockUnits') || '0'),
-      10,
-    );
+    const stockUnits = parseInt(String(formData.get('stockUnits') || '0'), 10);
     const mainImage = String(formData.get('mainImage') || '').trim();
+    const extraImages = (formData.getAll('images[]') as string[]).map(String).filter(Boolean);
     const categoryId = String(formData.get('categoryId') || '') || null;
 
     const schemaText = String(formData.get('schema') || '').trim();
@@ -133,12 +132,14 @@ export default async function ConfigurableProductsPage() {
       schema = defaultSchema;
     }
 
+    const allImages = mainImage ? [mainImage, ...extraImages] : extraImages;
+
     const product = await createProduct({
       name,
       slug,
       brand,
       description,
-      images: mainImage ? [mainImage] : [],
+      images: allImages.slice(0, 10),
       sku: null,
       barcode: '',
       priceUSD,
@@ -279,6 +280,15 @@ export default async function ConfigurableProductsPage() {
                 </p>
                 <HeroMediaUploader targetInputName="mainImage" />
                 <input type="hidden" name="mainImage" defaultValue="" />
+              </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Im&aacute;genes de soporte (hasta 10)
+                </label>
+                <p className="text-xs text-gray-500 mb-1">
+                  Im&aacute;genes adicionales del mueble (detalles, vistas de ambiente, etc.).
+                </p>
+                <ImagesUploader targetName="images[]" max={10} />
               </div>
             </div>
           </div>

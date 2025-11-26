@@ -16,6 +16,7 @@ async function ensureSiteSettingsColumns() {
         'ADD COLUMN IF NOT EXISTS "defaultMarginWholesalePct" DECIMAL(5,2), ' +
         'ADD COLUMN IF NOT EXISTS "heroAutoplayMs" INTEGER, ' +
         'ADD COLUMN IF NOT EXISTS "ecpdHeroUrls" TEXT[], ' +
+        'ADD COLUMN IF NOT EXISTS "ecpdColors" JSONB, ' +
         'ADD COLUMN IF NOT EXISTS "instagramHandle" TEXT, ' +
         'ADD COLUMN IF NOT EXISTS "tiktokHandle" TEXT, ' +
         'ADD COLUMN IF NOT EXISTS "categoryBannerCarpinteriaUrl" TEXT, ' +
@@ -176,6 +177,25 @@ export async function getSettings() {
       ecpdHeroUrls: Array.isArray((settings as any).ecpdHeroUrls)
         ? ((settings as any).ecpdHeroUrls as any[]).filter(Boolean)
         : [],
+      ecpdColors: Array.isArray((settings as any).ecpdColors)
+        ? (settings as any).ecpdColors
+        : [
+            {
+              name: 'Arena',
+              description: 'Melamina tono arena, base neutra y c&aacute;lida.',
+              image: '',
+            },
+            {
+              name: 'Nogal oscuro',
+              description: 'Melamina efecto madera nogal oscuro, elegante y profunda.',
+              image: '',
+            },
+            {
+              name: 'Gris claro',
+              description: 'Melamina gris claro, combinable con la mayor&iacute;a de estilos.',
+              image: '',
+            },
+          ],
       categoryBannerCarpinteriaUrl: (settings as any).categoryBannerCarpinteriaUrl || "",
       categoryBannerHogarUrl: (settings as any).categoryBannerHogarUrl || "",
       paymentZelleEmail: (settings as any).paymentZelleEmail || "",
@@ -214,6 +234,11 @@ export async function getSettings() {
       homeHeroUrls: [],
       heroAutoplayMs: 5000,
       ecpdHeroUrls: [],
+      ecpdColors: [
+        { name: 'Arena', description: '', image: '' },
+        { name: 'Nogal oscuro', description: '', image: '' },
+        { name: 'Gris claro', description: '', image: '' },
+      ],
       lowStockThreshold: 5,
       sellerCommissionPercent: 5,
       defaultMarginClientPct: 40,

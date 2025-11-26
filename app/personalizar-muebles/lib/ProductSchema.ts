@@ -95,8 +95,9 @@ export const ProductSchema: ProductSchemaType = {
   },
   aesthetics: {
     doors: ['Una', 'Dos', 'Sin puertas'],
-    colors: ['Blanco', 'Antracita', 'Roble', 'Blanco/roble'],
-    handles: ['Tirador Japón', 'Tirador Alemania', 'Niquel', 'Negro'],
+    // Colores base de melamina para el configurador ECPD.
+    colors: ['Arena', 'Nogal oscuro', 'Gris claro'],
+    handles: ['Tirador Jap��n', 'Tirador Alemania', 'Niquel', 'Negro'],
   },
   pricing: {
     referencePrice: 300,
