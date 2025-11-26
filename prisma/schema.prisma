@@ -130,6 +130,8 @@ model SiteSettings {
   secondaryColor          String?
   logoUrl                 String?
   homeHeroUrls            String[]
+  // Mini hero para el personalizador de muebles (ECPD)
+  ecpdHeroUrls            String[]
   heroAutoplayMs          Int?
   lowStockThreshold       Int     @default(5)
   sellerCommissionPercent Decimal @default(5) @db.Decimal(5, 2)

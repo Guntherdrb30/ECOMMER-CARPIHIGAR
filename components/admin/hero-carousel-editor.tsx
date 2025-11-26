@@ -9,7 +9,13 @@ function isVideoUrl(url?: string) {
   return s.endsWith('.mp4') || s.endsWith('.webm') || s.endsWith('.ogg');
 }
 
-export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: string[] }) {
+type HeroCarouselEditorProps = {
+  defaultUrls: string[];
+  // Permite reutilizar el editor para otros carousels (ej: ECPD)
+  fieldPrefix?: string;
+};
+
+export default function HeroCarouselEditor({ defaultUrls, fieldPrefix = 'homeHeroUrl' }: HeroCarouselEditorProps) {
   const initial = (defaultUrls || []).filter(Boolean).slice(0, 3);
   while (initial.length < 3) initial.push('');
   const [items, setItems] = useState<string[]>(initial);
@@ -115,7 +121,7 @@ export default function HeroCarouselEditor({ defaultUrls }: { defaultUrls: strin
             </button>
             <button type="button" onClick={() => clearSlot(i)} className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 flex-none">Limpiar</button>
           </div>
-          <input type="hidden" name={`homeHeroUrl${i + 1}`} value={url} />
+          <input type="hidden" name={`${fieldPrefix}${i + 1}`} value={url} />
         </div>
       ))}
       {error && <div className="text-red-600 text-sm col-span-full">{error}</div>}

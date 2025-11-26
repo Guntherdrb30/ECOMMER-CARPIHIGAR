@@ -15,6 +15,7 @@ async function ensureSiteSettingsColumns() {
         'ADD COLUMN IF NOT EXISTS "defaultMarginAllyPct" DECIMAL(5,2), ' +
         'ADD COLUMN IF NOT EXISTS "defaultMarginWholesalePct" DECIMAL(5,2), ' +
         'ADD COLUMN IF NOT EXISTS "heroAutoplayMs" INTEGER, ' +
+        'ADD COLUMN IF NOT EXISTS "ecpdHeroUrls" TEXT[], ' +
         'ADD COLUMN IF NOT EXISTS "instagramHandle" TEXT, ' +
         'ADD COLUMN IF NOT EXISTS "tiktokHandle" TEXT, ' +
         'ADD COLUMN IF NOT EXISTS "categoryBannerCarpinteriaUrl" TEXT, ' +
@@ -172,6 +173,9 @@ export async function getSettings() {
       defaultMarginAllyPct: (settings as any).defaultMarginAllyPct?.toNumber?.() ?? 30,
       defaultMarginWholesalePct: (settings as any).defaultMarginWholesalePct?.toNumber?.() ?? 20,
       heroAutoplayMs: Number((settings as any).heroAutoplayMs ?? 5000) || 5000,
+      ecpdHeroUrls: Array.isArray((settings as any).ecpdHeroUrls)
+        ? ((settings as any).ecpdHeroUrls as any[]).filter(Boolean)
+        : [],
       categoryBannerCarpinteriaUrl: (settings as any).categoryBannerCarpinteriaUrl || "",
       categoryBannerHogarUrl: (settings as any).categoryBannerHogarUrl || "",
       paymentZelleEmail: (settings as any).paymentZelleEmail || "",
@@ -209,6 +213,7 @@ export async function getSettings() {
       logoUrl: "/logo-default.svg",
       homeHeroUrls: [],
       heroAutoplayMs: 5000,
+      ecpdHeroUrls: [],
       lowStockThreshold: 5,
       sellerCommissionPercent: 5,
       defaultMarginClientPct: 40,
@@ -397,12 +402,15 @@ export async function updateSettings(data: any) {
   }
 
   // La tasa oficial (tasaVES) se gestiona solo vía BCV o setTasaManual
-  const cleaned = { ...(data || {}) } as any;
-  delete cleaned.tasaVES;
-
-  const urlsIn = Array.isArray(cleaned?.homeHeroUrls)
-    ? (cleaned.homeHeroUrls as string[]).filter(Boolean)
-    : [];
+    const cleaned = { ...(data || {}) } as any;
+    delete cleaned.tasaVES;
+  
+    const urlsIn = Array.isArray(cleaned?.homeHeroUrls)
+      ? (cleaned.homeHeroUrls as string[]).filter(Boolean)
+      : [];
+    const ecpdUrlsIn = Array.isArray(cleaned?.ecpdHeroUrls)
+      ? (cleaned.ecpdHeroUrls as string[]).filter(Boolean)
+      : [];
   const isVideo = (u: string) => {
     const s = String(u || "").toLowerCase();
     return s.endsWith(".mp4") || s.endsWith(".webm") || s.endsWith(".ogg");
@@ -415,15 +423,16 @@ export async function updateSettings(data: any) {
       urlsIn[idx] = t;
     }
   }
-  const msRaw = Number(cleaned?.heroAutoplayMs ?? 5000);
-  const heroAutoplayMs = !isNaN(msRaw) && msRaw > 0 ? Math.min(Math.max(msRaw, 1000), 120000) : 5000;
-
-  const prepared = {
-    ...cleaned,
-    homeHeroUrls: urlsIn,
-    heroAutoplayMs,
-    categoryBannerCarpinteriaUrl: cleaned.categoryBannerCarpinteriaUrl || null,
-    categoryBannerHogarUrl: cleaned.categoryBannerHogarUrl || null,
+    const msRaw = Number(cleaned?.heroAutoplayMs ?? 5000);
+    const heroAutoplayMs = !isNaN(msRaw) && msRaw > 0 ? Math.min(Math.max(msRaw, 1000), 120000) : 5000;
+  
+    const prepared = {
+      ...cleaned,
+      homeHeroUrls: urlsIn,
+      ecpdHeroUrls: ecpdUrlsIn,
+      heroAutoplayMs,
+      categoryBannerCarpinteriaUrl: cleaned.categoryBannerCarpinteriaUrl || null,
+      categoryBannerHogarUrl: cleaned.categoryBannerHogarUrl || null,
   } as any;
 
   const settings = await prisma.siteSettings.update({
