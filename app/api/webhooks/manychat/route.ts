@@ -7,12 +7,26 @@ import { normalizeVePhone } from '@/lib/phone';
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({} as any));
-    const rawPhone = String((body as any)?.phone || (body as any)?.from || '').trim();
-    const message = String((body as any)?.message || (body as any)?.text || '').trim();
+
+    // ManyChat suele enviar:
+    // {
+    //   "subscriber": { "phone": "58412...", "name": "...", "id": "..." },
+    //   "message": { "text": "..." },
+    //   "channel": "whatsapp"
+    // }
+    let rawPhone = String((body as any)?.phone || (body as any)?.from || '').trim();
+    if (!rawPhone && (body as any)?.subscriber?.phone) {
+      rawPhone = String((body as any).subscriber.phone || '').trim();
+    }
+
+    let message = String((body as any)?.message || (body as any)?.text || '').trim();
+    if (!message && (body as any)?.message?.text) {
+      message = String((body as any).message.text || '').trim();
+    }
 
     const normalized = normalizeVePhone(rawPhone);
     const phone = normalized || rawPhone.replace(/[^0-9]/g, '');
-    if (!phone) return NextResponse.json({ ok: false });
+    if (!phone) return NextResponse.json({ ok: true });
 
     // Registrar siempre el mensaje entrante en la bandeja de mensajería
     if (message) {
