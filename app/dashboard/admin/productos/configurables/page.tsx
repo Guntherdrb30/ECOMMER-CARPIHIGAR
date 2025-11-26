@@ -2,7 +2,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getConfigurableProducts, setProductEcpdConfig } from '@/server/actions/ecpd';
-import { getProducts } from '@/server/actions/products';
+import { getProducts, createProduct } from '@/server/actions/products';
+import { getCategoriesFlattened } from '@/server/actions/categories';
+import HeroMediaUploader from '@/components/admin/hero-media-uploader';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
 
 const defaultSchema = {
@@ -47,9 +49,10 @@ export default async function ConfigurableProductsPage() {
     redirect('/auth/login?callbackUrl=/dashboard/admin/productos/configurables');
   }
 
-  const [allProducts, configurable] = await Promise.all([
+  const [allProducts, configurable, categories] = await Promise.all([
     getProducts(),
     getConfigurableProducts(),
+    getCategoriesFlattened(),
   ]);
 
   const configurableIds = new Set(
@@ -96,6 +99,84 @@ export default async function ConfigurableProductsPage() {
     );
   }
 
+  async function createConfigurableProduct(formData: FormData) {
+    'use server';
+    const name = String(formData.get('name') || '').trim();
+    if (!name) {
+      redirect(
+        '/dashboard/admin/productos/configurables?error=Nombre%20requerido',
+      );
+    }
+    const slug = String(formData.get('slug') || '').trim();
+    const brand =
+      String(formData.get('brand') || '').trim() || 'Carpihogar';
+    const description = String(formData.get('description') || '').trim();
+    const priceUSD = parseFloat(String(formData.get('priceUSD') || '0'));
+    const stockUnits = parseInt(
+      String(formData.get('stockUnits') || '0'),
+      10,
+    );
+    const mainImage = String(formData.get('mainImage') || '').trim();
+    const categoryId = String(formData.get('categoryId') || '') || null;
+
+    const schemaText = String(formData.get('schema') || '').trim();
+    let schema: any;
+    if (schemaText) {
+      try {
+        schema = JSON.parse(schemaText);
+      } catch {
+        redirect(
+          '/dashboard/admin/productos/configurables?error=El%20JSON%20no%20es%20v%C3%A1lido',
+        );
+      }
+    } else {
+      schema = defaultSchema;
+    }
+
+    const product = await createProduct({
+      name,
+      slug,
+      brand,
+      description,
+      images: mainImage ? [mainImage] : [],
+      sku: null,
+      barcode: '',
+      priceUSD,
+      priceAllyUSD: null,
+      priceWholesaleUSD: null,
+      stock: stockUnits,
+      stockUnits,
+      stockMinUnits: 0,
+      allowBackorder: false,
+      type: 'SIMPLE',
+      unitsPerPackage: null,
+      stockPackages: null,
+      soldBy: 'UNIT',
+      weightKg: null,
+      heightCm: null,
+      widthCm: null,
+      depthCm: null,
+      freightType: null,
+      categoryId,
+      supplierId: null,
+      isNew: true,
+      videoUrl: null,
+      showSocialButtons: false,
+      relatedIds: [],
+      isConfigurable: true,
+      configSchema: schema,
+    } as any);
+
+    await setProductEcpdConfig(String((product as any).id), {
+      name: String(schema?.name || name),
+      schema,
+    });
+
+    redirect(
+      '/dashboard/admin/productos/configurables?message=Mueble%20configurable%20creado',
+    );
+  }
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       <ShowToastFromSearch successParam="message" errorParam="error" />
@@ -103,6 +184,127 @@ export default async function ConfigurableProductsPage() {
       <p className="text-sm text-gray-600 mb-4">
         Desde aquí defines qué productos del catálogo se pueden personalizar con el motor ECPD y, de forma avanzada, puedes ajustar el esquema JSON del configurador.
       </p>
+
+      <section className="bg-white rounded-lg shadow p-4 space-y-3">
+        <h2 className="text-lg font-semibold">
+          Crear nuevo mueble configurable
+        </h2>
+        <p className="text-sm text-gray-600">
+          Usa este formulario para dar de alta un mueble dise�ado para el
+          personalizador (nombre, ficha b�sica, imagen principal y esquema
+          ECPD). Luego podr�s afinar m�s detalles desde &quot;Gestionar
+          Productos&quot;.
+        </p>
+        <form action={createConfigurableProduct} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Nombre del mueble
+              </label>
+              <input
+                name="name"
+                required
+                className="w-full border rounded px-2 py-1 text-sm"
+                placeholder="Armario Nidus 2 puertas"
+              />
+              <label className="block text-sm font-medium text-gray-700 mt-3">
+                Slug (opcional)
+              </label>
+              <input
+                name="slug"
+                className="w-full border rounded px-2 py-1 text-sm"
+                placeholder="armario-nidus-2p"
+              />
+              <label className="block text-sm font-medium text-gray-700 mt-3">
+                Marca
+              </label>
+              <input
+                name="brand"
+                defaultValue="Carpihogar"
+                className="w-full border rounded px-2 py-1 text-sm"
+              />
+              <label className="block text-sm font-medium text-gray-700 mt-3">
+                Precio base (USD)
+              </label>
+              <input
+                name="priceUSD"
+                type="number"
+                min={0}
+                step="0.01"
+                required
+                className="w-full border rounded px-2 py-1 text-sm"
+              />
+              <label className="block text-sm font-medium text-gray-700 mt-3">
+                Stock inicial (unidades)
+              </label>
+              <input
+                name="stockUnits"
+                type="number"
+                min={0}
+                defaultValue={0}
+                className="w-full border rounded px-2 py-1 text-sm"
+              />
+              <label className="block text-sm font-medium text-gray-700 mt-3">
+                Categor�a (opcional)
+              </label>
+              <select
+                name="categoryId"
+                className="w-full border rounded px-2 py-1 text-sm"
+                defaultValue=""
+              >
+                <option value="">Sin categor�a</option>
+                {(categories as any[]).map((c: any) => (
+                  <option key={c.id} value={c.id}>
+                    {`${'- '.repeat(c.depth || 0)}${c.name}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Descripci�n comercial
+              </label>
+              <textarea
+                name="description"
+                className="w-full border rounded px-2 py-1 text-sm min-h-[90px]"
+                placeholder="Descripci�n breve del mueble, materiales, usos recomendados..."
+              />
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Imagen principal
+                </label>
+                <p className="text-xs text-gray-500 mb-1">
+                  Esta imagen se usar� como referencia visual del mueble en el
+                  personalizador y en la ficha de producto.
+                </p>
+                <HeroMediaUploader targetInputName="mainImage" />
+                <input type="hidden" name="mainImage" defaultValue="" />
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Esquema JSON del configurador (opcional)
+            </label>
+            <textarea
+              name="schema"
+              className="w-full border rounded px-2 py-1 text-xs font-mono min-h-[140px]"
+              placeholder={JSON.stringify(defaultSchema, null, 2)}
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Si lo dejas vac�o se usar� el esquema por defecto del Armario
+              Nidus. Aqu� puedes definir dimensiones, componentes, est�tica y
+              precios espec�ficos para este modelo.
+            </p>
+          </div>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded bg-brand text-white text-sm font-semibold hover:bg-opacity-90"
+          >
+            Crear mueble configurable
+          </button>
+        </form>
+      </section>
 
       <section className="bg-white rounded-lg shadow p-4 space-y-3">
         <h2 className="text-lg font-semibold">Seleccionar producto y definir esquema</h2>
@@ -201,4 +403,3 @@ export default async function ConfigurableProductsPage() {
     </div>
   );
 }
-
