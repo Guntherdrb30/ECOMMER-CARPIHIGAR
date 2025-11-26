@@ -15,7 +15,9 @@ async function ensureProductColumns() {
     await prisma.$executeRawUnsafe(
       'ALTER TABLE "public"."Product" ' +
       'ADD COLUMN IF NOT EXISTS "videoUrl" TEXT, ' +
-      'ADD COLUMN IF NOT EXISTS "showSocialButtons" BOOLEAN NOT NULL DEFAULT false'
+      'ADD COLUMN IF NOT EXISTS "showSocialButtons" BOOLEAN NOT NULL DEFAULT false, ' +
+      'ADD COLUMN IF NOT EXISTS "isConfigurable" BOOLEAN NOT NULL DEFAULT false, ' +
+      'ADD COLUMN IF NOT EXISTS "configSchema" JSONB'
     );
   } catch {}
 }
@@ -160,6 +162,7 @@ export async function importProductsCsv(formData: FormData) {
 }
 
 export async function getProducts(filters?: { isNew?: boolean; categorySlug?: string; q?: string; supplierId?: string }) {
+    await ensureProductColumns();
     const where: any = {};
 
     if (filters?.isNew) {

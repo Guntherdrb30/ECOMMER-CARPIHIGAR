@@ -192,6 +192,10 @@ model Product {
   videoUrl     String?
   // Show Instagram/TikTok buttons in PDP
   showSocialButtons Boolean @default(false)
+  // ECPD: marca si el producto tiene configurador de muebles asociado
+  isConfigurable    Boolean @default(false)
+  // ECPD: esquema JSON del configurador (dimensiones, componentes, etc.)
+  configSchema      Json?
   sku          String?         @unique
   // Câ”œâ”‚digo interno opcional (puede venir de proveedor)
   code         String?         @unique
