@@ -83,7 +83,28 @@ export default function ChatMessages({ conversationId, initial }: { conversation
         </div>
       );
     }
-    return <div className="text-[15px] leading-5 whitespace-pre-wrap text-gray-900">{m.text}</div>;
+    const text = String(m.text || '');
+    const parts = text.split(/(https?:\/\/\S+)/g);
+    return (
+      <div className="text-[15px] leading-5 whitespace-pre-wrap text-gray-900">
+        {parts.map((part, idx) => {
+          if (/^https?:\/\/\S+$/i.test(part)) {
+            return (
+              <a
+                key={idx}
+                href={part}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 underline break-all"
+              >
+                {part}
+              </a>
+            );
+          }
+          return <span key={idx}>{part}</span>;
+        })}
+      </div>
+    );
   };
 
   return (

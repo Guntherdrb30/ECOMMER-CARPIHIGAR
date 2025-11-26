@@ -20,22 +20,32 @@ export function ProductActions({
   product,
   whatsappPhone,
 }: {
-  product: Omit<Product, 'priceUSD' | 'stockUnits'> & { priceUSD: number; stockUnits?: number | null };
+  product: Omit<Product, 'priceUSD' | 'stockUnits'> & {
+    priceUSD: number;
+    stockUnits?: number | null;
+  };
   whatsappPhone?: string;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [liveStock, setLiveStock] = useState<number | null>(null);
   const stock = useMemo(() => {
-    const base = typeof product.stockUnits === 'number' && product.stockUnits != null && !isNaN(product.stockUnits)
-      ? product.stockUnits
-      : product.stock;
+    const base =
+      typeof product.stockUnits === 'number' &&
+      product.stockUnits != null &&
+      !isNaN(product.stockUnits)
+        ? product.stockUnits
+        : product.stock;
     return liveStock ?? base;
   }, [liveStock, product.stock, product.stockUnits]);
+
   useEffect(() => {
     let cancelled = false;
     const poll = async () => {
       try {
-        const res = await fetch(`/api/stock?ids=${encodeURIComponent(product.id)}`, { cache: 'no-store' });
+        const res = await fetch(
+          `/api/stock?ids=${encodeURIComponent(product.id)}`,
+          { cache: 'no-store' },
+        );
         if (!res.ok) return;
         const data = await res.json();
         const s = Number(data?.stocks?.[product.id] ?? NaN);
@@ -44,12 +54,19 @@ export function ProductActions({
     };
     poll();
     const t = setInterval(poll, STOCK_POLL_MS);
-    return () => { cancelled = true; clearInterval(t); };
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
   }, [product.id]);
+
   const addItem = useCartStore((state) => state.addItem);
 
   const whatsappNumber = useMemo(() => {
-    const raw = (whatsappPhone || process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '').replace(/\D+/g, '');
+    const raw = (whatsappPhone || process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '').replace(
+      /\D+/g,
+      '',
+    );
     return raw || null;
   }, [whatsappPhone]);
 
@@ -67,7 +84,7 @@ export function ProductActions({
         stock: stock,
         image: (product as any).images?.[0],
       },
-      safeQty
+      safeQty,
     );
     if (safeQty < quantity) {
       toast.info(`Se agregó el máximo disponible (${safeQty})`);
@@ -84,8 +101,11 @@ export function ProductActions({
     if (typeof window !== 'undefined') {
       baseUrl = window.location.origin;
     }
-    const productUrl = baseUrl ? `${baseUrl}/productos/${product.slug}` : '';
-    const text = `Hola, estoy interesado en el producto "${product.name}"${productUrl ? ` (${productUrl})` : ''}. ��Me puedes dar mǭs informaci��n y opciones de compra?`;
+    const encodedSlug = encodeURIComponent(String(product.slug || ''));
+    const productUrl = baseUrl ? `${baseUrl}/productos/${encodedSlug}` : '';
+    const text = `Hola, estoy interesado en el producto "${product.name}"${
+      productUrl ? ` (${productUrl})` : ''
+    }. ¿Me puedes dar más información y opciones de compra?`;
     const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
     if (typeof window !== 'undefined') {
       window.open(waUrl, '_blank', 'noopener,noreferrer');
@@ -95,22 +115,28 @@ export function ProductActions({
   return (
     <>
       <div className="flex items-center gap-4 mb-8">
-        <label htmlFor="quantity" className="font-bold">Cantidad:</label>
+        <label htmlFor="quantity" className="font-bold">
+          Cantidad:
+        </label>
         <input
           id="quantity"
           type="number"
           min={1}
           max={Math.max(1, stock)}
           value={quantity}
-          onChange={(e) => setQuantity(() => {
-            const n = Number(e.target.value);
-            if (!Number.isFinite(n)) return 1;
-            return Math.max(1, Math.min(n, stock));
-          })}
+          onChange={(e) =>
+            setQuantity(() => {
+              const n = Number(e.target.value);
+              if (!Number.isFinite(n)) return 1;
+              return Math.max(1, Math.min(n, stock));
+            })
+          }
           className="w-24 border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand"
           disabled={stock === 0}
         />
-        <span className="text-sm text-gray-500">{stock > 0 ? `Disponibles: ${stock}` : 'Agotado'}</span>
+        <span className="text-sm text-gray-500">
+          {stock > 0 ? `Disponibles: ${stock}` : 'Agotado'}
+        </span>
       </div>
       <button
         onClick={handleAddToCart}
