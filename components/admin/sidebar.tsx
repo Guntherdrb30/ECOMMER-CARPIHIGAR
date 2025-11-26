@@ -67,6 +67,7 @@ export default function AdminSidebar() {
   const links = [
     { href: '/dashboard/admin', label: 'Resumen' },
     { href: '/dashboard/admin/productos', label: 'Productos' },
+    { href: '/dashboard/admin/productos/configurables', label: 'Configurables (ECPD)' },
     { href: '/dashboard/admin/categorias', label: 'Categorías' },
     { href: '/dashboard/admin/ventas', label: 'Ventas' },
     { href: '/dashboard/admin/ventas/aliados', label: 'Ventas Aliados (verificar)' },
