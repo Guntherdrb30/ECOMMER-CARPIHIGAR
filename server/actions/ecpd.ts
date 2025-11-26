@@ -11,16 +11,26 @@ type EcpdConfig = {
 };
 
 export async function getConfigurableProducts(): Promise<
-  Array<{ id: string; name: string; slug: string; isConfigurable: boolean; configSchema: any | null }>
+  Array<{
+    id: string;
+    name: string;
+    slug: string;
+    isConfigurable: boolean;
+    configSchema: any | null;
+    images: string[];
+    priceUSD: number | null;
+  }>
 > {
   const products = await prisma.product.findMany({
-    where: {},
+    where: { isConfigurable: true },
     select: {
       id: true,
       name: true,
       slug: true,
       isConfigurable: true,
       configSchema: true,
+      images: true,
+      priceUSD: true,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -28,7 +38,38 @@ export async function getConfigurableProducts(): Promise<
   return products.map((p) => ({
     ...p,
     configSchema: (p as any).configSchema ?? null,
+    images: Array.isArray((p as any).images) ? ((p as any).images as string[]) : [],
+    priceUSD:
+      typeof (p as any).priceUSD === 'number'
+        ? ((p as any).priceUSD as number)
+        : (p as any).priceUSD?.toNumber?.() ?? null,
   }));
+}
+
+export async function getConfigurableProductBySlug(slug: string) {
+  const p = await prisma.product.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      images: true,
+      priceUSD: true,
+      isConfigurable: true,
+      configSchema: true,
+    },
+  });
+  if (!p || !p.isConfigurable) return null;
+  return {
+    ...p,
+    images: Array.isArray((p as any).images) ? ((p as any).images as string[]) : [],
+    priceUSD:
+      typeof (p as any).priceUSD === 'number'
+        ? ((p as any).priceUSD as number)
+        : (p as any).priceUSD?.toNumber?.() ?? null,
+    configSchema: (p as any).configSchema ?? null,
+  };
 }
 
 export async function setProductEcpdConfig(productId: string, config: EcpdConfig | null) {
@@ -53,4 +94,3 @@ export async function setProductEcpdConfig(productId: string, config: EcpdConfig
 
   revalidatePath('/dashboard/admin/productos/configurables');
 }
-

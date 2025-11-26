@@ -21,9 +21,18 @@ import { toast } from 'sonner';
 type ConfiguratorUIProps = {
   schema: ProductSchemaType;
   tasa: number;
+  productId: string;
+  productName: string;
+  productImages?: string[];
 };
 
-export default function ConfiguratorUI({ schema, tasa }: ConfiguratorUIProps) {
+export default function ConfiguratorUI({
+  schema,
+  tasa,
+  productId,
+  productName,
+  productImages,
+}: ConfiguratorUIProps) {
   const [config, setConfig] = useState<ProductConfig>(() =>
     createDefaultConfig(schema),
   );
@@ -76,7 +85,7 @@ export default function ConfiguratorUI({ schema, tasa }: ConfiguratorUIProps) {
 
   const handleExportConfig = () => {
     const json = JSON.stringify(
-      { product: schema.name, config, price },
+      { product: productName || schema.name, config, price },
       null,
       2,
     );
@@ -105,10 +114,10 @@ export default function ConfiguratorUI({ schema, tasa }: ConfiguratorUIProps) {
     try {
       addItem(
         {
-          id: 'custom-armario',
-          name: schema.name,
+          id: productId,
+          name: productName,
           priceUSD: finalPrice,
-          image: undefined,
+          image: productImages?.[0],
           type: 'configurable',
           config,
         } as any,
@@ -116,11 +125,11 @@ export default function ConfiguratorUI({ schema, tasa }: ConfiguratorUIProps) {
       );
 
       const payload = {
-        productId: 'custom-armario',
+        productId,
         type: 'configurable',
         config,
         price: finalPrice,
-        previewImage: null as string | null,
+        previewImage: (productImages && productImages[0]) || null,
       };
 
       try {
@@ -137,17 +146,28 @@ export default function ConfiguratorUI({ schema, tasa }: ConfiguratorUIProps) {
     }
   };
 
+  const mainImage = productImages && productImages[0];
+
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start">
       <div className="space-y-8">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="h-64 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-900 flex items-center justify-center">
-            <div className="text-center text-white px-6">
+          <div className="h-64 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-900 flex items-center justify-center relative">
+            {mainImage && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={mainImage}
+                alt={productName}
+                className="absolute inset-0 w-full h-full object-cover opacity-60"
+              />
+            )}
+            <div className="absolute inset-0 bg-black/40" />
+            <div className="relative text-center text-white px-6">
               <div className="text-xs uppercase tracking-[0.25em] text-gray-300 mb-2">
                 Motor de configuración Carpihogar
               </div>
               <h2 className="text-3xl font-extrabold mb-2">
-                {schema.name}
+                {productName || schema.name}
               </h2>
               <p className="text-sm text-gray-200 max-w-md mx-auto">
                 Ajusta dimensiones, componentes y estética para crear un mueble a medida listo para producción.
