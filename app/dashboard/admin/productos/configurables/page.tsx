@@ -44,7 +44,11 @@ const defaultSchema = {
   },
 };
 
-export default async function ConfigurableProductsPage() {
+export default async function ConfigurableProductsPage({
+  searchParams,
+}: {
+  searchParams?: { q?: string };
+}) {
   const session = await getServerSession(authOptions as any);
   const role = String((session?.user as any)?.role || '');
   if (!session?.user || role !== 'ADMIN') {
@@ -58,10 +62,6 @@ export default async function ConfigurableProductsPage() {
     getSettings(),
   ]);
 
-  const configurableIds = new Set(
-    configurable.filter((p) => p.isConfigurable).map((p) => p.id),
-  );
-
   const rawColors = Array.isArray((settings as any).ecpdColors)
     ? ((settings as any).ecpdColors as any[])
     : [];
@@ -73,6 +73,21 @@ export default async function ConfigurableProductsPage() {
           { name: 'Nogal oscuro', description: '', image: '' },
           { name: 'Gris claro', description: '', image: '' },
         ];
+
+  const q = String(searchParams?.q || '').trim();
+  const qLower = q.toLowerCase();
+
+  const configurableFiltered = configurable.filter((p: any) => {
+    if (!p.isConfigurable) return false;
+    if (!qLower) return true;
+    const name = String(p.name || '').toLowerCase();
+    const slug = String(p.slug || '').toLowerCase();
+    return name.includes(qLower) || slug.includes(qLower);
+  });
+
+  const configurableIds = new Set(
+    configurableFiltered.map((p: any) => p.id),
+  );
 
   async function setConfigurable(formData: FormData) {
     'use server';
@@ -559,9 +574,28 @@ export default async function ConfigurableProductsPage() {
 
       <section className="bg-white rounded-lg shadow p-4">
         <h2 className="text-lg font-semibold mb-3">Listado de muebles configurables</h2>
-        {configurable.filter((p) => p.isConfigurable).length === 0 ? (
+        <form className="mb-3 flex gap-2" method="get">
+          <input
+            name="q"
+            placeholder="Buscar por nombre o slug"
+            defaultValue={q}
+            className="flex-1 border rounded px-2 py-1 text-sm"
+          />
+          <button className="px-3 py-1 rounded bg-brand hover:bg-opacity-90 text-white text-sm">
+            Buscar
+          </button>
+          {q && (
+            <a
+              href="/dashboard/admin/productos/configurables"
+              className="px-3 py-1 rounded border text-sm"
+            >
+              Limpiar
+            </a>
+          )}
+        </form>
+        {configurableFiltered.length === 0 ? (
           <p className="text-sm text-gray-500">
-            A�n no hay productos configurables. Marca al menos uno desde el formulario superior.
+            No hay muebles configurables que coincidan con la busqueda.
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -574,9 +608,7 @@ export default async function ConfigurableProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {configurable
-                .filter((p) => p.isConfigurable)
-                .map((p) => (
+              {configurableFiltered.map((p: any) => (
                   <tr key={p.id} className="border-b last:border-0">
                     <td className="p-2">{p.name}</td>
                     <td className="p-2 text-xs text-gray-600">{p.slug}</td>
@@ -586,15 +618,25 @@ export default async function ConfigurableProductsPage() {
                       </pre>
                     </td>
                     <td className="p-2 text-right">
-                      <form action={disableConfigurable}>
-                        <input type="hidden" name="productId" value={p.id} />
-                        <button
-                          type="submit"
-                          className="px-3 py-1 rounded border text-xs text-red-600 hover:bg-red-50"
+                      <div className="flex items-center justify-end gap-2">
+                        <a
+                          href={`/dashboard/admin/productos?q=${encodeURIComponent(
+                            String(p.name || ''),
+                          )}`}
+                          className="px-3 py-1 rounded border text-xs text-gray-700 hover:bg-gray-50"
                         >
-                          Desactivar
-                        </button>
-                      </form>
+                          Editar producto
+                        </a>
+                        <form action={disableConfigurable}>
+                          <input type="hidden" name="productId" value={p.id} />
+                          <button
+                            type="submit"
+                            className="px-3 py-1 rounded border text-xs text-red-600 hover:bg-red-50"
+                          >
+                            Desactivar
+                          </button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -605,4 +647,3 @@ export default async function ConfigurableProductsPage() {
     </div>
   );
 }
-
