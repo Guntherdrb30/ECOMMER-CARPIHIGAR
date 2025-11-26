@@ -47,35 +47,52 @@ export async function getConfigurableProducts(): Promise<
 }
 
 export async function getConfigurableProductBySlug(rawSlug: string) {
-  const cleaned = String(rawSlug || '').trim();
-  const normalized = cleaned
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  const candidates = Array.from(
-    new Set([cleaned, normalized].filter((s) => s.length)),
-  );
-
-  let p: any = null;
-  for (const slug of candidates) {
-    p = await prisma.product.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        images: true,
-        priceUSD: true,
-        isConfigurable: true,
-        configSchema: true,
-      },
-    });
-    if (p) break;
+  // Para evitar cualquier inconsistencia entre rutas y BD,
+  // resolvemos siempre partiendo del listado de configurables.
+  let cleaned = String(rawSlug || '').trim();
+  try {
+    cleaned = decodeURIComponent(cleaned);
+  } catch {
+    // ignorar errores de decodeURIComponent
   }
-  if (!p || !p.isConfigurable) return null;
+
+  const normalize = (value: string) =>
+    String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+  const target = normalize(cleaned);
+
+  // Usamos el mismo origen de datos que la página índice
+  const list = await getConfigurableProducts();
+  if (!list.length) return null;
+
+  const matchBasic =
+    list.find((p) => normalize(p.slug) === target) ||
+    list.find((p) => normalize(p.name) === target) ||
+    list[0];
+
+  const p = await prisma.product.findUnique({
+    where: { id: matchBasic.id },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      images: true,
+      priceUSD: true,
+      isConfigurable: true,
+      configSchema: true,
+    },
+  });
+
+  if (!p || !(p as any).isConfigurable) return null;
+
   return {
     ...p,
     images: Array.isArray((p as any).images) ? ((p as any).images as string[]) : [],

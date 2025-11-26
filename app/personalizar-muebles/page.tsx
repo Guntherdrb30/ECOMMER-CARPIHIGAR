@@ -13,7 +13,7 @@ export default async function PersonalizarMueblesIndexPage() {
       <div className="container mx-auto px-4 space-y-8">
         <header className="max-w-3xl">
           <p className="text-sm font-semibold tracking-[0.25em] text-brand uppercase mb-2">
-            ECPD · Motor de Configuración
+            ECPD - Motor de Configuración
           </p>
           <h1 className="text-3xl md:text-4xl font-extrabold mb-3">
             Elige el mueble que quieres personalizar
