@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getConfigurableProducts, setProductEcpdConfig } from '@/server/actions/ecpd';
 import { getProducts, createProduct } from '@/server/actions/products';
 import { getCategoriesFlattened } from '@/server/actions/categories';
+import { getSettings } from '@/server/actions/settings';
 import HeroMediaUploader from '@/components/admin/hero-media-uploader';
 import ImagesUploader from '@/components/admin/images-uploader2';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
@@ -28,8 +29,8 @@ const defaultSchema = {
   },
   aesthetics: {
     doors: ['Una', 'Dos', 'Sin puertas'],
-    colors: ['Blanco', 'Antracita', 'Roble', 'Blanco/roble'],
-    handles: ['Tirador Japón', 'Tirador Alemania', 'Niquel', 'Negro'],
+    colors: ['Arena', 'Nogal oscuro', 'Gris claro'],
+    handles: [],
   },
   pricing: {
     referencePrice: 300,
@@ -50,15 +51,28 @@ export default async function ConfigurableProductsPage() {
     redirect('/auth/login?callbackUrl=/dashboard/admin/productos/configurables');
   }
 
-  const [allProducts, configurable, categories] = await Promise.all([
+  const [allProducts, configurable, categories, settings] = await Promise.all([
     getProducts(),
     getConfigurableProducts(),
     getCategoriesFlattened(),
+    getSettings(),
   ]);
 
   const configurableIds = new Set(
     configurable.filter((p) => p.isConfigurable).map((p) => p.id),
   );
+
+  const rawColors = Array.isArray((settings as any).ecpdColors)
+    ? ((settings as any).ecpdColors as any[])
+    : [];
+  const ecpdColors =
+    rawColors.length > 0
+      ? rawColors
+      : [
+          { name: 'Arena', description: '', image: '' },
+          { name: 'Nogal oscuro', description: '', image: '' },
+          { name: 'Gris claro', description: '', image: '' },
+        ];
 
   async function setConfigurable(formData: FormData) {
     'use server';
@@ -118,19 +132,82 @@ export default async function ConfigurableProductsPage() {
     const extraImages = (formData.getAll('images[]') as string[]).map(String).filter(Boolean);
     const categoryId = String(formData.get('categoryId') || '') || null;
 
-    const schemaText = String(formData.get('schema') || '').trim();
-    let schema: any;
-    if (schemaText) {
-      try {
-        schema = JSON.parse(schemaText);
-      } catch {
-        redirect(
-          '/dashboard/admin/productos/configurables?error=El%20JSON%20no%20es%20v%C3%A1lido',
-        );
+    // Medidas mínimas y máximas
+    const widthMinRaw = parseFloat(String(formData.get('widthMin') || '0'));
+    const widthMaxRaw = parseFloat(String(formData.get('widthMax') || '0'));
+    const heightMinRaw = parseFloat(String(formData.get('heightMin') || '0'));
+    const heightMaxRaw = parseFloat(String(formData.get('heightMax') || '0'));
+    const depthMinRaw = parseFloat(String(formData.get('depthMin') || '0'));
+    const depthMaxRaw = parseFloat(String(formData.get('depthMax') || '0'));
+
+    const widthMin =
+      !isNaN(widthMinRaw) && widthMinRaw > 0
+        ? widthMinRaw
+        : defaultSchema.dimensions.width.min;
+    const widthMax =
+      !isNaN(widthMaxRaw) && widthMaxRaw > 0
+        ? widthMaxRaw
+        : defaultSchema.dimensions.width.max;
+    const heightMin =
+      !isNaN(heightMinRaw) && heightMinRaw > 0
+        ? heightMinRaw
+        : defaultSchema.dimensions.height.min;
+    const heightMax =
+      !isNaN(heightMaxRaw) && heightMaxRaw > 0
+        ? heightMaxRaw
+        : defaultSchema.dimensions.height.max;
+    const depthMin =
+      !isNaN(depthMinRaw) && depthMinRaw > 0
+        ? depthMinRaw
+        : defaultSchema.dimensions.depth.min;
+    const depthMax =
+      !isNaN(depthMaxRaw) && depthMaxRaw > 0
+        ? depthMaxRaw
+        : defaultSchema.dimensions.depth.max;
+
+    // Colores permitidos
+    const allowedColors: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const flag = formData.get(`colorAllowed${i}`);
+      const nameFromForm = String(formData.get(`colorName${i}`) || '').trim();
+      if (flag && nameFromForm) {
+        allowedColors.push(nameFromForm);
       }
-    } else {
-      schema = defaultSchema;
     }
+    const allowColorCombos =
+      String(formData.get('allowColorCombos') || '') === 'on';
+
+    const colorOptions: string[] = [...allowedColors];
+    if (allowColorCombos && allowedColors.length >= 2) {
+      for (let i = 0; i < allowedColors.length; i++) {
+        for (let j = i + 1; j < allowedColors.length; j++) {
+          colorOptions.push(`${allowedColors[i]} + ${allowedColors[j]}`);
+        }
+      }
+    }
+
+    const finalColorOptions =
+      colorOptions.length > 0
+        ? colorOptions
+        : ['Arena', 'Nogal oscuro', 'Gris claro'];
+
+    const schema: any = {
+      ...defaultSchema,
+      name,
+      dimensions: {
+        width: { min: widthMin, max: widthMax },
+        depth: { min: depthMin, max: depthMax },
+        height: { min: heightMin, max: heightMax },
+      },
+      components: {
+        ...defaultSchema.components,
+      },
+      aesthetics: {
+        ...defaultSchema.aesthetics,
+        colors: finalColorOptions,
+        handles: [],
+      },
+    };
 
     const allImages = mainImage ? [mainImage, ...extraImages] : extraImages;
 
@@ -183,7 +260,9 @@ export default async function ConfigurableProductsPage() {
       <ShowToastFromSearch successParam="message" errorParam="error" />
       <h1 className="text-2xl font-bold mb-2">Muebles personalizables (ECPD)</h1>
       <p className="text-sm text-gray-600 mb-4">
-        Desde aquí defines qué productos del catálogo se pueden personalizar con el motor ECPD y, de forma avanzada, puedes ajustar el esquema JSON del configurador.
+        Desde aqu� defines qu� productos del cat�logo se pueden personalizar con el motor ECPD.
+        Para cada mueble puedes fijar sus medidas m�nimas/m�ximas y los colores de melamina
+        permitidos.
       </p>
 
       <section className="bg-white rounded-lg shadow p-4 space-y-3">
@@ -192,9 +271,7 @@ export default async function ConfigurableProductsPage() {
         </h2>
         <p className="text-sm text-gray-600">
           Usa este formulario para dar de alta un mueble dise�ado para el
-          personalizador (nombre, ficha b�sica, imagen principal y esquema
-          ECPD). Luego podr�s afinar m�s detalles desde &quot;Gestionar
-          Productos&quot;.
+          personalizador (nombre, ficha b�sica, medidas, colores e im�genes).
         </p>
         <form action={createConfigurableProduct} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -275,38 +352,150 @@ export default async function ConfigurableProductsPage() {
                   Imagen principal
                 </label>
                 <p className="text-xs text-gray-500 mb-1">
-                  Esta imagen se usar� como referencia visual del mueble en el
-                  personalizador y en la ficha de producto.
+                  Esta imagen se usar� como referencia visual en el personalizador y
+                  en la ficha de producto.
                 </p>
                 <HeroMediaUploader targetInputName="mainImage" />
                 <input type="hidden" name="mainImage" defaultValue="" />
               </div>
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Im&aacute;genes de soporte (hasta 10)
+                  Im�genes de soporte (hasta 10)
                 </label>
                 <p className="text-xs text-gray-500 mb-1">
-                  Im&aacute;genes adicionales del mueble (detalles, vistas de ambiente, etc.).
+                  Im�genes adicionales del mueble (detalles, ambiente, etc.).
                 </p>
                 <ImagesUploader targetName="images[]" max={10} />
               </div>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Esquema JSON del configurador (opcional)
-            </label>
-            <textarea
-              name="schema"
-              className="w-full border rounded px-2 py-1 text-xs font-mono min-h-[140px]"
-              placeholder={JSON.stringify(defaultSchema, null, 2)}
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Si lo dejas vac�o se usar� el esquema por defecto del Armario
-              Nidus. Aqu� puedes definir dimensiones, componentes, est�tica y
-              precios espec�ficos para este modelo.
-            </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+            <div>
+              <h3 className="text-sm font-semibold mb-2">
+                Medidas m�nimas (cm)
+              </h3>
+              <label className="block text-xs text-gray-700 mb-1">
+                Ancho m�nimo
+              </label>
+              <input
+                name="widthMin"
+                type="number"
+                step="0.1"
+                min={0}
+                className="w-full border rounded px-2 py-1 text-xs"
+                placeholder="Ej. 60"
+              />
+              <label className="block text-xs text-gray-700 mb-1 mt-2">
+                Alto m�nimo
+              </label>
+              <input
+                name="heightMin"
+                type="number"
+                step="0.1"
+                min={0}
+                className="w-full border rounded px-2 py-1 text-xs"
+                placeholder="Ej. 75"
+              />
+              <label className="block text-xs text-gray-700 mb-1 mt-2">
+                Fondo m�nimo
+              </label>
+              <input
+                name="depthMin"
+                type="number"
+                step="0.1"
+                min={0}
+                className="w-full border rounded px-2 py-1 text-xs"
+                placeholder="Ej. 25"
+              />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold mb-2">
+                Medidas m�ximas (cm)
+              </h3>
+              <label className="block text-xs text-gray-700 mb-1">
+                Ancho m�ximo
+              </label>
+              <input
+                name="widthMax"
+                type="number"
+                step="0.1"
+                min={0}
+                className="w-full border rounded px-2 py-1 text-xs"
+                placeholder="Ej. 120"
+              />
+              <label className="block text-xs text-gray-700 mb-1 mt-2">
+                Alto m�ximo
+              </label>
+              <input
+                name="heightMax"
+                type="number"
+                step="0.1"
+                min={0}
+                className="w-full border rounded px-2 py-1 text-xs"
+                placeholder="Ej. 200"
+              />
+              <label className="block text-xs text-gray-700 mb-1 mt-2">
+                Fondo m�ximo
+              </label>
+              <input
+                name="depthMax"
+                type="number"
+                step="0.1"
+                min={0}
+                className="w-full border rounded px-2 py-1 text-xs"
+                placeholder="Ej. 40"
+              />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Colores permitidos</h3>
+              <p className="text-xs text-gray-500 mb-2">
+                Marca los colores de melamina que se pueden usar en este mueble. Las
+                combinaciones mostrar�n opciones como &quot;Arena + Gris claro&quot;.
+              </p>
+              <div className="space-y-2">
+                {ecpdColors.slice(0, 3).map((c: any, i: number) => (
+                  <label
+                    key={i}
+                    className="flex items-center gap-2 text-xs text-gray-700"
+                  >
+                    <input
+                      type="checkbox"
+                      name={`colorAllowed${i}`}
+                      defaultChecked={i === 0}
+                    />
+                    {c.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={c.image}
+                        alt={c.name || ''}
+                        className="w-6 h-6 rounded-full object-cover border"
+                      />
+                    ) : (
+                      <span className="inline-block w-6 h-6 rounded-full bg-gray-200 border" />
+                    )}
+                    <span>{c.name || `Color ${i + 1}`}</span>
+                    <input
+                      type="hidden"
+                      name={`colorName${i}`}
+                      value={c.name || ''}
+                    />
+                  </label>
+                ))}
+              </div>
+              <label className="mt-3 inline-flex items-center gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  name="allowColorCombos"
+                  defaultChecked
+                />
+                Permitir combinaciones de dos colores
+              </label>
+            </div>
           </div>
+
+          {/* Bloque avanzado de JSON eliminado: ahora se genera el schema desde estos campos */}
+
           <button
             type="submit"
             className="px-4 py-2 rounded bg-brand text-white text-sm font-semibold hover:bg-opacity-90"
@@ -318,6 +507,10 @@ export default async function ConfigurableProductsPage() {
 
       <section className="bg-white rounded-lg shadow p-4 space-y-3">
         <h2 className="text-lg font-semibold">Seleccionar producto y definir esquema</h2>
+        <p className="text-xs text-gray-500">
+          Esta secci�n es avanzada. Puedes tomar un producto existente y sobreescribir su esquema
+          ECPD pegando un JSON compatible.
+        </p>
         <form action={setConfigurable} className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -329,7 +522,7 @@ export default async function ConfigurableProductsPage() {
                 className="w-full border rounded px-2 py-1 text-sm"
                 required
               >
-                <option value="">Selecciona un producto…</option>
+                <option value="">Selecciona un producto�?�</option>
                 {allProducts.map((p: any) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -338,7 +531,7 @@ export default async function ConfigurableProductsPage() {
                 ))}
               </select>
               <p className="mt-1 text-xs text-gray-500">
-                Puedes reutilizar un producto existente como base de precio y ficha de catálogo.
+                Puedes reutilizar un producto existente como base de precio y ficha de cat�logo.
               </p>
             </div>
             <div className="md:col-span-2">
@@ -351,8 +544,7 @@ export default async function ConfigurableProductsPage() {
                 placeholder={JSON.stringify(defaultSchema, null, 2)}
               />
               <p className="mt-1 text-xs text-gray-500">
-                Si lo dejas vacío se usará el esquema por defecto del Armario Nidus. Puedes pegar aquí un JSON
-                compatible con el ECPD para definir dimensiones, componentes y precios específicos.
+                Si lo dejas vac�o se usar� el esquema por defecto del Armario Nidus.
               </p>
             </div>
           </div>
@@ -369,7 +561,7 @@ export default async function ConfigurableProductsPage() {
         <h2 className="text-lg font-semibold mb-3">Listado de muebles configurables</h2>
         {configurable.filter((p) => p.isConfigurable).length === 0 ? (
           <p className="text-sm text-gray-500">
-            Aún no hay productos configurables. Marca al menos uno desde el formulario superior.
+            A�n no hay productos configurables. Marca al menos uno desde el formulario superior.
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -413,3 +605,4 @@ export default async function ConfigurableProductsPage() {
     </div>
   );
 }
+
