@@ -2,6 +2,7 @@
 import LogoUploader from "@/components/admin/logo-uploader";
 import HeroMediaUploader from "@/components/admin/hero-media-uploader";
 import HeroCarouselEditor from "@/components/admin/hero-carousel-editor";
+import EcpdColorsEditor from "@/components/admin/ecpd-colors-editor";
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import ShowToastFromSearch from '@/components/show-toast-from-search';
@@ -48,6 +49,13 @@ export default async function AdminSettingsPage() {
                 tiktokHandle: String((formData.get('tiktokHandle') as string) || '').replace(/^@+/, '').trim() || undefined,
                 categoryBannerCarpinteriaUrl: (formData.get('categoryBannerCarpinteriaUrl') as string) || undefined,
                 categoryBannerHogarUrl: (formData.get('categoryBannerHogarUrl') as string) || undefined,
+                ecpdColors: Array.from({ length: 3 }).map((_, i) => {
+                  const name = String(formData.get(`ecpdColorName${i}`) || '').trim();
+                  const description = String(formData.get(`ecpdColorDescription${i}`) || '').trim();
+                  const image = String(formData.get(`ecpdColorImage${i}`) || '').trim();
+                  if (!name && !description && !image) return null;
+                  return { name, description, image };
+                }).filter(Boolean),
             };
             await updateSettings(data);
             const { redirect } = await import('next/navigation');
@@ -143,11 +151,12 @@ export default async function AdminSettingsPage() {
             <p className="text-sm text-gray-600 mb-3">
               Sube hasta 3 im�genes para el carrusel peque�o que promociona el personalizador de muebles en la p�gina de inicio.
             </p>
-            <HeroCarouselEditor
-              defaultUrls={((settings as any).ecpdHeroUrls || []) as string[]}
-              fieldPrefix="ecpdHeroUrl"
-            />
-          </div>
+              <HeroCarouselEditor
+                defaultUrls={((settings as any).ecpdHeroUrls || []) as string[]}
+                fieldPrefix="ecpdHeroUrl"
+              />
+            </div>
+            <EcpdColorsEditor defaultColors={((settings as any).ecpdColors || []) as any[]} />
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-2">Categorías del Home</h3>
             <p className="text-sm text-gray-600 mb-3">Carga imágenes de fondo para las tarjetas de "Carpintería" y "Hogar".</p>
