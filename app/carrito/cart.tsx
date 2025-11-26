@@ -97,66 +97,99 @@ export default function Cart({ tasa }: { tasa: number }) {
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
-              <tr key={item.id} className="border-b">
-                <td className="p-4">{item.name}</td>
-                <td className="p-4">
-                  <Price priceUSD={item.priceUSD} tasa={tasa} moneda={moneda} />
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center gap-2">
-                    <button
-                      aria-label="Disminuir"
-                      onClick={() => {
-                        const next = item.quantity - 1;
-                        if (next <= 0) { removeItem(item.id); toast.success('Producto eliminado del carrito'); }
-                        else { updateQty(item.id, next); toast.info(`Cantidad actualizada a ${next}`); }
-                      }}
-                      className="p-1 rounded border hover:bg-gray-50"
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <input
-                      type="number"
-                      min={1}
-                      max={Math.max(1, item.stock ?? 1)}
-                      value={item.quantity}
-                      onChange={(e) => {
-                        const v = parseInt(e.target.value, 10);
-                        const max = typeof item.stock === 'number' ? item.stock : Infinity;
-                        if (!isFinite(v) || isNaN(v)) return;
-                        if (v < 1) { removeItem(item.id); toast.success('Producto eliminado del carrito'); return; }
-                        if (v > (max as number)) { updateQty(item.id, max as number); toast.warning(`Stock maximo disponible: ${max}`); return; }
-                        updateQty(item.id, v); toast.info(`Cantidad actualizada a ${v}`);
-                      }}
-                      className="w-20 border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand text-center"
-                    />
-                    <button
-                      aria-label="Aumentar"
-                      onClick={() => {
-                        const max = typeof item.stock === 'number' ? item.stock : Infinity;
-                        if (item.quantity >= (max as number)) { toast.warning(`Stock maximo disponible: ${max}`); return; }
-                        const next = item.quantity + 1; updateQty(item.id, next); toast.info(`Cantidad actualizada a ${next}`);
-                      }}
-                      className="p-1 rounded border hover:bg-gray-50"
-                    >
-                      <Plus size={14} />
-                    </button>
-                    <button
-                      onClick={() => { removeItem(item.id); toast.success('Producto eliminado del carrito'); }}
-                      className="ml-2 p-1 rounded border hover:bg-gray-50 text-red-600"
-                      aria-label="Eliminar"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">{(item.stock ?? Infinity) === Infinity ? '' : `Stock: ${item.stock}`}</div>
-                </td>
-                <td className="p-4 text-right">
-                  <Price priceUSD={item.priceUSD * item.quantity} tasa={tasa} moneda={moneda} className="font-bold" />
-                </td>
-              </tr>
-            ))}
+            {items.map((item) => {
+              const cfg = item.config as any;
+              const isConfigurable = item.type === 'configurable' && cfg;
+              const dims = cfg?.dimensions;
+              const comps = cfg?.components;
+              const aesth = cfg?.aesthetics;
+              return (
+                <tr key={item.id} className="border-b">
+                  <td className="p-4 align-top">
+                    <div className="font-medium">{item.name}</div>
+                    {isConfigurable && (
+                      <div className="mt-1 text-xs text-gray-600 space-y-0.5">
+                        {dims && (
+                          <div>
+                            Dimensiones:{' '}
+                            {dims.width} × {dims.depth} × {dims.height} cm
+                          </div>
+                        )}
+                        {comps && (
+                          <div>
+                            Componentes: {comps.shelves} baldas, {comps.drawers} cajones, maletero {comps.maletero} cm, barra de colgar{' '}
+                            {comps.hangingBar ? 'sí' : 'no'}
+                            {comps.rodapieAMedida
+                              ? `, rodapié a medida ${comps.rodapieAMedidaDimension ?? ''} cm`
+                              : ', sin rodapié a medida'}
+                          </div>
+                        )}
+                        {aesth && (
+                          <div>
+                            Estética: {aesth.doors} puerta(s), {aesth.colors}, tirador {aesth.handles}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-4 align-top">
+                    <Price priceUSD={item.priceUSD} tasa={tasa} moneda={moneda} />
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-2">
+                      <button
+                        aria-label="Disminuir"
+                        onClick={() => {
+                          const next = item.quantity - 1;
+                          if (next <= 0) { removeItem(item.id); toast.success('Producto eliminado del carrito'); }
+                          else { updateQty(item.id, next); toast.info(`Cantidad actualizada a ${next}`); }
+                        }}
+                        className="p-1 rounded border hover:bg-gray-50"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={Math.max(1, item.stock ?? 1)}
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          const max = typeof item.stock === 'number' ? item.stock : Infinity;
+                          if (!isFinite(v) || isNaN(v)) return;
+                          if (v < 1) { removeItem(item.id); toast.success('Producto eliminado del carrito'); return; }
+                          if (v > (max as number)) { updateQty(item.id, max as number); toast.warning(`Stock maximo disponible: ${max}`); return; }
+                          updateQty(item.id, v); toast.info(`Cantidad actualizada a ${v}`);
+                        }}
+                        className="w-20 border-gray-300 rounded-md shadow-sm focus:ring-brand focus:border-brand text-center"
+                      />
+                      <button
+                        aria-label="Aumentar"
+                        onClick={() => {
+                          const max = typeof item.stock === 'number' ? item.stock : Infinity;
+                          if (item.quantity >= (max as number)) { toast.warning(`Stock maximo disponible: ${max}`); return; }
+                          const next = item.quantity + 1; updateQty(item.id, next); toast.info(`Cantidad actualizada a ${next}`);
+                        }}
+                        className="p-1 rounded border hover:bg-gray-50"
+                      >
+                        <Plus size={14} />
+                      </button>
+                      <button
+                        onClick={() => { removeItem(item.id); toast.success('Producto eliminado del carrito'); }}
+                        className="ml-2 p-1 rounded border hover:bg-gray-50 text-red-600"
+                        aria-label="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">{(item.stock ?? Infinity) === Infinity ? '' : `Stock: ${item.stock}`}</div>
+                  </td>
+                  <td className="p-4 text-right align-top">
+                    <Price priceUSD={item.priceUSD * item.quantity} tasa={tasa} moneda={moneda} className="font-bold" />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

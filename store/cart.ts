@@ -9,6 +9,9 @@ export type CartItem = {
   // Snapshot del stock disponible al momento de agregar
   stock?: number;
   image?: string;
+  type?: 'simple' | 'configurable';
+  config?: any;
+  previewImage?: string;
 };
 
 export type CartState = {
