@@ -46,20 +46,35 @@ export async function getConfigurableProducts(): Promise<
   }));
 }
 
-export async function getConfigurableProductBySlug(slug: string) {
-  const p = await prisma.product.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      description: true,
-      images: true,
-      priceUSD: true,
-      isConfigurable: true,
-      configSchema: true,
-    },
-  });
+export async function getConfigurableProductBySlug(rawSlug: string) {
+  const cleaned = String(rawSlug || '').trim();
+  const normalized = cleaned
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  const candidates = Array.from(
+    new Set([cleaned, normalized].filter((s) => s.length)),
+  );
+
+  let p: any = null;
+  for (const slug of candidates) {
+    p = await prisma.product.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        images: true,
+        priceUSD: true,
+        isConfigurable: true,
+        configSchema: true,
+      },
+    });
+    if (p) break;
+  }
   if (!p || !p.isConfigurable) return null;
   return {
     ...p,
