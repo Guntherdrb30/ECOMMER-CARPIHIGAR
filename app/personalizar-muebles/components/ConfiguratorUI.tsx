@@ -24,6 +24,7 @@ type ConfiguratorUIProps = {
   productId: string;
   productName: string;
   productImages?: string[];
+  ecpdColors?: Array<{ name?: string; description?: string; image?: string }>;
 };
 
 export default function ConfiguratorUI({
@@ -32,6 +33,7 @@ export default function ConfiguratorUI({
   productId,
   productName,
   productImages,
+  ecpdColors,
 }: ConfiguratorUIProps) {
   const [config, setConfig] = useState<ProductConfig>(() =>
     createDefaultConfig(schema),
@@ -43,6 +45,7 @@ export default function ConfiguratorUI({
     calculatePriceForConfig(createDefaultConfig(schema), schema),
   );
   const [isAdding, setIsAdding] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const addItem = useCartStore((state) => state.addItem);
 
@@ -146,7 +149,11 @@ export default function ConfiguratorUI({
     }
   };
 
-  const mainImage = productImages && productImages[0];
+  const images = Array.isArray(productImages) ? productImages : [];
+  const mainImage =
+    images.length > 0
+      ? images[Math.min(activeImageIndex, images.length - 1)]
+      : undefined;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start">
@@ -175,6 +182,34 @@ export default function ConfiguratorUI({
             </div>
           </div>
           <div className="p-6 space-y-6">
+            {images.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                  Galería del producto
+                </h3>
+                <div className="flex gap-3 overflow-x-auto pb-1">
+                  {images.map((img, idx) => (
+                    <button
+                      key={img + idx.toString()}
+                      type="button"
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`relative flex-shrink-0 w-20 h-20 rounded-lg border overflow-hidden ${
+                        idx === activeImageIndex
+                          ? 'border-brand ring-2 ring-brand/40'
+                          : 'border-gray-200 hover:border-brand/60'
+                      }`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img}
+                        alt={`${productName} vista ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <h3 className="text-lg font-semibold mb-3">
                 Dimensiones del mueble
@@ -205,6 +240,7 @@ export default function ConfiguratorUI({
                 schema={schema.aesthetics}
                 values={config.aesthetics}
                 onChange={handleAestheticChange}
+                ecpdColors={ecpdColors}
               />
             </div>
           </div>

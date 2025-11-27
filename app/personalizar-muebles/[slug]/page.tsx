@@ -19,6 +19,9 @@ export default async function PersonalizarMuebleBySlugPage({
   }
   const settings = await getSettings();
   const tasa = Number((settings as any).tasaVES ?? 1);
+  const ecpdColors = Array.isArray((settings as any).ecpdColors)
+    ? ((settings as any).ecpdColors as any[])
+    : [];
 
   const baseSchema: ProductSchemaType = ProductSchema;
   const dbSchema = (product as any).configSchema as any | null;
@@ -63,9 +66,11 @@ export default async function PersonalizarMuebleBySlugPage({
           productId={product.id}
           productName={product.name}
           productImages={images}
+          ecpdColors={ecpdColors}
         />
       </div>
     </div>
   );
 }
+
 

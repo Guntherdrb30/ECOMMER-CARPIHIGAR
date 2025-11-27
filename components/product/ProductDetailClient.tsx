@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import type { Product } from '@prisma/client';
@@ -8,7 +8,10 @@ import { ProductActions } from '@/components/product-actions';
 import RelatedProductsCarousel from '@/components/related-products-carousel';
 import Breadcrumb from '@/components/breadcrumb';
 
-type ProductWithExtras = Omit<Product, 'priceUSD' | 'priceAllyUSD' | 'avgCost' | 'lastCost' | 'images'> & {
+type ProductWithExtras = Omit<
+  Product,
+  'priceUSD' | 'priceAllyUSD' | 'avgCost' | 'lastCost' | 'images'
+> & {
   priceUSD: number;
   priceAllyUSD?: number | null;
   avgCost?: number | null;
@@ -20,6 +23,7 @@ type ProductWithExtras = Omit<Product, 'priceUSD' | 'priceAllyUSD' | 'avgCost' |
   } | null;
   videoUrl?: string | null;
   showSocialButtons?: boolean;
+  isConfigurable?: boolean;
 };
 
 type SiteSettingsLike = {
@@ -37,7 +41,13 @@ interface ProductDetailClientProps {
   relatedProducts: RelatedProductWithCategory[];
 }
 
-function ProductJsonLd({ product, baseUrl }: { product: ProductWithExtras; baseUrl: string }) {
+function ProductJsonLd({
+  product,
+  baseUrl,
+}: {
+  product: ProductWithExtras;
+  baseUrl: string;
+}) {
   const productUrl = `${baseUrl}/productos/${product.slug}`;
 
   const jsonLd = {
@@ -72,9 +82,17 @@ function ProductJsonLd({ product, baseUrl }: { product: ProductWithExtras; baseU
       <meta property="og:site_name" content="Carpihogar.ai" />
       <meta property="og:url" content={productUrl} />
       <meta property="og:title" content={product.name} />
-      {product.description && <meta property="og:description" content={product.description} />}
-      <meta property="og:image" content={product.images[0] || `${baseUrl}/logo-default.svg`} />
-      <meta property="product:brand" content={(product as any).brand || 'Carpihogar'} />
+      {product.description && (
+        <meta property="og:description" content={product.description} />
+      )}
+      <meta
+        property="og:image"
+        content={product.images[0] || `${baseUrl}/logo-default.svg`}
+      />
+      <meta
+        property="product:brand"
+        content={(product as any).brand || 'Carpihogar'}
+      />
       <meta
         property="product:availability"
         content={
@@ -85,15 +103,29 @@ function ProductJsonLd({ product, baseUrl }: { product: ProductWithExtras; baseU
               : 'out of stock'
         }
       />
-      <meta property="product:retailer_item_id" content={product.sku || product.id} />
-      <meta property="product:price:amount" content={product.priceUSD.toString()} />
+      <meta
+        property="product:retailer_item_id"
+        content={product.sku || product.id}
+      />
+      <meta
+        property="product:price:amount"
+        content={product.priceUSD.toString()}
+      />
       <meta property="product:price:currency" content="USD" />
-      <meta property="og:price:amount" content={product.priceUSD.toString()} />
+      <meta
+        property="og:price:amount"
+        content={product.priceUSD.toString()}
+      />
       <meta property="og:price:currency" content="USD" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={product.name} />
-      {product.description && <meta name="twitter:description" content={product.description} />}
-      <meta name="twitter:image" content={product.images[0] || `${baseUrl}/logo-default.svg`} />
+      {product.description && (
+        <meta name="twitter:description" content={product.description} />
+      )}
+      <meta
+        name="twitter:image"
+        content={product.images[0] || `${baseUrl}/logo-default.svg`}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -102,8 +134,15 @@ function ProductJsonLd({ product, baseUrl }: { product: ProductWithExtras; baseU
   );
 }
 
-function ProductImageGallery({ images, videoUrl }: { images: string[]; videoUrl?: string | null }) {
-  const isVideo = (u?: string | null) => !!u && /\.(mp4|webm|ogg)(\?.*)?$/i.test(u);
+function ProductImageGallery({
+  images,
+  videoUrl,
+}: {
+  images: string[];
+  videoUrl?: string | null;
+}) {
+  const isVideo = (u?: string | null) =>
+    !!u && /\.(mp4|webm|ogg)(\?.*)?$/i.test(u);
   const media = [...(images || [])];
   if (videoUrl && !isVideo(images?.[images.length - 1])) {
     media.push(videoUrl);
@@ -113,7 +152,10 @@ function ProductImageGallery({ images, videoUrl }: { images: string[]; videoUrl?
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const selectedUrl = media[selectedIdx] || 'https://via.placeholder.com/400';
   const selectedIsVideo =
-    isVideo(selectedUrl) || (!!videoUrl && selectedIdx === media.length - 1 && selectedUrl === videoUrl);
+    isVideo(selectedUrl) ||
+    (!!videoUrl &&
+      selectedIdx === media.length - 1 &&
+      selectedUrl === videoUrl);
 
   return (
     <div>
@@ -127,21 +169,28 @@ function ProductImageGallery({ images, videoUrl }: { images: string[]; videoUrl?
           <div
             style={{ backgroundImage: `url(${selectedUrl})` }}
             className="bg-gray-200 h-96 w-full bg-cover bg-center transform transition-transform duration-300 hover:scale-110"
-          ></div>
+          />
         )}
       </div>
       <div className="grid grid-cols-4 gap-4">
         {media.map((url, index) => {
-          const isV = isVideo(url) || (!!videoUrl && index === media.length - 1 && url === videoUrl);
+          const isV =
+            isVideo(url) ||
+            (!!videoUrl &&
+              index === media.length - 1 &&
+              url === videoUrl);
           return (
-            <div
+            <button
               key={index}
+              type="button"
               className="overflow-hidden rounded-md cursor-pointer"
               onClick={() => setSelectedIdx(index)}
             >
               <div
                 style={!isV ? { backgroundImage: `url(${url})` } : undefined}
-                className={`bg-gray-200 h-20 w-full bg-cover bg-center transform transition-transform duration-300 hover:scale-110 ${selectedIdx === index ? 'border-2 border-brand' : ''} relative`}
+                className={`bg-gray-200 h-20 w-full bg-cover bg-center transform transition-transform duration-300 hover:scale-110 ${
+                  selectedIdx === index ? 'border-2 border-brand' : ''
+                } relative`}
               >
                 {isV && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30 text-white font-semibold">
@@ -149,7 +198,7 @@ function ProductImageGallery({ images, videoUrl }: { images: string[]; videoUrl?
                   </div>
                 )}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -159,8 +208,15 @@ function ProductImageGallery({ images, videoUrl }: { images: string[]; videoUrl?
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
           onClick={() => setLightboxImage(null)}
         >
-          <button className="absolute top-4 right-4 text-white text-3xl font-bold">&times;</button>
-          <img src={lightboxImage} alt="Product image" className="max-w-full max-h-full p-4" />
+          <button className="absolute top-4 right-4 text-white text-3xl font-bold">
+            &times;
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxImage}
+            alt="Product image"
+            className="max-w-full max-h-full p-4"
+          />
         </div>
       )}
     </div>
@@ -179,7 +235,7 @@ const AnimatedTitle = ({ children }: { children: React.ReactNode }) => {
           observer.disconnect();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (ref.current) {
@@ -210,9 +266,7 @@ export default function ProductDetailClient({
   settings,
   relatedProducts,
 }: ProductDetailClientProps) {
-  const breadcrumbItems = [
-    { name: 'Inicio', href: '/' },
-  ];
+  const breadcrumbItems = [{ name: 'Inicio', href: '/' }];
 
   if ((product as any).category) {
     breadcrumbItems.push({
@@ -220,20 +274,38 @@ export default function ProductDetailClient({
       href: `/categorias/${(product as any).category.slug}`,
     });
   }
-  breadcrumbItems.push({ name: product.name, href: `/productos/${product.slug}` });
+  breadcrumbItems.push({
+    name: product.name,
+    href: `/productos/${product.slug}`,
+  });
+
+  const isConfigurable = Boolean((product as any).isConfigurable);
+  const configurableHref = isConfigurable
+    ? `/personalizar-muebles/${encodeURIComponent(
+        String((product as any).slug || ''),
+      )}`
+    : null;
 
   return (
     <>
       <ProductJsonLd product={product} baseUrl="https://carpihogar.com" />
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8">
-          <Breadcrumb items={breadcrumbItems} baseUrl="https://carpihogar.com" />
+          <Breadcrumb
+            items={breadcrumbItems}
+            baseUrl="https://carpihogar.com"
+          />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <ProductImageGallery images={product.images} videoUrl={product.videoUrl} />
+          <ProductImageGallery
+            images={product.images}
+            videoUrl={product.videoUrl}
+          />
 
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              {product.name}
+            </h1>
             <div className="mb-4">
               <Price
                 priceUSD={product.priceUSD}
@@ -256,6 +328,17 @@ export default function ProductDetailClient({
               {product.description || 'Descripción no disponible.'}
             </p>
 
+            {isConfigurable && configurableHref && (
+              <div className="mb-6">
+                <a
+                  href={configurableHref}
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-brand text-white text-sm font-semibold shadow-sm hover:bg-opacity-90 transition-colors"
+                >
+                  Personalizar este mueble
+                </a>
+              </div>
+            )}
+
             <ProductActions
               product={{
                 ...(product as any),
@@ -275,7 +358,7 @@ export default function ProductDetailClient({
                     <a
                       className="px-4 py-2 rounded bg-pink-600 text-white hover:bg-pink-700"
                       href={`https://www.instagram.com/${String(
-                        (settings as any).instagramHandle || ''
+                        (settings as any).instagramHandle || '',
                       ).replace(/^@+/, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -287,7 +370,7 @@ export default function ProductDetailClient({
                     <a
                       className="px-4 py-2 rounded bg-black text-white hover:bg-gray-800"
                       href={`https://www.tiktok.com/@${String(
-                        (settings as any).tiktokHandle || ''
+                        (settings as any).tiktokHandle || '',
                       ).replace(/^@+/, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -303,7 +386,10 @@ export default function ProductDetailClient({
         {relatedProducts && relatedProducts.length > 0 && (
           <>
             <AnimatedTitle>También te puede interesar</AnimatedTitle>
-            <RelatedProductsCarousel products={relatedProducts as any} settings={settings} />
+            <RelatedProductsCarousel
+              products={relatedProducts as any}
+              settings={settings}
+            />
           </>
         )}
       </div>
