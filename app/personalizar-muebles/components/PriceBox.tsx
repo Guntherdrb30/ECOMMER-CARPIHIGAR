@@ -49,7 +49,7 @@ export default function PriceBox({
         <div className="mt-1 text-sm text-gray-500">
           <span className="inline-flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            Precio dinámico según medidas y acabados.
+            Precio dinámico según las medidas configuradas.
           </span>
         </div>
       </div>
@@ -65,18 +65,8 @@ export default function PriceBox({
             {config.dimensions.height} cm
           </div>
           <div>
-            <span className="font-semibold">Componentes:</span>{' '}
-            {config.components.shelves} baldas, {config.components.drawers}{' '}
-            cajones, maletero {config.components.maletero} cm, barra de colgar{' '}
-            {config.components.hangingBar ? 'sí' : 'no'}
-            {config.components.rodapieAMedida
-              ? `, rodapié a medida ${config.components.rodapieAMedidaDimension ?? ''} cm`
-              : ', sin rodapié a medida'}
-          </div>
-          <div>
-            <span className="font-semibold">Estética:</span>{' '}
-            {config.aesthetics.doors} puerta(s), color {config.aesthetics.colors}
-            , tirador {config.aesthetics.handles}
+            <span className="font-semibold">Color:</span>{' '}
+            {config.aesthetics.colors}
           </div>
         </div>
         <button
@@ -90,7 +80,9 @@ export default function PriceBox({
 
       {hasErrors && (
         <div className="border border-red-200 bg-red-50 text-red-700 text-xs rounded-lg p-3 space-y-1">
-          <div className="font-semibold">Revisa estos puntos antes de continuar:</div>
+          <div className="font-semibold">
+            Revisa estos puntos antes de continuar:
+          </div>
           <ul className="list-disc list-inside space-y-0.5">
             {errors.map((err, idx) => (
               <li key={idx}>{err}</li>
@@ -105,7 +97,11 @@ export default function PriceBox({
         disabled={isAdding || hasErrors}
         className="w-full bg-brand text-white font-bold py-3 rounded-full hover:bg-opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
       >
-        {hasErrors ? 'Corrige la configuración' : isAdding ? 'Agregando...' : 'Agregar al carrito'}
+        {hasErrors
+          ? 'Corrige la configuración'
+          : isAdding
+            ? 'Agregando...'
+            : 'Agregar al carrito'}
       </button>
     </aside>
   );

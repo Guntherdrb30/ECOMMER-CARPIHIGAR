@@ -1,22 +1,21 @@
-'use client';
+﻿"use client";
 
-import { useEffect, useState } from 'react';
-import DimensionInputs from './DimensionInputs';
-import ComponentSelector from './ComponentSelector';
-import AestheticSelector from './AestheticSelector';
-import PriceBox from './PriceBox';
+import { useEffect, useState } from "react";
+import DimensionInputs from "./DimensionInputs";
+import AestheticSelector from "./AestheticSelector";
+import PriceBox from "./PriceBox";
 import {
   ProductSchemaType,
   type ProductConfig,
   createDefaultConfig,
-} from '../lib/ProductSchema';
+} from "../lib/ProductSchema";
 import {
   validateConfig,
   type FullValidationResult,
-} from '../api/validate';
-import { calculatePriceForConfig } from '../api/calculate';
-import { useCartStore } from '@/store/cart';
-import { toast } from 'sonner';
+} from "../api/validate";
+import { calculatePriceForConfig } from "../api/calculate";
+import { useCartStore } from "@/store/cart";
+import { toast } from "sonner";
 
 type ConfiguratorUIProps = {
   schema: ProductSchemaType;
@@ -46,6 +45,7 @@ export default function ConfiguratorUI({
   );
   const [isAdding, setIsAdding] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const addItem = useCartStore((state) => state.addItem);
 
@@ -57,7 +57,7 @@ export default function ConfiguratorUI({
   }, [config, schema]);
 
   const handleDimensionChange = (
-    key: 'width' | 'depth' | 'height',
+    key: "width" | "depth" | "height",
     value: number,
   ) => {
     setConfig((prev) => ({
@@ -66,18 +66,8 @@ export default function ConfiguratorUI({
     }));
   };
 
-  const handleComponentChange = (
-    key: keyof ProductConfig['components'],
-    value: number | boolean,
-  ) => {
-    setConfig((prev) => ({
-      ...prev,
-      components: { ...prev.components, [key]: value as any },
-    }));
-  };
-
   const handleAestheticChange = (
-    key: keyof ProductConfig['aesthetics'],
+    key: keyof ProductConfig["aesthetics"],
     value: string,
   ) => {
     setConfig((prev) => ({
@@ -93,12 +83,12 @@ export default function ConfiguratorUI({
       2,
     );
     try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
         navigator.clipboard.writeText(json);
-        toast.success('Configuración copiada al portapapeles.');
+        toast.success("Configuración copiada al portapapeles.");
       }
     } catch {
-      toast.error('No se pudo copiar la configuración.');
+      toast.error("No se pudo copiar la configuración.");
     }
   };
 
@@ -106,7 +96,7 @@ export default function ConfiguratorUI({
     const currentValidation = validateConfig(config, schema);
     setValidation(currentValidation);
     if (!currentValidation.valid) {
-      toast.error('Revisa la configuración antes de agregar al carrito.');
+      toast.error("Revisa la configuración antes de agregar al carrito.");
       return;
     }
 
@@ -121,7 +111,7 @@ export default function ConfiguratorUI({
           name: productName,
           priceUSD: finalPrice,
           image: productImages?.[0],
-          type: 'configurable',
+          type: "configurable",
           config,
         } as any,
         1,
@@ -129,21 +119,21 @@ export default function ConfiguratorUI({
 
       const payload = {
         productId,
-        type: 'configurable',
+        type: "configurable",
         config,
         price: finalPrice,
         previewImage: (productImages && productImages[0]) || null,
       };
 
       try {
-        await fetch('/api/cart/add', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/cart/add", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
       } catch {}
 
-      toast.success('Configuración agregada al carrito.');
+      toast.success("Configuración agregada al carrito.");
     } finally {
       setIsAdding(false);
     }
@@ -159,7 +149,12 @@ export default function ConfiguratorUI({
     <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start">
       <div className="space-y-8">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="h-64 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-900 flex items-center justify-center relative">
+          <div
+            className="h-64 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-900 flex items-center justify-center relative cursor-pointer"
+            onClick={() => {
+              if (mainImage) setLightboxImage(mainImage);
+            }}
+          >
             {mainImage && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -177,7 +172,7 @@ export default function ConfiguratorUI({
                 {productName || schema.name}
               </h2>
               <p className="text-sm text-gray-200 max-w-md mx-auto">
-                Ajusta dimensiones, componentes y estética para crear un mueble a medida listo para producción.
+                Ajusta dimensiones y estética para crear un mueble a medida listo para producción.
               </p>
             </div>
           </div>
@@ -192,11 +187,14 @@ export default function ConfiguratorUI({
                     <button
                       key={img + idx.toString()}
                       type="button"
-                      onClick={() => setActiveImageIndex(idx)}
+                      onClick={() => {
+                        setActiveImageIndex(idx);
+                        setLightboxImage(img);
+                      }}
                       className={`relative flex-shrink-0 w-20 h-20 rounded-lg border overflow-hidden ${
                         idx === activeImageIndex
-                          ? 'border-brand ring-2 ring-brand/40'
-                          : 'border-gray-200 hover:border-brand/60'
+                          ? "border-brand ring-2 ring-brand/40"
+                          : "border-gray-200 hover:border-brand/60"
                       }`}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -218,17 +216,6 @@ export default function ConfiguratorUI({
                 schema={schema.dimensions}
                 values={config.dimensions}
                 onChange={handleDimensionChange}
-              />
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-3">
-                Componentes internos
-              </h3>
-              <ComponentSelector
-                schema={schema.components}
-                values={config.components}
-                onChange={handleComponentChange}
               />
             </div>
 
@@ -256,7 +243,27 @@ export default function ConfiguratorUI({
         isAdding={isAdding}
         config={config}
       />
+
+      {lightboxImage && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <button
+            type="button"
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-4 right-4 text-white text-2xl font-bold"
+            aria-label="Cerrar imagen ampliada"
+          >
+            ×
+          </button>
+          <div className="max-w-5xl max-h-[90vh] w-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightboxImage}
+              alt={productName}
+              className="w-full h-full object-contain rounded-lg shadow-2xl bg-black"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
