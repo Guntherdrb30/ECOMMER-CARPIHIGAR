@@ -89,26 +89,29 @@ export default function RevisarPage() {
   const [tasaVES, setTasaVES] = useState<number>(40);
 
   const subtotal = useMemo(() => getTotalUSD(), [getTotalUSD, items]);
-  const iva = useMemo(
-    () => subtotal * (ivaPercent / 100),
-    [subtotal, ivaPercent],
-  );
-  const totalUSD = useMemo(() => subtotal + iva, [subtotal, iva]);
   const discountPct = useMemo(
     () => (paymentCurrency === 'USD' ? 0.2 : 0),
     [paymentCurrency],
   );
   const discountUSD = useMemo(
-    () => totalUSD * discountPct,
-    [totalUSD, discountPct],
+    () => subtotal * discountPct,
+    [subtotal, discountPct],
   );
-  const payableUSD = useMemo(
-    () => totalUSD - discountUSD,
-    [totalUSD, discountUSD],
+  const taxableBaseUSD = useMemo(
+    () => subtotal - discountUSD,
+    [subtotal, discountUSD],
+  );
+  const iva = useMemo(
+    () => taxableBaseUSD * (ivaPercent / 100),
+    [taxableBaseUSD, ivaPercent],
+  );
+  const totalUSD = useMemo(
+    () => taxableBaseUSD + iva,
+    [taxableBaseUSD, iva],
   );
   const totalVES = useMemo(
-    () => payableUSD * tasaVES,
-    [payableUSD, tasaVES],
+    () => totalUSD * tasaVES,
+    [totalUSD, tasaVES],
   );
 
   const initialState = { ok: false as boolean, error: '' as string };
@@ -238,6 +241,16 @@ export default function RevisarPage() {
             <div className="flex justify-between">
               <span>Subtotal:</span>
               <span>{formatUSD(subtotal)}</span>
+            </div>
+            {paymentCurrency === 'USD' && discountUSD > 0 && (
+              <div className="flex justify-between text-green-700">
+                <span>Descuento 20% pago en USD:</span>
+                <span>-{formatUSD(discountUSD)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span>Base imponible:</span>
+              <span>{formatUSD(taxableBaseUSD)}</span>
             </div>
             <div className="flex justify-between">
               <span>IVA ({ivaPercent}%):</span>
