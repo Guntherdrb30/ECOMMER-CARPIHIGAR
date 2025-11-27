@@ -40,26 +40,46 @@ export default async function PersonalizarMuebleBySlugPage({
       : priceDb?.toNumber?.() ?? schema.pricing.referencePrice;
   schema.pricing.referencePrice = priceNumber;
 
-  // Si el esquema de BD trae dimensiones iniciales recomendadas,
-  // nos aseguramos de que existan y ajustamos el volumen de referencia
-  // para que el precio base coincida con esas medidas.
-  if ((schema as any).initialDimensions) {
-    const init = (schema as any).initialDimensions as {
-      width: number;
-      depth: number;
-      height: number;
-    };
-    if (
-      typeof init.width === 'number' &&
-      typeof init.depth === 'number' &&
-      typeof init.height === 'number' &&
-      init.width > 0 &&
-      init.depth > 0 &&
-      init.height > 0
-    ) {
-      schema.pricing.referenceVolume = init.width * init.depth * init.height;
-    }
-  }
+  // Determinar las medidas iniciales a usar en el configurador:
+  // 1) Si el producto tiene heightCm / widthCm / depthCm > 0, usamos esas.
+  // 2) Si no, usamos initialDimensions del schema si existen.
+  // 3) Si tampoco, usamos las medidas m�nimas del schema.
+  const productWidth = Number((product as any).widthCm ?? 0) || 0;
+  const productDepth = Number((product as any).depthCm ?? 0) || 0;
+  const productHeight = Number((product as any).heightCm ?? 0) || 0;
+
+  const schemaInitial = (schema as any).initialDimensions as
+    | { width: number; depth: number; height: number }
+    | undefined;
+
+  const dims = schema.dimensions;
+
+  let widthInitial =
+    productWidth > 0
+      ? productWidth
+      : schemaInitial?.width ?? dims.width.min;
+  let depthInitial =
+    productDepth > 0
+      ? productDepth
+      : schemaInitial?.depth ?? dims.depth.min;
+  let heightInitial =
+    productHeight > 0
+      ? productHeight
+      : schemaInitial?.height ?? dims.height.min;
+
+  // Aseguramos que est�n dentro de los rangos permitidos del schema.
+  widthInitial = Math.min(Math.max(widthInitial, dims.width.min), dims.width.max);
+  depthInitial = Math.min(Math.max(depthInitial, dims.depth.min), dims.depth.max);
+  heightInitial = Math.min(Math.max(heightInitial, dims.height.min), dims.height.max);
+
+  (schema as any).initialDimensions = {
+    width: widthInitial,
+    depth: depthInitial,
+    height: heightInitial,
+  };
+
+  schema.pricing.referenceVolume =
+    widthInitial * depthInitial * heightInitial;
 
   const images: string[] = Array.isArray((product as any).images)
     ? ((product as any).images as string[])
@@ -93,5 +113,6 @@ export default async function PersonalizarMuebleBySlugPage({
     </div>
   );
 }
+
 
 

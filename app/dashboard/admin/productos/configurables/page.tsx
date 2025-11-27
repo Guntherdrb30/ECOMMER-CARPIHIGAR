@@ -318,9 +318,11 @@ export default async function ConfigurableProductsPage({
       stockPackages: null,
       soldBy: 'UNIT',
       weightKg: null,
-      heightCm: null,
-      widthCm: null,
-      depthCm: null,
+      // Medidas base del producto simple (sin personalizar)
+      // para que coincidan con las medidas iniciales recomendadas.
+      heightCm: heightInitial,
+      widthCm: widthInitial,
+      depthCm: depthInitial,
       freightType: null,
       categoryId,
       supplierId: null,
