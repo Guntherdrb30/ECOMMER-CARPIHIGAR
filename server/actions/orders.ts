@@ -199,13 +199,14 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
         if (deliverySelected) {
             subtotalUSD += 6; // Delivery moto Barinas
         }
-        const ivaAmount = subtotalUSD * (ivaPercent / 100);
-        let totalUSD = subtotalUSD + ivaAmount;
 
-        // Descuento 20% si el pago es en USD
+        // Descuento 20% sobre la base imponible si el pago es en USD.
         const discountPercent = paymentCurrency === 'USD' ? 0.2 : 0;
-        const discountUSD = totalUSD * discountPercent;
-        totalUSD = totalUSD - discountUSD;
+        const discountUSD = subtotalUSD * discountPercent;
+        const taxableBaseUSD = subtotalUSD - discountUSD;
+
+        const ivaAmount = taxableBaseUSD * (ivaPercent / 100);
+        const totalUSD = taxableBaseUSD + ivaAmount;
 
         const totalVES = totalUSD * tasaVES;
 

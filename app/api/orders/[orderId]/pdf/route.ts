@@ -167,18 +167,20 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     }
     const deliveryFeeUSD = Number((order as any).shipping?.deliveryFeeUSD || 0);
     subtotalUSD += deliveryFeeUSD;
-    const ivaUSD = subtotalUSD * (ivaPercent / 100);
 
     const paymentCurrency = String(
       (order.payment as any)?.currency || "USD",
     ).toUpperCase();
     const isDivisa = paymentCurrency === "USD" || paymentCurrency === "USDT";
 
-    const totalSinIgtfUSD = subtotalUSD + ivaUSD;
-    const discountUSD = isDivisa ? totalSinIgtfUSD * 0.2 : 0;
-    const baseAfterDiscountUSD = totalSinIgtfUSD - discountUSD;
-    const igtfUSD = isDivisa ? baseAfterDiscountUSD * 0.03 : 0;
-    const totalOperacionUSD = baseAfterDiscountUSD + igtfUSD;
+    const discountPercent = isDivisa ? 0.2 : 0;
+    const discountUSD = subtotalUSD * discountPercent;
+    const taxableBaseUSD = subtotalUSD - discountUSD;
+    const ivaUSD = taxableBaseUSD * (ivaPercent / 100);
+
+    const totalSinIgtfUSD = taxableBaseUSD + ivaUSD;
+    const igtfUSD = isDivisa ? totalSinIgtfUSD * 0.03 : 0;
+    const totalOperacionUSD = totalSinIgtfUSD + igtfUSD;
 
     const subtotalBs = toMoney(subtotalUSD);
     const ivaBs = toMoney(ivaUSD);
@@ -368,7 +370,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
 
     if (discountUSD > 0) {
       doc.text("Descuento 20% pago USD:", totalsLabelX, doc.y);
-      doc.text(money(-discountBs), totalsValueX, doc.y, {
+      doc.text(`- ${money(discountBs)}`, totalsValueX, doc.y, {
         align: "right",
         width: totalsWidth,
       });
