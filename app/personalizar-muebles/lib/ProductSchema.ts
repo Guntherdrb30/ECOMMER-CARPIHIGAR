@@ -43,6 +43,7 @@ export type PricingSchema = {
 export type ProductSchemaType = {
   name: string;
   dimensions: DimensionsSchema;
+  initialDimensions?: DimensionsConfig;
   components: ComponentsSchema;
   aesthetics: AestheticsSchema;
   pricing: PricingSchema;
@@ -82,6 +83,11 @@ export const ProductSchema: ProductSchemaType = {
     depth: { min: 30, max: 110 },
     height: { min: 33, max: 65 },
   },
+  initialDimensions: {
+    width: 130,
+    depth: 30,
+    height: 33,
+  },
   components: {
     shelves: { min: 1, max: 7 },
     drawers: { min: 1, max: 3, spacePerDrawer: 20 },
@@ -113,11 +119,16 @@ export const ProductSchema: ProductSchemaType = {
 
 export function createDefaultConfig(schema: ProductSchemaType): ProductConfig {
   const { dimensions, components, aesthetics } = schema;
+  const initial = schema.initialDimensions || {
+    width: dimensions.width.min,
+    depth: dimensions.depth.min,
+    height: dimensions.height.min,
+  };
   return {
     dimensions: {
-      width: dimensions.width.min,
-      depth: dimensions.depth.min,
-      height: dimensions.height.min,
+      width: initial.width,
+      depth: initial.depth,
+      height: initial.height,
     },
     components: {
       shelves: components.shelves.min,
@@ -134,4 +145,3 @@ export function createDefaultConfig(schema: ProductSchemaType): ProductConfig {
     },
   };
 }
-

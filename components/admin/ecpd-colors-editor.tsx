@@ -10,7 +10,7 @@ type EcpdColor = {
 
 export default function EcpdColorsEditor({ defaultColors }: { defaultColors: EcpdColor[] }) {
   const slots: EcpdColor[] = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     slots.push(defaultColors[i] || {});
   }
 
@@ -18,8 +18,8 @@ export default function EcpdColorsEditor({ defaultColors }: { defaultColors: Ecp
     <div className="mt-6">
       <h3 className="text-lg font-semibold mb-2">Colores de melamina (ECPD)</h3>
       <p className="text-sm text-gray-600 mb-3">
-        Define los colores base del personalizador de muebles. Por ejemplo:{' '}
-        <strong>Arena</strong>, <strong>Nogal oscuro</strong> y <strong>Gris claro</strong>. Cada
+        Define hasta 5 colores base del personalizador de muebles. Por ejemplo:{' '}
+        <strong>Arena</strong>, <strong>Nogal oscuro</strong>, <strong>Gris claro</strong>, etc. Cada
         color puede tener una imagen de muestra y una breve descripci&oacute;n.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -37,7 +37,15 @@ export default function EcpdColorsEditor({ defaultColors }: { defaultColors: Ecp
               <input
                 name={`ecpdColorName${i}`}
                 defaultValue={c.name || ''}
-                placeholder={i === 0 ? 'Arena' : i === 1 ? 'Nogal oscuro' : i === 2 ? 'Gris claro' : ''}
+                placeholder={
+                  i === 0
+                    ? 'Arena'
+                    : i === 1
+                      ? 'Nogal oscuro'
+                      : i === 2
+                        ? 'Gris claro'
+                        : ''
+                }
                 className="w-full border rounded px-2 py-1 text-xs"
               />
             </div>
@@ -76,4 +84,3 @@ export default function EcpdColorsEditor({ defaultColors }: { defaultColors: Ecp
     </div>
   );
 }
-

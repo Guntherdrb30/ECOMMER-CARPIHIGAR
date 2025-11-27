@@ -16,6 +16,11 @@ const defaultSchema = {
     depth: { min: 30, max: 110 },
     height: { min: 33, max: 65 },
   },
+  initialDimensions: {
+    width: 130,
+    depth: 30,
+    height: 33,
+  },
   components: {
     shelves: { min: 1, max: 7 },
     drawers: { min: 1, max: 3, spacePerDrawer: 20 },
@@ -94,6 +99,12 @@ export default async function ConfigurableProductsPage({
   const editingSchema: any =
     editing && (editing as any).configSchema ? (editing as any).configSchema : null;
   const editingDimensions = editingSchema?.dimensions || defaultSchema.dimensions;
+  const editingInitialDimensions =
+    editingSchema?.initialDimensions || {
+      width: editingDimensions.width.min,
+      depth: editingDimensions.depth.min,
+      height: editingDimensions.height.min,
+    };
   const editingColors: string[] =
     Array.isArray(editingSchema?.aesthetics?.colors) && editingSchema.aesthetics.colors.length
       ? (editingSchema.aesthetics.colors as string[])
@@ -201,9 +212,38 @@ export default async function ConfigurableProductsPage({
         ? depthMaxRaw
         : defaultSchema.dimensions.depth.max;
 
+    // Medidas iniciales recomendadas
+    const widthInitialRaw = parseFloat(
+      String(formData.get('widthInitial') || '0'),
+    );
+    const heightInitialRaw = parseFloat(
+      String(formData.get('heightInitial') || '0'),
+    );
+    const depthInitialRaw = parseFloat(
+      String(formData.get('depthInitial') || '0'),
+    );
+
+    let widthInitial =
+      !isNaN(widthInitialRaw) && widthInitialRaw > 0
+        ? widthInitialRaw
+        : widthMin;
+    let heightInitial =
+      !isNaN(heightInitialRaw) && heightInitialRaw > 0
+        ? heightInitialRaw
+        : heightMin;
+    let depthInitial =
+      !isNaN(depthInitialRaw) && depthInitialRaw > 0
+        ? depthInitialRaw
+        : depthMin;
+
+    // Asegurar que las iniciales est�n dentro de los rangos
+    widthInitial = Math.min(Math.max(widthInitial, widthMin), widthMax);
+    heightInitial = Math.min(Math.max(heightInitial, heightMin), heightMax);
+    depthInitial = Math.min(Math.max(depthInitial, depthMin), depthMax);
+
     // Colores permitidos
     const allowedColors: string[] = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       const flag = formData.get(`colorAllowed${i}`);
       const nameFromForm = String(formData.get(`colorName${i}`) || '').trim();
       if (flag && nameFromForm) {
@@ -227,6 +267,8 @@ export default async function ConfigurableProductsPage({
         ? colorOptions
         : ['Arena', 'Nogal oscuro', 'Gris claro'];
 
+    const referenceVolume = widthInitial * depthInitial * heightInitial;
+
     const schema: any = {
       ...defaultSchema,
       name,
@@ -235,6 +277,11 @@ export default async function ConfigurableProductsPage({
         depth: { min: depthMin, max: depthMax },
         height: { min: heightMin, max: heightMax },
       },
+      initialDimensions: {
+        width: widthInitial,
+        depth: depthInitial,
+        height: heightInitial,
+      },
       components: {
         ...defaultSchema.components,
       },
@@ -242,6 +289,10 @@ export default async function ConfigurableProductsPage({
         ...defaultSchema.aesthetics,
         colors: finalColorOptions,
         handles: [],
+      },
+      pricing: {
+        ...defaultSchema.pricing,
+        referenceVolume,
       },
     };
 
@@ -336,9 +387,43 @@ export default async function ConfigurableProductsPage({
     const depthMax =
       !isNaN(depthMaxRaw) && depthMaxRaw > 0 ? depthMaxRaw : baseDims.depth.max;
 
+    // Medidas iniciales recomendadas
+    const baseInitial = baseSchema.initialDimensions || {
+      width: baseDims.width.min,
+      depth: baseDims.depth.min,
+      height: baseDims.height.min,
+    };
+
+    const widthInitialRaw = parseFloat(
+      String(formData.get('widthInitial') || '0'),
+    );
+    const heightInitialRaw = parseFloat(
+      String(formData.get('heightInitial') || '0'),
+    );
+    const depthInitialRaw = parseFloat(
+      String(formData.get('depthInitial') || '0'),
+    );
+
+    let widthInitial =
+      !isNaN(widthInitialRaw) && widthInitialRaw > 0
+        ? widthInitialRaw
+        : baseInitial.width;
+    let heightInitial =
+      !isNaN(heightInitialRaw) && heightInitialRaw > 0
+        ? heightInitialRaw
+        : baseInitial.height;
+    let depthInitial =
+      !isNaN(depthInitialRaw) && depthInitialRaw > 0
+        ? depthInitialRaw
+        : baseInitial.depth;
+
+    widthInitial = Math.min(Math.max(widthInitial, widthMin), widthMax);
+    heightInitial = Math.min(Math.max(heightInitial, heightMin), heightMax);
+    depthInitial = Math.min(Math.max(depthInitial, depthMin), depthMax);
+
     // Colores permitidos
     const allowedColors: string[] = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       const flag = formData.get(`colorAllowed${i}`);
       const nameFromForm = String(formData.get(`colorName${i}`) || '').trim();
       if (flag && nameFromForm) {
@@ -363,6 +448,8 @@ export default async function ConfigurableProductsPage({
         : (baseAesthetics.colors as string[]) ||
           ['Arena', 'Nogal oscuro', 'Gris claro'];
 
+    const referenceVolume = widthInitial * depthInitial * heightInitial;
+
     const schema: any = {
       ...baseSchema,
       name: baseSchema.name || prod.name || 'Configurador',
@@ -371,6 +458,11 @@ export default async function ConfigurableProductsPage({
         depth: { min: depthMin, max: depthMax },
         height: { min: heightMin, max: heightMax },
       },
+      initialDimensions: {
+        width: widthInitial,
+        depth: depthInitial,
+        height: heightInitial,
+      },
       components: {
         ...baseSchema.components,
       },
@@ -378,6 +470,10 @@ export default async function ConfigurableProductsPage({
         ...baseAesthetics,
         colors: finalColorOptions,
         handles: [],
+      },
+      pricing: {
+        ...baseSchema.pricing,
+        referenceVolume,
       },
     };
 
@@ -590,7 +686,7 @@ export default async function ConfigurableProductsPage({
                 combinaciones mostrar�n opciones como &quot;Arena + Gris claro&quot;.
               </p>
               <div className="space-y-2">
-                {ecpdColors.slice(0, 3).map((c: any, i: number) => (
+                {ecpdColors.slice(0, 5).map((c: any, i: number) => (
                   <label
                     key={i}
                     className="flex items-center gap-2 text-xs text-gray-700"
@@ -627,6 +723,58 @@ export default async function ConfigurableProductsPage({
                 />
                 Permitir combinaciones de dos colores
               </label>
+            </div>
+          </div>
+
+          <div className="mt-4 border-t pt-4">
+            <h3 className="text-sm font-semibold mb-2">
+              Medidas iniciales recomendadas (cm)
+            </h3>
+            <p className="text-xs text-gray-500 mb-2">
+              Estas ser�n las medidas con las que se abrir� el personalizador y
+              el precio base recomendado. Si las dejas vac�as, se usar�n las
+              medidas m�nimas.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-700 mb-1">
+                  Ancho inicial
+                </label>
+                <input
+                  name="widthInitial"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  placeholder="Ej. 100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-700 mb-1">
+                  Alto inicial
+                </label>
+                <input
+                  name="heightInitial"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  placeholder="Ej. 180"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-700 mb-1">
+                  Fondo inicial
+                </label>
+                <input
+                  name="depthInitial"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  placeholder="Ej. 35"
+                />
+              </div>
             </div>
           </div>
 
@@ -737,7 +885,7 @@ export default async function ConfigurableProductsPage({
                   Marca los colores de melamina que se pueden usar en este mueble.
                 </p>
                 <div className="space-y-2">
-                  {ecpdColors.slice(0, 3).map((c: any, i: number) => (
+                  {ecpdColors.slice(0, 5).map((c: any, i: number) => (
                     <label
                       key={i}
                       className="flex items-center gap-2 text-xs text-gray-700"
@@ -774,6 +922,57 @@ export default async function ConfigurableProductsPage({
                   />
                   Permitir combinaciones de dos colores
                 </label>
+              </div>
+            </div>
+
+            <div className="mt-4 border-t pt-4">
+              <h3 className="text-sm font-semibold mb-2">
+                Medidas iniciales recomendadas (cm)
+              </h3>
+              <p className="text-xs text-gray-500 mb-2">
+                Definen el tama�o con el que se abrir� el personalizador y el
+                precio recomendado inicial.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-700 mb-1">
+                    Ancho inicial
+                  </label>
+                  <input
+                    name="widthInitial"
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    className="w-full border rounded px-2 py-1 text-xs"
+                    defaultValue={editingInitialDimensions.width}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-700 mb-1">
+                    Alto inicial
+                  </label>
+                  <input
+                    name="heightInitial"
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    className="w-full border rounded px-2 py-1 text-xs"
+                    defaultValue={editingInitialDimensions.height}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-700 mb-1">
+                    Fondo inicial
+                  </label>
+                  <input
+                    name="depthInitial"
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    className="w-full border rounded px-2 py-1 text-xs"
+                    defaultValue={editingInitialDimensions.depth}
+                  />
+                </div>
               </div>
             </div>
 

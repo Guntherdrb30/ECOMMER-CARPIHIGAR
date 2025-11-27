@@ -49,7 +49,7 @@ export default async function AdminSettingsPage() {
                 tiktokHandle: String((formData.get('tiktokHandle') as string) || '').replace(/^@+/, '').trim() || undefined,
                 categoryBannerCarpinteriaUrl: (formData.get('categoryBannerCarpinteriaUrl') as string) || undefined,
                 categoryBannerHogarUrl: (formData.get('categoryBannerHogarUrl') as string) || undefined,
-                ecpdColors: Array.from({ length: 3 }).map((_, i) => {
+                ecpdColors: Array.from({ length: 5 }).map((_, i) => {
                   const name = String(formData.get(`ecpdColorName${i}`) || '').trim();
                   const description = String(formData.get(`ecpdColorDescription${i}`) || '').trim();
                   const image = String(formData.get(`ecpdColorImage${i}`) || '').trim();

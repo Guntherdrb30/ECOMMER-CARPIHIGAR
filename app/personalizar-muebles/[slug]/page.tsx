@@ -40,6 +40,27 @@ export default async function PersonalizarMuebleBySlugPage({
       : priceDb?.toNumber?.() ?? schema.pricing.referencePrice;
   schema.pricing.referencePrice = priceNumber;
 
+  // Si el esquema de BD trae dimensiones iniciales recomendadas,
+  // nos aseguramos de que existan y ajustamos el volumen de referencia
+  // para que el precio base coincida con esas medidas.
+  if ((schema as any).initialDimensions) {
+    const init = (schema as any).initialDimensions as {
+      width: number;
+      depth: number;
+      height: number;
+    };
+    if (
+      typeof init.width === 'number' &&
+      typeof init.depth === 'number' &&
+      typeof init.height === 'number' &&
+      init.width > 0 &&
+      init.depth > 0 &&
+      init.height > 0
+    ) {
+      schema.pricing.referenceVolume = init.width * init.depth * init.height;
+    }
+  }
+
   const images: string[] = Array.isArray((product as any).images)
     ? ((product as any).images as string[])
     : [];
