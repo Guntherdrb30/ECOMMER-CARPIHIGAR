@@ -46,6 +46,9 @@ export default function ConfiguratorUI({
   const [isAdding, setIsAdding] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [colorPreviewImage, setColorPreviewImage] = useState<string | null>(
+    null,
+  );
 
   const addItem = useCartStore((state) => state.addItem);
 
@@ -74,6 +77,28 @@ export default function ConfiguratorUI({
       ...prev,
       aesthetics: { ...prev.aesthetics, [key]: value },
     }));
+
+    // Cuando se cambia el color, usamos la muestra de melamina
+    // para mostrarla en grande en el hero principal.
+    if (key === 'colors' && Array.isArray(ecpdColors) && ecpdColors.length) {
+      const normalized = value.trim().toLowerCase();
+      // En combinaciones "Color A + Color B" usamos el primer color como referencia.
+      const baseName =
+        normalized.split('+')[0]?.trim().toLowerCase() || normalized;
+
+      const match =
+        ecpdColors.find(
+          (c) => (c.name || '').trim().toLowerCase() === baseName,
+        ) ||
+        ecpdColors.find(
+          (c) => (c.name || '').trim().toLowerCase() === normalized,
+        );
+
+      setColorPreviewImage(match?.image || null);
+      if (match?.image) {
+        setLightboxImage(match.image);
+      }
+    }
   };
 
   const handleExportConfig = () => {
@@ -141,9 +166,10 @@ export default function ConfiguratorUI({
 
   const images = Array.isArray(productImages) ? productImages : [];
   const mainImage =
-    images.length > 0
+    colorPreviewImage ||
+    (images.length > 0
       ? images[Math.min(activeImageIndex, images.length - 1)]
-      : undefined;
+      : undefined);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start">

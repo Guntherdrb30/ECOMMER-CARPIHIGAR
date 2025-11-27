@@ -75,7 +75,7 @@ export default function AestheticSelector({
         </p>
 
         {/* Carrusel de colores base */}
-        <div className="flex gap-3 overflow-x-auto pb-1">
+        <div className="flex gap-4 overflow-x-auto pb-3">
           {baseColorOptions.map((opt) => {
             const meta = findColorMeta(opt);
             const isActive = values.colors === opt;
@@ -84,7 +84,7 @@ export default function AestheticSelector({
                 key={opt}
                 type="button"
                 onClick={() => onChange('colors', opt)}
-                className={`flex-shrink-0 w-32 rounded-lg border p-2 text-left text-xs transition-all hover:shadow-sm ${
+                className={`flex-shrink-0 w-40 md:w-48 rounded-lg border p-3 text-left text-xs transition-all hover:shadow-md ${
                   isActive
                     ? 'border-brand bg-brand/5 ring-2 ring-brand/40'
                     : 'border-gray-200 bg-white hover:border-brand/60'
@@ -166,7 +166,7 @@ export default function AestheticSelector({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4">
       {renderColorsGroup()}
     </div>
   );
