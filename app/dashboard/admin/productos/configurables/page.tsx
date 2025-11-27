@@ -47,7 +47,7 @@ const defaultSchema = {
 export default async function ConfigurableProductsPage({
   searchParams,
 }: {
-  searchParams?: { q?: string };
+  searchParams?: { q?: string; editId?: string };
 }) {
   const session = await getServerSession(authOptions as any);
   const role = String((session?.user as any)?.role || '');
@@ -88,6 +88,27 @@ export default async function ConfigurableProductsPage({
   const configurableIds = new Set(
     configurableFiltered.map((p: any) => p.id),
   );
+
+  const editId = String((searchParams as any)?.editId || '').trim();
+  const editing = editId ? configurable.find((p: any) => p.id === editId) || null : null;
+  const editingSchema: any =
+    editing && (editing as any).configSchema ? (editing as any).configSchema : null;
+  const editingDimensions = editingSchema?.dimensions || defaultSchema.dimensions;
+  const editingColors: string[] =
+    Array.isArray(editingSchema?.aesthetics?.colors) && editingSchema.aesthetics.colors.length
+      ? (editingSchema.aesthetics.colors as string[])
+      : defaultSchema.aesthetics.colors;
+  const editingHasCombos = editingColors.some((c) => c.includes('+'));
+  const editingColorsLower = editingColors.map((c) => String(c || '').toLowerCase());
+  const isColorAllowedForEditing = (name: string | undefined) => {
+    if (!name) return false;
+    const n = String(name).toLowerCase();
+    return editingColorsLower.some((opt) => {
+      if (!opt) return false;
+      if (opt === n) return true;
+      return opt.includes(`${n} +`) || opt.includes(`+ ${n}`);
+    });
+  };
 
   async function setConfigurable(formData: FormData) {
     'use server';
@@ -267,6 +288,106 @@ export default async function ConfigurableProductsPage({
 
     redirect(
       '/dashboard/admin/productos/configurables?message=Mueble%20configurable%20creado',
+    );
+  }
+
+  async function updateConfigurableProduct(formData: FormData) {
+    'use server';
+    const productId = String(formData.get('productId') || '').trim();
+    if (!productId) {
+      redirect(
+        '/dashboard/admin/productos/configurables?error=Producto%20requerido',
+      );
+    }
+
+    const allConfig = await getConfigurableProducts();
+    const prod = allConfig.find((p: any) => p.id === productId);
+    if (!prod) {
+      redirect(
+        '/dashboard/admin/productos/configurables?error=Producto%20no%20encontrado',
+      );
+    }
+
+    const baseSchema: any =
+      (prod as any).configSchema && Object.keys((prod as any).configSchema || {}).length
+        ? (prod as any).configSchema
+        : defaultSchema;
+    const baseDims = baseSchema.dimensions || defaultSchema.dimensions;
+    const baseAesthetics = baseSchema.aesthetics || defaultSchema.aesthetics;
+
+    // Medidas mínimas y máximas
+    const widthMinRaw = parseFloat(String(formData.get('widthMin') || '0'));
+    const widthMaxRaw = parseFloat(String(formData.get('widthMax') || '0'));
+    const heightMinRaw = parseFloat(String(formData.get('heightMin') || '0'));
+    const heightMaxRaw = parseFloat(String(formData.get('heightMax') || '0'));
+    const depthMinRaw = parseFloat(String(formData.get('depthMin') || '0'));
+    const depthMaxRaw = parseFloat(String(formData.get('depthMax') || '0'));
+
+    const widthMin =
+      !isNaN(widthMinRaw) && widthMinRaw > 0 ? widthMinRaw : baseDims.width.min;
+    const widthMax =
+      !isNaN(widthMaxRaw) && widthMaxRaw > 0 ? widthMaxRaw : baseDims.width.max;
+    const heightMin =
+      !isNaN(heightMinRaw) && heightMinRaw > 0 ? heightMinRaw : baseDims.height.min;
+    const heightMax =
+      !isNaN(heightMaxRaw) && heightMaxRaw > 0 ? heightMaxRaw : baseDims.height.max;
+    const depthMin =
+      !isNaN(depthMinRaw) && depthMinRaw > 0 ? depthMinRaw : baseDims.depth.min;
+    const depthMax =
+      !isNaN(depthMaxRaw) && depthMaxRaw > 0 ? depthMaxRaw : baseDims.depth.max;
+
+    // Colores permitidos
+    const allowedColors: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const flag = formData.get(`colorAllowed${i}`);
+      const nameFromForm = String(formData.get(`colorName${i}`) || '').trim();
+      if (flag && nameFromForm) {
+        allowedColors.push(nameFromForm);
+      }
+    }
+    const allowColorCombos =
+      String(formData.get('allowColorCombos') || '') === 'on';
+
+    const colorOptions: string[] = [...allowedColors];
+    if (allowColorCombos && allowedColors.length >= 2) {
+      for (let i = 0; i < allowedColors.length; i++) {
+        for (let j = i + 1; j < allowedColors.length; j++) {
+          colorOptions.push(`${allowedColors[i]} + ${allowedColors[j]}`);
+        }
+      }
+    }
+
+    const finalColorOptions =
+      colorOptions.length > 0
+        ? colorOptions
+        : (baseAesthetics.colors as string[]) ||
+          ['Arena', 'Nogal oscuro', 'Gris claro'];
+
+    const schema: any = {
+      ...baseSchema,
+      name: baseSchema.name || prod.name || 'Configurador',
+      dimensions: {
+        width: { min: widthMin, max: widthMax },
+        depth: { min: depthMin, max: depthMax },
+        height: { min: heightMin, max: heightMax },
+      },
+      components: {
+        ...baseSchema.components,
+      },
+      aesthetics: {
+        ...baseAesthetics,
+        colors: finalColorOptions,
+        handles: [],
+      },
+    };
+
+    await setProductEcpdConfig(productId, {
+      name: String(schema?.name || prod.name || 'Configurador'),
+      schema,
+    });
+
+    redirect(
+      `/dashboard/admin/productos/configurables?message=Configurador%20actualizado`,
     );
   }
 
@@ -520,6 +641,160 @@ export default async function ConfigurableProductsPage({
         </form>
       </section>
 
+      {editing && (
+        <section className="bg-white rounded-lg shadow p-4 space-y-3">
+          <h2 className="text-lg font-semibold">
+            Editar mueble configurable
+          </h2>
+          <p className="text-sm text-gray-600">
+            Aquí puedes actualizar solo las <strong>medidas mínimas/máximas</strong> y los{' '}
+            <strong>colores de melamina</strong> del mueble{' '}
+            <span className="font-semibold">{(editing as any).name}</span>. El precio, categoría,
+            imágenes y otros datos del producto se editan desde el listado general de productos.
+          </p>
+          <form action={updateConfigurableProduct} className="space-y-4">
+            <input type="hidden" name="productId" value={(editing as any).id} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+              <div>
+                <h3 className="text-sm font-semibold mb-2">
+                  Medidas mínimas (cm)
+                </h3>
+                <label className="block text-xs text-gray-700 mb-1">
+                  Ancho mínimo
+                </label>
+                <input
+                  name="widthMin"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  defaultValue={editingDimensions.width.min}
+                />
+                <label className="block text-xs text-gray-700 mb-1 mt-2">
+                  Alto mínimo
+                </label>
+                <input
+                  name="heightMin"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  defaultValue={editingDimensions.height.min}
+                />
+                <label className="block text-xs text-gray-700 mb-1 mt-2">
+                  Fondo mínimo
+                </label>
+                <input
+                  name="depthMin"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  defaultValue={editingDimensions.depth.min}
+                />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold mb-2">
+                  Medidas máximas (cm)
+                </h3>
+                <label className="block text-xs text-gray-700 mb-1">
+                  Ancho máximo
+                </label>
+                <input
+                  name="widthMax"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  defaultValue={editingDimensions.width.max}
+                />
+                <label className="block text-xs text-gray-700 mb-1 mt-2">
+                  Alto máximo
+                </label>
+                <input
+                  name="heightMax"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  defaultValue={editingDimensions.height.max}
+                />
+                <label className="block text-xs text-gray-700 mb-1 mt-2">
+                  Fondo máximo
+                </label>
+                <input
+                  name="depthMax"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  defaultValue={editingDimensions.depth.max}
+                />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Colores permitidos</h3>
+                <p className="text-xs text-gray-500 mb-2">
+                  Marca los colores de melamina que se pueden usar en este mueble.
+                </p>
+                <div className="space-y-2">
+                  {ecpdColors.slice(0, 3).map((c: any, i: number) => (
+                    <label
+                      key={i}
+                      className="flex items-center gap-2 text-xs text-gray-700"
+                    >
+                      <input
+                        type="checkbox"
+                        name={`colorAllowed${i}`}
+                        defaultChecked={isColorAllowedForEditing(c.name)}
+                      />
+                      {c.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={c.image}
+                          alt={c.name || ''}
+                          className="w-6 h-6 rounded-full object-cover border"
+                        />
+                      ) : (
+                        <span className="inline-block w-6 h-6 rounded-full bg-gray-200 border" />
+                      )}
+                      <span>{c.name || `Color ${i + 1}`}</span>
+                      <input
+                        type="hidden"
+                        name={`colorName${i}`}
+                        value={c.name || ''}
+                      />
+                    </label>
+                  ))}
+                </div>
+                <label className="mt-3 inline-flex items-center gap-2 text-xs text-gray-700">
+                  <input
+                    type="checkbox"
+                    name="allowColorCombos"
+                    defaultChecked={editingHasCombos}
+                  />
+                  Permitir combinaciones de dos colores
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                className="px-4 py-2 rounded bg-brand text-white text-sm font-semibold hover:bg-opacity-90"
+              >
+                Guardar cambios de configurador
+              </button>
+              <a
+                href="/dashboard/admin/productos/configurables"
+                className="text-xs text-gray-600 underline"
+              >
+                Cancelar edición
+              </a>
+            </div>
+          </form>
+        </section>
+      )}
+
       <section className="bg-white rounded-lg shadow p-4 space-y-3">
         <h2 className="text-lg font-semibold">Seleccionar producto y definir esquema</h2>
         <p className="text-xs text-gray-500">
@@ -619,6 +894,14 @@ export default async function ConfigurableProductsPage({
                     </td>
                     <td className="p-2 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <a
+                          href={`/dashboard/admin/productos/configurables?editId=${encodeURIComponent(
+                            String(p.id),
+                          )}`}
+                          className="px-3 py-1 rounded border text-xs text-gray-700 hover:bg-gray-50"
+                        >
+                          Editar configuración
+                        </a>
                         <a
                           href={`/dashboard/admin/productos?q=${encodeURIComponent(
                             String(p.name || ''),
