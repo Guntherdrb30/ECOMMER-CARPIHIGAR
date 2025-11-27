@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { useSession, signOut } from 'next-auth/react';
-import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X, Minus, Plus, Trash2, Search, Cloud, Sun } from 'lucide-react';
+import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X, Minus, Plus, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import ProductLiveSearch from '@/components/product-live-search';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -44,7 +44,6 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
   const [cartVisible, setCartVisible] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const cartRef = useRef<HTMLDivElement | null>(null);
   const { data: session, status } = useSession();
 
@@ -115,25 +114,6 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
     setTimeout(() => setCartVisible(false), 250);
   };
 
-  // Theme (light/dark) persisted in localStorage and applied to <html>
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const stored = window.localStorage.getItem('siteTheme');
-    if (stored === 'dark' || stored === 'light') {
-      setTheme(stored);
-      const root = window.document.documentElement;
-      if (stored === 'dark') root.classList.add('dark');
-      else root.classList.remove('dark');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const root = window.document.documentElement;
-    if (theme === 'dark') root.classList.add('dark');
-    else root.classList.remove('dark');
-    window.localStorage.setItem('siteTheme', theme);
-  }, [theme]);
 
   return (
     <header className="sticky top-0 z-50">
@@ -142,7 +122,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
         isBlurred
         maxWidth="full"
         height={72}
-        className="bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-md dark:bg-zinc-900/70 dark:supports-[backdrop-filter]:bg-zinc-900/60"
+        className="bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-md"
         classNames={{
           menu: 'bg-white shadow-xl border',
           menuItem: 'bg-white',
@@ -181,26 +161,6 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
         </NavbarContent>
 
         <NavbarContent justify="end" className="hidden lg:flex items-center gap-1">
-          <NavbarItem>
-            <button
-              type="button"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-gray-300/70 bg-white/70 text-xs text-gray-700 hover:bg-gray-100 dark:bg-zinc-800 dark:text-gray-100 dark:border-zinc-600 dark:hover:bg-zinc-700"
-              aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-            >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="w-4 h-4 text-yellow-400" />
-                  <span className="hidden xl:inline">Claro</span>
-                </>
-              ) : (
-                <>
-                  <Cloud className="w-4 h-4 text-sky-500" />
-                  <span className="hidden xl:inline">Oscuro</span>
-                </>
-              )}
-            </button>
-          </NavbarItem>
           {allLinks
             .filter((l) => l.href !== '/carrito')
             .map((link) => (

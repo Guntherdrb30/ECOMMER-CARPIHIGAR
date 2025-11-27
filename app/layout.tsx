@@ -61,9 +61,9 @@ export default async function RootLayout({
   };
 
   return (
-    <html lang="es" className="bg-gray-50 text-gray-800 dark:bg-zinc-950 dark:text-gray-100">
+    <html lang="es">
       <body
-        className={`${inter.className} antialiased`}
+        className={`${inter.className} bg-gray-50 text-gray-800 antialiased`}
         style={{ ["--color-brand" as any]: (settings as any).primaryColor || "#FF4D00", ["--color-secondary" as any]: (settings as any).secondaryColor || "#111827" }}
       >
         <script
