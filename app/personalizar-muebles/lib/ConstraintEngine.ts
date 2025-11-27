@@ -25,9 +25,9 @@ export function validateDimensions(
     if (value < range.min || value > range.max) {
       const label = translateDimensionKey(key);
       if (value < range.min) {
-        errors.push(El  no puede ser menor a  cm.);
+        errors.push(`El ${label} no puede ser menor a ${range.min} cm.`);
       } else if (value > range.max) {
-        errors.push(El  no puede ser mayor a  cm.);
+        errors.push(`El ${label} no puede ser mayor a ${range.max} cm.`);
       }
     }
   });
