@@ -246,7 +246,7 @@ export default function ConfiguratorUI({
 
       {lightboxImage && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
           onClick={() => setLightboxImage(null)}
         >
           <button
@@ -257,12 +257,12 @@ export default function ConfiguratorUI({
           >
             ×
           </button>
-          <div className="max-w-[90vw] max-h-[90vh] w-full">
+          <div className="w-full h-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={lightboxImage}
               alt={productName}
-              className="w-full h-full object-contain rounded-lg shadow-2xl bg-black"
+              className="w-full h-full object-contain"
             />
           </div>
         </div>
@@ -270,4 +270,3 @@ export default function ConfiguratorUI({
     </div>
   );
 }
-
