@@ -1,4 +1,5 @@
 const config = {
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -12,5 +13,5 @@ const config = {
     },
   },
   plugins: [],
-} as const
-export default config
+} as const;
+export default config;
