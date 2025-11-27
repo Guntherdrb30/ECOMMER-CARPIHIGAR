@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
+import { Cloud, Sun } from "lucide-react";
 import DimensionInputs from "./DimensionInputs";
 import AestheticSelector from "./AestheticSelector";
 import PriceBox from "./PriceBox";
@@ -46,6 +47,7 @@ export default function ConfiguratorUI({
   const [isAdding, setIsAdding] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   const addItem = useCartStore((state) => state.addItem);
 
@@ -145,9 +147,47 @@ export default function ConfiguratorUI({
       ? images[Math.min(activeImageIndex, images.length - 1)]
       : undefined;
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("ecpdTheme");
+    if (stored === "dark" || stored === "light") {
+      setTheme(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("ecpdTheme", theme);
+  }, [theme]);
+
+  const isDark = theme === "dark";
+
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start">
+    <div
+      className={`grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start rounded-2xl p-4 ${
+        isDark ? "bg-zinc-900 text-gray-100" : "bg-gray-50 text-gray-900"
+      }`}
+    >
       <div className="space-y-8">
+        <div className="flex justify-end mb-4">
+          <button
+            type="button"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-400/60 bg-white/10 text-xs text-gray-100 hover:bg-white/20"
+          >
+            {isDark ? (
+              <>
+                <Sun className="w-4 h-4 text-yellow-400" />
+                <span>Modo claro</span>
+              </>
+            ) : (
+              <>
+                <Cloud className="w-4 h-4 text-sky-500" />
+                <span>Modo oscuro</span>
+              </>
+            )}
+          </button>
+        </div>
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div
             className="h-64 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-900 flex items-center justify-center relative cursor-pointer"
