@@ -169,14 +169,20 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     subtotalUSD += deliveryFeeUSD;
     const ivaUSD = subtotalUSD * (ivaPercent / 100);
 
-    const paymentCurrency = String((order.payment as any)?.currency || "USD").toUpperCase();
+    const paymentCurrency = String(
+      (order.payment as any)?.currency || "USD",
+    ).toUpperCase();
     const isDivisa = paymentCurrency === "USD" || paymentCurrency === "USDT";
+
     const totalSinIgtfUSD = subtotalUSD + ivaUSD;
-    const igtfUSD = isDivisa ? totalSinIgtfUSD * 0.03 : 0;
-    const totalOperacionUSD = totalSinIgtfUSD + igtfUSD;
+    const discountUSD = isDivisa ? totalSinIgtfUSD * 0.2 : 0;
+    const baseAfterDiscountUSD = totalSinIgtfUSD - discountUSD;
+    const igtfUSD = isDivisa ? baseAfterDiscountUSD * 0.03 : 0;
+    const totalOperacionUSD = baseAfterDiscountUSD + igtfUSD;
 
     const subtotalBs = toMoney(subtotalUSD);
     const ivaBs = toMoney(ivaUSD);
+    const discountBs = toMoney(discountUSD);
     const igtfBs = toMoney(igtfUSD);
     const totalOperacionBs = toMoney(totalOperacionUSD);
 
@@ -359,6 +365,15 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
       width: totalsWidth,
     });
     doc.moveDown(0.2);
+
+    if (discountUSD > 0) {
+      doc.text("Descuento 20% pago USD:", totalsLabelX, doc.y);
+      doc.text(money(-discountBs), totalsValueX, doc.y, {
+        align: "right",
+        width: totalsWidth,
+      });
+      doc.moveDown(0.2);
+    }
 
     doc.text("I.G.T.F. 3%:", totalsLabelX, doc.y);
     doc.text(money(igtfBs), totalsValueX, doc.y, {

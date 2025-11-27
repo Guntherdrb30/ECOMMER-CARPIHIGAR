@@ -89,12 +89,27 @@ export default function RevisarPage() {
   const [tasaVES, setTasaVES] = useState<number>(40);
 
   const subtotal = useMemo(() => getTotalUSD(), [getTotalUSD, items]);
-  const iva = useMemo(() => subtotal * (ivaPercent / 100), [subtotal, ivaPercent]);
+  const iva = useMemo(
+    () => subtotal * (ivaPercent / 100),
+    [subtotal, ivaPercent],
+  );
   const totalUSD = useMemo(() => subtotal + iva, [subtotal, iva]);
-  const discountPct = useMemo(() => paymentCurrency === 'USD' ? 0.20 : 0, [paymentCurrency]);
-  const discountUSD = useMemo(() => totalUSD * discountPct, [totalUSD, discountPct]);
-  const payableUSD = useMemo(() => totalUSD - discountUSD, [totalUSD, discountUSD]);
-  const totalVES = useMemo(() => payableUSD * tasaVES, [payableUSD, tasaVES]);
+  const discountPct = useMemo(
+    () => (paymentCurrency === 'USD' ? 0.2 : 0),
+    [paymentCurrency],
+  );
+  const discountUSD = useMemo(
+    () => totalUSD * discountPct,
+    [totalUSD, discountPct],
+  );
+  const payableUSD = useMemo(
+    () => totalUSD - discountUSD,
+    [totalUSD, discountUSD],
+  );
+  const totalVES = useMemo(
+    () => payableUSD * tasaVES,
+    [payableUSD, tasaVES],
+  );
 
   const initialState = { ok: false as boolean, error: '' as string };
   const [state, formAction] = useFormState(confirmOrderAction as any, initialState);

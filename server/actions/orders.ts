@@ -190,14 +190,23 @@ export async function confirmOrderAction(_prevState: any, formData: FormData) {
                 await prisma.user.update({ where: { id: userId }, data: { phone: phoneRaw } });
             }
         } catch {}
-        let subtotalUSD = items.reduce((sum, it) => sum + (Number(it.priceUSD) * Number(it.quantity)), 0);
+        let subtotalUSD = items.reduce(
+            (sum, it) => sum + Number(it.priceUSD) * Number(it.quantity),
+            0,
+        );
         // Add local delivery fee (Barinas) if selected
         const deliverySelected = shippingOption === 'DELIVERY';
         if (deliverySelected) {
             subtotalUSD += 6; // Delivery moto Barinas
         }
         const ivaAmount = subtotalUSD * (ivaPercent / 100);
-        const totalUSD = subtotalUSD + ivaAmount;
+        let totalUSD = subtotalUSD + ivaAmount;
+
+        // Descuento 20% si el pago es en USD
+        const discountPercent = paymentCurrency === 'USD' ? 0.2 : 0;
+        const discountUSD = totalUSD * discountPercent;
+        totalUSD = totalUSD - discountUSD;
+
         const totalVES = totalUSD * tasaVES;
 
         // Validate stock and create order atomically with stock deduction
