@@ -79,10 +79,11 @@ export default function ConfiguratorUI({
     }));
 
     // Cuando se cambia el color, usamos la muestra de melamina
-    // para mostrarla en grande en el hero principal.
+    // para mostrarla en grande en la imagen principal.
     if (key === 'colors' && Array.isArray(ecpdColors) && ecpdColors.length) {
       const normalized = value.trim().toLowerCase();
-      // En combinaciones "Color A + Color B" usamos el primer color como referencia.
+      // En combinaciones "Color A + Color B" usamos primero coincidencia exacta,
+      // y si no existe, usamos el primer color como referencia.
       const baseName =
         normalized.split('+')[0]?.trim().toLowerCase() || normalized;
 
@@ -172,11 +173,12 @@ export default function ConfiguratorUI({
       : undefined);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start">
-      <div className="space-y-8">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)] items-start">
+      {/* Columna izquierda: imagen principal + miniaturas, fija en desktop */}
+      <div className="space-y-4 lg:sticky lg:top-24 self-start">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div
-            className="h-64 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-900 flex items-center justify-center relative cursor-pointer"
+            className="h-64 md:h-80 lg:h-[420px] bg-gray-900 flex items-center justify-center relative cursor-pointer"
             onClick={() => {
               if (mainImage) setLightboxImage(mainImage);
             }}
@@ -187,89 +189,83 @@ export default function ConfiguratorUI({
                 id="producto-imagen-principal"
                 src={mainImage}
                 alt={productName}
-                className="absolute inset-0 w-full h-full object-cover opacity-60"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             )}
-            <div className="absolute inset-0 bg-black/40" />
-            <div className="relative text-center text-white px-6">
-              <div className="text-xs uppercase tracking-[0.25em] text-gray-300 mb-2">
-                Motor de configuración Carpihogar
+            {!mainImage && (
+              <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                Sin imagen disponible
               </div>
-              <h2 className="text-3xl font-extrabold mb-2">
-                {productName || schema.name}
-              </h2>
-              <p className="text-sm text-gray-200 max-w-md mx-auto">
-                Ajusta dimensiones y estética para crear un mueble a medida listo para producción.
-              </p>
+            )}
+          </div>
+        </div>
+
+        {images.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">
+              Galería del producto
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {images.map((img, idx) => (
+                <button
+                  key={img + idx.toString()}
+                  type="button"
+                  onClick={() => {
+                    setActiveImageIndex(idx);
+                    setLightboxImage(img);
+                  }}
+                  className={`relative flex-shrink-0 w-20 h-20 rounded-lg border overflow-hidden ${
+                    idx === activeImageIndex
+                      ? 'border-brand ring-2 ring-brand/40'
+                      : 'border-gray-200 hover:border-brand/60'
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img}
+                    alt={`${productName} vista ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
             </div>
           </div>
-          <div className="p-6 space-y-6">
-            {images.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                  Galería del producto
-                </h3>
-                <div className="flex gap-3 overflow-x-auto pb-1">
-                  {images.map((img, idx) => (
-                    <button
-                      key={img + idx.toString()}
-                      type="button"
-                      onClick={() => {
-                        setActiveImageIndex(idx);
-                        setLightboxImage(img);
-                      }}
-                      className={`relative flex-shrink-0 w-20 h-20 rounded-lg border overflow-hidden ${
-                        idx === activeImageIndex
-                          ? 'border-brand ring-2 ring-brand/40'
-                          : 'border-gray-200 hover:border-brand/60'
-                      }`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={img}
-                        alt={`${productName} vista ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div>
-              <h3 className="text-lg font-semibold mb-3">
-                Dimensiones del mueble
-              </h3>
-              <DimensionInputs
-                schema={schema.dimensions}
-                values={config.dimensions}
-                onChange={handleDimensionChange}
-              />
-            </div>
+        )}
+      </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-3">
-                Acabados estéticos
-              </h3>
-              <AestheticSelector
-                schema={schema.aesthetics}
-                values={config.aesthetics}
-                onChange={handleAestheticChange}
-                ecpdColors={ecpdColors}
-              />
-            </div>
+      {/* Columna derecha: precio + panel de configuración (medidas y color) */}
+      <div className="space-y-6">
+        <PriceBox
+          price={price}
+          tasa={tasa}
+          validation={validation}
+          onAddToCart={handleAddToCart}
+          onExportConfig={handleExportConfig}
+          isAdding={isAdding}
+          config={config}
+        />
+
+        <div className="form-card space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Medidas</h3>
+            <DimensionInputs
+              schema={schema.dimensions}
+              values={config.dimensions}
+              onChange={handleDimensionChange}
+            />
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Color</h3>
+            <AestheticSelector
+              schema={schema.aesthetics}
+              values={config.aesthetics}
+              onChange={handleAestheticChange}
+              ecpdColors={ecpdColors}
+            />
           </div>
         </div>
       </div>
-
-      <PriceBox
-        price={price}
-        tasa={tasa}
-        validation={validation}
-        onAddToCart={handleAddToCart}
-        onExportConfig={handleExportConfig}
-        isAdding={isAdding}
-        config={config}
-      />
 
       {lightboxImage && (
         <div
