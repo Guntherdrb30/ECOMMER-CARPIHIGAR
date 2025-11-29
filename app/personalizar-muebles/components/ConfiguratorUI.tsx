@@ -174,7 +174,7 @@ export default function ConfiguratorUI({
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)] items-start">
-      {/* Columna izquierda: imagen principal + galería + precio */}
+      {/* Columna izquierda: imagen principal + galería */}
       <div className="space-y-4">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div
@@ -231,7 +231,10 @@ export default function ConfiguratorUI({
             </div>
           </div>
         )}
+      </div>
 
+      {/* Columna derecha: precio + panel de configuración (medidas y color) */}
+      <div className="space-y-6">
         <PriceBox
           price={price}
           tasa={tasa}
@@ -241,27 +244,26 @@ export default function ConfiguratorUI({
           isAdding={isAdding}
           config={config}
         />
-      </div>
 
-      {/* Columna derecha: solo panel de configuración (medidas y color) */}
-      <div className="form-card space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-3">Medidas</h3>
-          <DimensionInputs
-            schema={schema.dimensions}
-            values={config.dimensions}
-            onChange={handleDimensionChange}
-          />
-        </div>
+        <div className="form-card space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Medidas</h3>
+            <DimensionInputs
+              schema={schema.dimensions}
+              values={config.dimensions}
+              onChange={handleDimensionChange}
+            />
+          </div>
 
-        <div>
-          <h3 className="text-lg font-semibold mb-3">Color</h3>
-          <AestheticSelector
-            schema={schema.aesthetics}
-            values={config.aesthetics}
-            onChange={handleAestheticChange}
-            ecpdColors={ecpdColors}
-          />
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Color</h3>
+            <AestheticSelector
+              schema={schema.aesthetics}
+              values={config.aesthetics}
+              onChange={handleAestheticChange}
+              ecpdColors={ecpdColors}
+            />
+          </div>
         </div>
       </div>
 
