@@ -30,6 +30,13 @@ export default function RegisterPage() {
   const [resendOk, setResendOk] = useState<null | boolean>(null);
   const [uploadBusyCount, setUploadBusyCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [userType, setUserType] = useState<'CLIENT' | 'ALLY' | 'DELIVERY'>('CLIENT');
+
+  const handleUserTypeChange = (type: 'CLIENT' | 'ALLY' | 'DELIVERY') => {
+    setUserType(type);
+    setIsAlly(type === 'ALLY');
+    setIsDelivery(type === 'DELIVERY');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,18 +200,102 @@ export default function RegisterPage() {
           />
         </div>
 
-        <div>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={isAlly} onChange={(e) => setIsAlly(e.target.checked)} />
-            <span className="text-gray-700">Soy arquitecto/disenador/aliado</span>
-          </label>
-        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-gray-800">
+            ¿Cómo quieres usar Carpihogar?
+          </p>
+          <p className="text-xs text-gray-500">
+            Elige una opción. Puedes registrarte solo como cliente o solicitar acceso como aliado o delivery.
+          </p>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => handleUserTypeChange('CLIENT')}
+              className={`w-full text-left border rounded-lg p-3 text-sm transition-colors ${
+                userType === 'CLIENT'
+                  ? 'border-brand bg-brand/5'
+                  : 'border-gray-300 hover:border-brand/60'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-gray-800">Cliente</span>
+                <span
+                  className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                    userType === 'CLIENT'
+                      ? 'border-brand bg-brand'
+                      : 'border-gray-300 bg-white'
+                  }`}
+                >
+                  {userType === 'CLIENT' && (
+                    <span className="w-2 h-2 rounded-full bg-white" />
+                  )}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-600">
+                Compra para tu hogar o negocio sin requisitos adicionales.
+              </p>
+            </button>
 
-        <div>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={isDelivery} onChange={(e) => setIsDelivery(e.target.checked)} />
-            <span className="text-gray-700">Quiero ser Delivery autorizado</span>
-          </label>
+            <button
+              type="button"
+              onClick={() => handleUserTypeChange('ALLY')}
+              className={`w-full text-left border rounded-lg p-3 text-sm transition-colors ${
+                userType === 'ALLY'
+                  ? 'border-brand bg-brand/5'
+                  : 'border-gray-300 hover:border-brand/60'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-gray-800">
+                  Arquitecto / Diseñador / Aliado
+                </span>
+                <span
+                  className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                    userType === 'ALLY'
+                      ? 'border-brand bg-brand'
+                      : 'border-gray-300 bg-white'
+                  }`}
+                >
+                  {userType === 'ALLY' && (
+                    <span className="w-2 h-2 rounded-full bg-white" />
+                  )}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-600">
+                Regístrate como profesional para acceder a beneficios y comisiones por proyectos de tus clientes.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleUserTypeChange('DELIVERY')}
+              className={`w-full text-left border rounded-lg p-3 text-sm transition-colors ${
+                userType === 'DELIVERY'
+                  ? 'border-brand bg-brand/5'
+                  : 'border-gray-300 hover:border-brand/60'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-gray-800">
+                  Delivery autorizado
+                </span>
+                <span
+                  className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                    userType === 'DELIVERY'
+                      ? 'border-brand bg-brand'
+                      : 'border-gray-300 bg-white'
+                  }`}
+                >
+                  {userType === 'DELIVERY' && (
+                    <span className="w-2 h-2 rounded-full bg-white" />
+                  )}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-600">
+                Solicita trabajar como repartidor oficial de Carpihogar. Te pediremos algunos datos y documentos de tu vehículo.
+              </p>
+            </button>
+          </div>
         </div>
 
         {isDelivery && (

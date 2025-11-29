@@ -27,7 +27,8 @@ export default function DimensionInputs({
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {keys.map((key) => {
         const range = schema[key];
-        const value = values[key];
+        const rawValue = values[key];
+        const displayValue = rawValue === 0 ? '' : rawValue;
         return (
           <div key={key} className="bg-white rounded-lg shadow-sm p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -38,9 +39,14 @@ export default function DimensionInputs({
                 type="number"
                 min={range.min}
                 max={range.max}
-                value={value}
+                value={displayValue}
                 onChange={(e) => {
-                  const next = Number(e.target.value);
+                  const { value } = e.target;
+                  if (value === '') {
+                    onChange(key, 0 as number);
+                    return;
+                  }
+                  const next = Number(value);
                   if (!Number.isFinite(next)) return;
                   onChange(key, next);
                 }}
@@ -56,4 +62,3 @@ export default function DimensionInputs({
     </div>
   );
 }
-

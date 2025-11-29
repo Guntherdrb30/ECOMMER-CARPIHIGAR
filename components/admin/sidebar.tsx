@@ -17,6 +17,7 @@ export default function AdminSidebar() {
   const [allyPending, setAllyPending] = React.useState(0);
   const [salesPending, setSalesPending] = React.useState(0);
   const [unreadMsgs, setUnreadMsgs] = React.useState(0);
+  const [usersPending, setUsersPending] = React.useState(0);
 
   React.useEffect(() => {
     let active = true;
@@ -63,6 +64,21 @@ export default function AdminSidebar() {
     tick();
     return () => { alive = false; if (t) clearTimeout(t); };
   }, []);
+
+  // Usuarios con estados pendientes (aliados o delivery por revisar)
+  React.useEffect(() => {
+    if (!isAdmin) return;
+    let alive = true;
+    fetch('/api/admin/pending-users-count')
+      .then((r) => (r.ok ? r.json() : { count: 0 }))
+      .then((d) => {
+        if (alive && typeof d?.count === 'number') setUsersPending(d.count);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [isAdmin]);
 
   const links = [
     { href: '/dashboard/admin', label: 'Resumen' },
@@ -125,6 +141,11 @@ export default function AdminSidebar() {
                 {l.href === '/dashboard/admin/mensajeria' && unreadMsgs > 0 && (
                   <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[11px] px-1.5 min-w-[1.25rem]">
                     {unreadMsgs}
+                  </span>
+                )}
+                {l.href === '/dashboard/admin/usuarios' && usersPending > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[11px] px-1.5 min-w-[1.25rem]">
+                    {usersPending}
                   </span>
                 )}
               </span>
