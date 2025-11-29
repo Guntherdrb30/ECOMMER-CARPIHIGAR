@@ -19,6 +19,8 @@ export default async function PersonalizarMuebleBySlugPage({
   }
   const settings = await getSettings();
   const tasa = Number((settings as any).tasaVES ?? 1);
+  const whatsappPhone =
+    ((settings as any).whatsappPhone as string | undefined) || undefined;
   const ecpdColors = Array.isArray((settings as any).ecpdColors)
     ? ((settings as any).ecpdColors as any[])
     : [];
@@ -121,6 +123,7 @@ export default async function PersonalizarMuebleBySlugPage({
           productName={product.name}
           productImages={images}
           ecpdColors={ecpdColors}
+          whatsappPhone={whatsappPhone}
         />
       </div>
     </div>

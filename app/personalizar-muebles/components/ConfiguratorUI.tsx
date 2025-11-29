@@ -24,6 +24,7 @@ type ConfiguratorUIProps = {
   productName: string;
   productImages?: string[];
   ecpdColors?: Array<{ name?: string; description?: string; image?: string }>;
+  whatsappPhone?: string;
 };
 
 export default function ConfiguratorUI({
@@ -33,6 +34,7 @@ export default function ConfiguratorUI({
   productName,
   productImages,
   ecpdColors,
+  whatsappPhone,
 }: ConfiguratorUIProps) {
   const [config, setConfig] = useState<ProductConfig>(() =>
     createDefaultConfig(schema),
@@ -243,6 +245,8 @@ export default function ConfiguratorUI({
           onExportConfig={handleExportConfig}
           isAdding={isAdding}
           config={config}
+          productName={productName}
+          whatsappPhone={whatsappPhone}
         />
 
         <div className="form-card space-y-6">
@@ -293,4 +297,3 @@ export default function ConfiguratorUI({
     </div>
   );
 }
-
