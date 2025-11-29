@@ -160,49 +160,54 @@ export default function PriceBox({
           <p className="text-xs text-gray-500 mb-2 text-center">
             Compartir esta configuración
           </p>
-          <div className="flex justify-center gap-3">
-            <FacebookShareButton url={shareUrl} quote={shareTitle}>
-              <FacebookIcon size={32} round />
-            </FacebookShareButton>
-            <TwitterShareButton url={shareUrl} title={shareTitle}>
-              <div
-                aria-label="Compartir en X"
-                className="h-8 w-8 rounded-full bg-black text-white flex items-center justify-center text-[11px] font-semibold"
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex justify-center gap-3">
+              <FacebookShareButton url={shareUrl} quote={shareTitle}>
+                <FacebookIcon size={32} round />
+              </FacebookShareButton>
+              <TwitterShareButton url={shareUrl} title={shareTitle}>
+                <div
+                  aria-label="Compartir en X"
+                  className="h-8 w-8 rounded-full bg-black text-white flex items-center justify-center text-[11px] font-semibold"
+                >
+                  X
+                </div>
+              </TwitterShareButton>
+              <WhatsappShareButton
+                url={shareUrl}
+                title={shareTitle}
+                separator=" - "
               >
-                X
-              </div>
-            </TwitterShareButton>
-            <WhatsappShareButton
-              url={shareUrl}
-              title={shareTitle}
-              separator=" - "
+                <WhatsappIcon size={32} round />
+              </WhatsappShareButton>
+              <TelegramShareButton url={shareUrl} title={shareTitle}>
+                <TelegramIcon size={32} round />
+              </TelegramShareButton>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!shareUrl) return;
+                try {
+                  if (
+                    typeof navigator !== 'undefined' &&
+                    navigator.clipboard &&
+                    navigator.clipboard.writeText
+                  ) {
+                    await navigator.clipboard.writeText(shareUrl);
+                  }
+                } catch {
+                  // si falla, el usuario siempre puede copiar desde la barra
+                }
+              }}
+              className="text-[11px] text-blue-600 hover:text-blue-800 underline"
             >
-              <WhatsappIcon size={32} round />
-            </WhatsappShareButton>
-            <TelegramShareButton url={shareUrl} title={shareTitle}>
-              <TelegramIcon size={32} round />
-            </TelegramShareButton>
-            <a
-              href="https://www.instagram.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Compartir en Instagram"
-              className="h-8 w-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center text-[11px] font-semibold hover:opacity-90"
-            >
-              IG
-            </a>
-            <a
-              href="https://www.tiktok.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Compartir en TikTok"
-              className="h-8 w-8 rounded-full bg-black text-white flex items-center justify-center text-[11px] font-semibold hover:opacity-90"
-            >
-              TT
-            </a>
+              Copiar URL
+            </button>
           </div>
         </div>
       )}
     </aside>
   );
 }
+

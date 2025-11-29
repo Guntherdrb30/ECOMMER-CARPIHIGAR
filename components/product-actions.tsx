@@ -173,42 +173,49 @@ export function ProductActions({
         <p className="text-center text-sm font-medium text-gray-600 mb-4">
           ¡Comparte este producto con tus amigos!
         </p>
-        <div className="flex justify-center gap-4">
-          <FacebookShareButton url={shareUrl} title={product.name}>
-            <FacebookIcon size={42} round />
-          </FacebookShareButton>
-          <TwitterShareButton url={shareUrl} title={product.name}>
-            <div
-              aria-label="Compartir en X"
-              className="h-[42px] w-[42px] rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold"
-            >
-              X
-            </div>
-          </TwitterShareButton>
-          <WhatsappShareButton url={shareUrl} title={product.name} separator=":: ">
-            <WhatsappIcon size={42} round />
-          </WhatsappShareButton>
-          <TelegramShareButton url={shareUrl} title={product.name}>
-            <TelegramIcon size={42} round />
-          </TelegramShareButton>
-          <a
-            href="https://www.instagram.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Compartir en Instagram"
-            className="h-[42px] w-[42px] rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center text-xs font-semibold hover:opacity-90"
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex justify-center gap-4">
+            <FacebookShareButton url={shareUrl} title={product.name}>
+              <FacebookIcon size={42} round />
+            </FacebookShareButton>
+            <TwitterShareButton url={shareUrl} title={product.name}>
+              <div
+                aria-label="Compartir en X"
+                className="h-[42px] w-[42px] rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold"
+              >
+                X
+              </div>
+            </TwitterShareButton>
+            <WhatsappShareButton url={shareUrl} title={product.name} separator=":: ">
+              <WhatsappIcon size={42} round />
+            </WhatsappShareButton>
+            <TelegramShareButton url={shareUrl} title={product.name}>
+              <TelegramIcon size={42} round />
+            </TelegramShareButton>
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!shareUrl) return;
+              try {
+                if (
+                  typeof navigator !== 'undefined' &&
+                  navigator.clipboard &&
+                  navigator.clipboard.writeText
+                ) {
+                  await navigator.clipboard.writeText(shareUrl);
+                  toast.success('Enlace copiado al portapapeles.');
+                } else {
+                  toast.info(`Copia este enlace: ${shareUrl}`);
+                }
+              } catch {
+                toast.error('No se pudo copiar el enlace.');
+              }
+            }}
+            className="text-xs text-blue-600 hover:text-blue-800 underline"
           >
-            IG
-          </a>
-          <a
-            href="https://www.tiktok.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Compartir en TikTok"
-            className="h-[42px] w-[42px] rounded-full bg-black text-white flex items-center justify-center text-xs font-semibold hover:opacity-90"
-          >
-            TT
-          </a>
+            Copiar URL
+          </button>
         </div>
       </div>
     </>
