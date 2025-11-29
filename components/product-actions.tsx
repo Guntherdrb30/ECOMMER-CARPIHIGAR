@@ -93,7 +93,23 @@ export function ProductActions({
     }
   };
 
-  const shareUrl = `${process.env.NEXTAUTH_URL}/productos/${product.slug}`;
+  const getEnvBaseUrl = () => {
+    const fromEnv =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.NEXTAUTH_URL ||
+      'https://carpihogar.com';
+    return fromEnv.replace(/\/+$/, '');
+  };
+
+  const [shareUrl, setShareUrl] = useState<string>(
+    `${getEnvBaseUrl()}/productos/${product.slug}`,
+  );
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setShareUrl(window.location.href);
+    }
+  }, [product.slug]);
 
   const handleWhatsApp = () => {
     if (!whatsappNumber) return;
@@ -176,4 +192,3 @@ export function ProductActions({
     </>
   );
 }
-

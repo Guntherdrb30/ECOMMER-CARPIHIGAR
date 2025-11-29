@@ -81,97 +81,77 @@ export default function AestheticSelector({
           Usa las muestras de melamina para elegir el acabado principal del mueble.
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.6fr)] gap-6">
-          {/* Vista grande del color seleccionado */}
-          <div className="space-y-3">
-            <div className="text-xs font-semibold text-gray-600">
-              Vista previa del color seleccionado
-            </div>
-            <div className="relative w-full h-56 md:h-64 rounded-xl border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
-              {selectedMeta?.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={selectedMeta.image}
-                  alt={selectedMeta.name || selectedValue || 'Color seleccionado'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center text-xs text-gray-400 gap-2">
-                  <div className="w-20 h-20 rounded-full border border-dashed border-gray-300 bg-white" />
-                  <span>Selecciona un color para ver la muestra</span>
-                </div>
-              )}
-              {selectedMeta?.name && (
-                <div className="absolute bottom-0 inset-x-0 bg-black/45 text-white text-xs px-3 py-2 flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-sm">
-                      {selectedMeta.name}
-                    </div>
-                    {selectedMeta.description && (
-                      <div className="text-[11px] opacity-90 line-clamp-2">
-                        {selectedMeta.description}
+        {/* Resumen del color seleccionado (compacto) */}
+        <div className="mb-4 text-xs text-gray-600">
+          {selectedMeta?.name ? (
+            <span>
+              Color seleccionado:{' '}
+              <span className="font-semibold text-gray-800">
+                {selectedMeta.name}
+              </span>
+            </span>
+          ) : selectedValue ? (
+            <span>
+              Color seleccionado:{' '}
+              <span className="font-semibold text-gray-800">
+                {selectedValue}
+              </span>
+            </span>
+          ) : (
+            <span>Selecciona un color para ver cómo se aplica en el mueble.</span>
+          )}
+        </div>
+
+        {/* Tarjetas de colores base */}
+        <div className="mb-4">
+          <div className="text-xs font-semibold text-gray-600 mb-2">
+            Colores disponibles
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {baseColorOptions.map((opt) => {
+              const meta = findColorMeta(opt);
+              const isActive = values.colors === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => onChange('colors', opt)}
+                  className={`flex flex-col rounded-lg border bg-white overflow-hidden text-left text-xs transition-all hover:shadow-md ${
+                    isActive
+                      ? 'border-brand ring-2 ring-brand/40'
+                      : 'border-gray-200 hover:border-brand/60'
+                  }`}
+                >
+                  <div className="relative w-full h-20 md:h-24 bg-gray-100 overflow-hidden">
+                    {meta?.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={meta.image}
+                        alt={meta.name || opt}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 border-b border-gray-200" />
+                    )}
+                    {!isActive && (
+                      <div className="absolute inset-0 bg-black/30 text-white flex items-center justify-center text-[11px] font-semibold">
+                        Elegir color
                       </div>
                     )}
                   </div>
-                  <span className="text-[11px] px-2 py-1 rounded-full bg-white/20 border border-white/40">
-                    Color seleccionado
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Tarjetas de colores base */}
-          <div>
-            <div className="text-xs font-semibold text-gray-600 mb-2">
-              Colores disponibles
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {baseColorOptions.map((opt) => {
-                const meta = findColorMeta(opt);
-                const isActive = values.colors === opt;
-                return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => onChange('colors', opt)}
-                    className={`flex flex-col rounded-lg border bg-white overflow-hidden text-left text-xs transition-all hover:shadow-md ${
-                      isActive
-                        ? 'border-brand ring-2 ring-brand/40'
-                        : 'border-gray-200 hover:border-brand/60'
-                    }`}
-                  >
-                    <div className="relative w-full h-24 md:h-28 bg-gray-100 overflow-hidden">
-                      {meta?.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={meta.image}
-                          alt={meta.name || opt}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-100 border-b border-gray-200" />
-                      )}
-                      {!isActive && (
-                        <div className="absolute inset-0 bg-black/40 text-white flex items-center justify-center text-[11px] font-semibold">
-                          Elegir color
-                        </div>
-                      )}
+                  <div className="p-2.5 space-y-1">
+                    <div className="font-semibold text-[11px] text-gray-800 line-clamp-1">
+                      {meta?.name || opt}
                     </div>
-                    <div className="p-2.5 space-y-1">
-                      <div className="font-semibold text-[11px] text-gray-800 line-clamp-1">
-                        {meta?.name || opt}
+                    {meta?.description && (
+                      <div className="text-[10px] text-gray-500 line-clamp-2">
+                        {meta.description}
                       </div>
-                      {meta?.description && (
-                        <div className="text-[10px] text-gray-500 line-clamp-2">
-                          {meta.description}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
