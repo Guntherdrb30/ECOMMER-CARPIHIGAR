@@ -11,10 +11,11 @@ import {
   WhatsappShareButton,
   TelegramShareButton,
   FacebookIcon,
-  TwitterIcon,
   WhatsappIcon,
   TelegramIcon,
 } from 'react-share';
+import { FaXTwitter } from 'react-icons/fa6';
+import { FaInstagram, FaTiktok } from 'react-icons/fa';
 
 export function ProductActions({
   product,
@@ -179,7 +180,12 @@ export function ProductActions({
             <FacebookIcon size={42} round />
           </FacebookShareButton>
           <TwitterShareButton url={shareUrl} title={product.name}>
-            <TwitterIcon size={42} round />
+            <div
+              aria-label="Compartir en X"
+              className="h-[42px] w-[42px] rounded-full bg-black text-white flex items-center justify-center"
+            >
+              <FaXTwitter className="h-5 w-5" />
+            </div>
           </TwitterShareButton>
           <WhatsappShareButton url={shareUrl} title={product.name} separator=":: ">
             <WhatsappIcon size={42} round />
@@ -187,6 +193,24 @@ export function ProductActions({
           <TelegramShareButton url={shareUrl} title={product.name}>
             <TelegramIcon size={42} round />
           </TelegramShareButton>
+          <a
+            href="https://www.instagram.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Compartir en Instagram"
+            className="h-[42px] w-[42px] rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center hover:opacity-90"
+          >
+            <FaInstagram className="h-5 w-5" />
+          </a>
+          <a
+            href="https://www.tiktok.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Compartir en TikTok"
+            className="h-[42px] w-[42px] rounded-full bg-black text-white flex items-center justify-center hover:opacity-90"
+          >
+            <FaTiktok className="h-5 w-5" />
+          </a>
         </div>
       </div>
     </>

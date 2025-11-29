@@ -10,10 +10,11 @@ import {
   WhatsappShareButton,
   TelegramShareButton,
   FacebookIcon,
-  TwitterIcon,
   WhatsappIcon,
   TelegramIcon,
 } from 'react-share';
+import { FaXTwitter } from 'react-icons/fa6';
+import { FaInstagram, FaTiktok } from 'react-icons/fa';
 
 type PriceBoxProps = {
   price: number;
@@ -166,14 +167,41 @@ export default function PriceBox({
               <FacebookIcon size={32} round />
             </FacebookShareButton>
             <TwitterShareButton url={shareUrl} title={shareTitle}>
-              <TwitterIcon size={32} round />
+              <div
+                aria-label="Compartir en X"
+                className="h-8 w-8 rounded-full bg-black text-white flex items-center justify-center"
+              >
+                <FaXTwitter className="h-4 w-4" />
+              </div>
             </TwitterShareButton>
-            <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" - ">
+            <WhatsappShareButton
+              url={shareUrl}
+              title={shareTitle}
+              separator=" - "
+            >
               <WhatsappIcon size={32} round />
             </WhatsappShareButton>
             <TelegramShareButton url={shareUrl} title={shareTitle}>
               <TelegramIcon size={32} round />
             </TelegramShareButton>
+            <a
+              href="https://www.instagram.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Compartir en Instagram"
+              className="h-8 w-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center hover:opacity-90"
+            >
+              <FaInstagram className="h-4 w-4" />
+            </a>
+            <a
+              href="https://www.tiktok.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Compartir en TikTok"
+              className="h-8 w-8 rounded-full bg-black text-white flex items-center justify-center hover:opacity-90"
+            >
+              <FaTiktok className="h-4 w-4" />
+            </a>
           </div>
         </div>
       )}
