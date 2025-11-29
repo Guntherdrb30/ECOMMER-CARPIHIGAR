@@ -88,10 +88,10 @@ export default function ConfiguratorUI({
 
       const match =
         ecpdColors.find(
-          (c) => (c.name || '').trim().toLowerCase() === baseName,
+          (c) => (c.name || '').trim().toLowerCase() === normalized,
         ) ||
         ecpdColors.find(
-          (c) => (c.name || '').trim().toLowerCase() === normalized,
+          (c) => (c.name || '').trim().toLowerCase() === baseName,
         );
 
       setColorPreviewImage(match?.image || null);
@@ -184,6 +184,7 @@ export default function ConfiguratorUI({
             {mainImage && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
+                id="producto-imagen-principal"
                 src={mainImage}
                 alt={productName}
                 className="absolute inset-0 w-full h-full object-cover opacity-60"

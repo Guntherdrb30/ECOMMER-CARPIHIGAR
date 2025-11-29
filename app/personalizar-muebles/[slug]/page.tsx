@@ -33,6 +33,19 @@ export default async function PersonalizarMuebleBySlugPage({
       } as ProductSchemaType)
     : { ...baseSchema, name: product.name };
 
+  // Forzar que los colores estéticos del schema usen los definidos en ajustes (ecpdColors)
+  // como base, manteniendo cualquier combinación de dos colores definida en el schema.
+  if (Array.isArray(ecpdColors) && ecpdColors.length) {
+    const baseColorNames = ecpdColors
+      .map((c) => ((c as any)?.name || '').trim())
+      .filter((n) => n.length > 0);
+    if (baseColorNames.length) {
+      const existingColors = schema.aesthetics.colors || [];
+      const comboColors = existingColors.filter((opt) => opt.includes('+'));
+      schema.aesthetics.colors = [...baseColorNames, ...comboColors];
+    }
+  }
+
   const priceDb = (product as any).priceUSD;
   const priceNumber =
     typeof priceDb === 'number'
