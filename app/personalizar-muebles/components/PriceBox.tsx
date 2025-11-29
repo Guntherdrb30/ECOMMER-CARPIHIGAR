@@ -36,7 +36,7 @@ export default function PriceBox({
   const errors = validation?.errors ?? [];
 
   return (
-    <aside className="bg-white rounded-xl shadow-lg p-4 md:p-5 space-y-4 sticky top-24">
+    <aside className="bg-white rounded-xl shadow-lg p-4 md:p-5 space-y-4">
       <div>
         <h2 className="text-lg font-bold mb-1">Precio estimado</h2>
         <div
@@ -107,4 +107,3 @@ export default function PriceBox({
     </aside>
   );
 }
-
