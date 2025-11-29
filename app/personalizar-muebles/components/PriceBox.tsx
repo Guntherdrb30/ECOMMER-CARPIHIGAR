@@ -36,17 +36,17 @@ export default function PriceBox({
   const errors = validation?.errors ?? [];
 
   return (
-    <aside className="bg-white rounded-xl shadow-lg p-6 space-y-6 sticky top-24">
+    <aside className="bg-white rounded-xl shadow-lg p-4 md:p-5 space-y-4 sticky top-24">
       <div>
-        <h2 className="text-xl font-bold mb-2">Precio estimado</h2>
+        <h2 className="text-lg font-bold mb-1">Precio estimado</h2>
         <div
-          className={`text-3xl font-extrabold text-brand transition-transform ${
+          className={`text-2xl md:text-3xl font-extrabold text-brand transition-transform ${
             highlight ? 'scale-110' : 'scale-100'
           }`}
         >
           <Price priceUSD={price} tasa={tasa} moneda="USD" />
         </div>
-        <div className="mt-1 text-sm text-gray-500">
+        <div className="mt-1 text-xs md:text-sm text-gray-500">
           <span className="inline-flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             Precio dinámico según las medidas configuradas.
@@ -55,10 +55,10 @@ export default function PriceBox({
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">
+        <h3 className="text-sm font-semibold text-gray-700 mb-1">
           Tu configuración
         </h3>
-        <div className="text-xs text-gray-700 space-y-1 bg-gray-50 rounded-lg p-3 max-h-48 overflow-auto">
+        <div className="text-xs text-gray-700 space-y-1 bg-gray-50 rounded-lg p-2.5 max-h-28 overflow-auto">
           <div>
             <span className="font-semibold">Dimensiones:</span>{' '}
             {config.dimensions.width} × {config.dimensions.depth} ×{' '}
@@ -85,6 +85,7 @@ export default function PriceBox({
           </div>
           <ul className="list-disc list-inside space-y-0.5">
             {errors.map((err, idx) => (
+              // eslint-disable-next-line react/no-array-index-key
               <li key={idx}>{err}</li>
             ))}
           </ul>
@@ -95,7 +96,7 @@ export default function PriceBox({
         type="button"
         onClick={() => onAddToCart()}
         disabled={isAdding || hasErrors}
-        className="w-full bg-brand text-white font-bold py-3 rounded-full hover:bg-opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        className="w-full bg-brand text-white font-bold py-2.5 rounded-full hover:bg-opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
       >
         {hasErrors
           ? 'Corrige la configuración'
