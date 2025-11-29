@@ -13,8 +13,6 @@ import {
   WhatsappIcon,
   TelegramIcon,
 } from 'react-share';
-import { FaXTwitter } from 'react-icons/fa6';
-import { FaInstagram, FaTiktok } from 'react-icons/fa';
 
 type PriceBoxProps = {
   price: number;
@@ -169,9 +167,9 @@ export default function PriceBox({
             <TwitterShareButton url={shareUrl} title={shareTitle}>
               <div
                 aria-label="Compartir en X"
-                className="h-8 w-8 rounded-full bg-black text-white flex items-center justify-center"
+                className="h-8 w-8 rounded-full bg-black text-white flex items-center justify-center text-[11px] font-semibold"
               >
-                <FaXTwitter className="h-4 w-4" />
+                X
               </div>
             </TwitterShareButton>
             <WhatsappShareButton
@@ -189,18 +187,18 @@ export default function PriceBox({
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Compartir en Instagram"
-              className="h-8 w-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center hover:opacity-90"
+              className="h-8 w-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center text-[11px] font-semibold hover:opacity-90"
             >
-              <FaInstagram className="h-4 w-4" />
+              IG
             </a>
             <a
               href="https://www.tiktok.com/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Compartir en TikTok"
-              className="h-8 w-8 rounded-full bg-black text-white flex items-center justify-center hover:opacity-90"
+              className="h-8 w-8 rounded-full bg-black text-white flex items-center justify-center text-[11px] font-semibold hover:opacity-90"
             >
-              <FaTiktok className="h-4 w-4" />
+              TT
             </a>
           </div>
         </div>
