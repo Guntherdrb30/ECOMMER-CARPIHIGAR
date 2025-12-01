@@ -91,6 +91,9 @@ model User {
   driverLocations   DriverLocation[]
   assistantCarts    AssistantCart[]
 
+  // Moodboards creados por el usuario
+  moodboards        Moodboard[]
+
   passwordResetToken          String?   @unique
   passwordResetTokenExpiresAt DateTime?
 
@@ -921,6 +924,19 @@ model AssistantCartItem {
   quantity  Int
   createdAt DateTime @default(now())
   @@unique([cartId, productId])
+}
+
+model Moodboard {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  jsonData  Json
+  thumbnail String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt])
 }
 
 // Token para confirmar órdenes por WhatsApp
