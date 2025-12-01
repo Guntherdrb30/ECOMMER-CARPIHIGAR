@@ -10,7 +10,10 @@ export async function POST(req: Request) {
   try {
     const userId = await getCurrentUserId();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Debes iniciar sesion para guardar tus moodboards.' },
+        { status: 401 },
+      );
     }
 
     const body = await req.json().catch(() => null);
@@ -73,4 +76,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

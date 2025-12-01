@@ -14,6 +14,7 @@ export interface MoodboardElement {
     productId?: string;
     imageUrl?: string;
     textContent?: string;
+    quantity?: number;
     code?: string;
     name?: string;
     price?: number;
@@ -45,4 +46,3 @@ export interface SaveMoodboardPayload {
   elements: MoodboardElement[];
   thumbnailDataUrl?: string | null;
 }
-

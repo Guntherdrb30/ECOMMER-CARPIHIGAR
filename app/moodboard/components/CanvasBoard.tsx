@@ -145,7 +145,7 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
     setSelectedElement(element.id);
   };
 
-  const renderElementContent = (el: MoodboardElement) => {
+  const renderElementContent = (el: MoodboardElement, isSelected: boolean) => {
     if (el.type === "product") {
       return (
         <div className="flex h-full flex-col overflow-hidden rounded-lg bg-white">
@@ -194,10 +194,27 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
     }
 
     // text
+    const value = el.data.textContent ?? "";
+    if (isSelected) {
+      return (
+        <div className="flex h-full w-full items-center justify-center rounded-lg bg-white px-3 py-2 text-center">
+          <textarea
+            value={value}
+            onChange={(e) =>
+              updateElement(el.id, {
+                data: { ...el.data, textContent: e.target.value },
+              })
+            }
+            className="h-full w-full resize-none border-none bg-transparent text-sm font-semibold text-gray-800 focus:outline-none"
+            placeholder="Escribe aquí..."
+          />
+        </div>
+      );
+    }
     return (
       <div className="flex h-full w-full items-center justify-center rounded-lg bg-white px-3 py-2 text-center">
         <p className="text-sm font-semibold text-gray-800">
-          {el.data.textContent || "Texto"}
+          {value || "Texto"}
         </p>
       </div>
     );
@@ -239,7 +256,7 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
                 : "border-gray-200 hover:shadow-lg"
             } ${el.locked ? "opacity-80" : ""}`}
           >
-            {renderElementContent(el)}
+            {renderElementContent(el, isSelected)}
             {!el.locked && (
               <div
                 onMouseDown={(e) => handleResizeStart(e, el)}
@@ -256,4 +273,3 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
     </div>
   );
 }
-

@@ -3,14 +3,33 @@ import { Moodboard, ProductSummary, SaveMoodboardPayload } from '@/app/moodboard
 async function handleJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let msg = `Request failed with status ${res.status}`;
+    let body: any = null;
     try {
-      const data = await res.json();
-      if (data?.error || data?.message) {
-        msg = String(data.error || data.message);
+      body = await res.json();
+      if (body?.error || body?.message) {
+        msg = String(body.error || body.message);
       }
     } catch {
-      // ignore
+      // ignore parse errors
     }
+
+    if (typeof window !== 'undefined' && res.status === 401) {
+      // Avisamos al usuario y lo redirigimos a login con callback
+      try {
+        // eslint-disable-next-line no-alert
+        alert(msg || 'Debes iniciar sesion para continuar.');
+      } catch {
+        // ignore
+      }
+      const current =
+        window.location.pathname + (window.location.search || '') || '/moodboard';
+      const callback = encodeURIComponent(current);
+      const messageParam = encodeURIComponent(
+        msg || 'Debes iniciar sesion para continuar.',
+      );
+      window.location.href = `/auth/login?callbackUrl=${callback}&message=${messageParam}`;
+    }
+
     throw new Error(msg);
   }
   return (await res.json()) as T;
@@ -67,4 +86,3 @@ export async function uploadMoodboardThumbnail(moodboardId: string, dataUrl: str
     await handleJson(res);
   }
 }
-

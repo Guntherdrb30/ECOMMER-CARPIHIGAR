@@ -6,6 +6,7 @@ import Toolbar from "@/app/moodboard/components/Toolbar";
 import ProductSidebar from "@/app/moodboard/components/ProductSidebar";
 import CanvasBoard from "@/app/moodboard/components/CanvasBoard";
 import LayerList from "@/app/moodboard/components/LayerList";
+import BudgetSummary from "@/app/moodboard/components/BudgetSummary";
 import { useMoodboardStore } from "@/app/moodboard/hooks/useMoodboardStore";
 import {
   saveMoodboard,
@@ -155,7 +156,7 @@ export default function MoodboardEditor({
 
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        const text = "@Carpihogar";
+        const text = "Carpihogar.com";
         const padding = 16;
         ctx.font = "14px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
         const metrics = ctx.measureText(text);
@@ -243,6 +244,9 @@ export default function MoodboardEditor({
           >
             <CanvasBoard />
           </div>
+          <div className="mt-3">
+            <BudgetSummary />
+          </div>
         </div>
         {showLayers && (
           <div className="w-full lg:w-56 xl:w-64">
@@ -253,4 +257,3 @@ export default function MoodboardEditor({
     </section>
   );
 }
-

@@ -10,7 +10,10 @@ export async function DELETE(req: Request) {
   try {
     const userId = await getCurrentUserId();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Debes iniciar sesion para eliminar moodboards.' },
+        { status: 401 },
+      );
     }
 
     const url = new URL(req.url);
@@ -36,4 +39,3 @@ export async function DELETE(req: Request) {
     );
   }
 }
-
