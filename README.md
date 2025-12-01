@@ -1,179 +1,246 @@
 # Carpihogar.ai – E‑commerce + Backoffice
 
-Carpihogar.ai es una plataforma de comercio electrónico con paneles para Cliente, Aliado, Vendedor y Admin. Incluye catálogo, carrito y checkout, gestión de presupuestos y ventas (incluida modalidad Aliado con precios P1/P2), inventario, compras, envíos, reportes y mensajería.
+Carpihogar.ai es una plataforma de comercio electrónico orientada a retail y proyectos de mobiliario, con paneles para Cliente, Aliado, Vendedor, Delivery y Admin. Incluye catálogo, carrito y checkout, gestión de presupuestos y ventas (incluida modalidad Aliado con precios P1/P2), inventario, compras, envíos, reportes, mensajería y un asistente con IA.
 
-## Stack Técnico
+---
 
-- Framework: `Next.js (App Router)`
-- UI: `React`, `TailwindCSS`
-- Autenticación: `next-auth`
-- ORM: `Prisma` + `PostgreSQL`
-- Emails: `nodemailer`
-- Almacenamiento de archivos: `@vercel/blob`
+## Características principales
 
-## Arquitectura y Organización
+- Tienda online con categorías, buscador, wishlist y comparador.
+- Carrito y checkout con métodos de pago en USD/VES (`ZELLE`, `TRANSFERENCIA`, `PAGO_MOVIL`).
+- Paneles diferenciados por rol (cliente, aliado, vendedor, delivery, admin).
+- Flujo de presupuestos → venta (incluyendo precios P1/P2 para aliados).
+- Gestión de inventario, compras, proveedores y cuentas por cobrar.
+- Reportes de ventas, comisiones y KPIs por rol.
+- Integraciones: Vercel Blob (archivos), correo SMTP, OpenAI (asistente, voz, OCR de soportes de pago), ManyChat.
 
-- `app/`: rutas (sitio público, API Routes y dashboards).
-- `server/actions/`: acciones de servidor (lógica de negocio) usadas desde server components o formularios.
-- `prisma/schema.prisma`: modelo de datos.
+---
+
+## Stack técnico
+
+- Framework: `Next.js` (App Router).
+- UI: `React`, `TailwindCSS` + componentes propios.
+- Autenticación: `next-auth` (credenciales + Google OAuth).
+- ORM: `Prisma` + `PostgreSQL`.
+- Emails: `nodemailer` (SMTP configurable).
+- Almacenamiento de archivos: `@vercel/blob`.
+- Despliegue recomendado: `Vercel` (Plan Pro).
+
+---
+
+## Arquitectura y organización
+
+- `app/`: rutas del sitio público, dashboards y API Routes.
 - `components/`: componentes reutilizables (admin, cliente, aliado, etc.).
-- `middleware.ts`: protección de rutas por rol.
+- `server/actions/`: acciones de servidor con lógica de negocio (ventas, presupuestos, inventario, usuarios…).
+- `prisma/schema.prisma`: modelo de datos y relaciones.
+- `middleware.ts`: protección de rutas según rol y verificación de email.
+- `lib/`: helpers de autenticación (`auth.ts`), Prisma (`prisma.ts`), mailing (`mailer.ts`), integración con OpenAI, etc.
 
-## Roles y Permisos
+---
 
-- `CLIENTE`: compra en la tienda y accede al panel del cliente.
-- `ALIADO`: crea y gestiona presupuestos y ventas propias; ve reportes y accesos rápidos del cliente.
+## Roles y permisos
+
+- `CLIENTE`: compra en la tienda y accede al panel de cliente.
+- `ALIADO`: crea y gestiona presupuestos y ventas propias; visualiza reportes y accesos rápidos del cliente.
 - `VENDEDOR`: registra ventas en tienda y gestiona presupuestos.
-- `ADMIN`: acceso total (productos, compras, inventario, usuarios, reportes, etc.).
+- `DELIVERY`: gestiona entregas asignadas y flujo de reparto.
+- `DESPACHO`: acceso acotado a módulo de envíos.
+- `ADMIN`: acceso completo (productos, compras, inventario, usuarios, reportes, ajustes, etc.).
 
-La protección de rutas se aplica en `middleware.ts`:
-- `/dashboard/admin/*` → requiere `ADMIN`.
-- `/dashboard/cliente/*` → requiere sesión.
+Protección de rutas (ver `middleware.ts`):
+
+- `/dashboard/admin/*` → requiere `ADMIN` (o `DESPACHO` para `/dashboard/admin/envios`).  
+- `/dashboard/cliente/*` → requiere sesión; redirección según rol.
 - `/dashboard/aliado/*` → requiere `ALIADO`.
+- `/dashboard/delivery/*` → requiere `DELIVERY`.
+- `/checkout/*` → requiere sesión y email verificado para CLIENTE/ALIADO/DELIVERY (si se fuerza verificación, ver sección de seguridad).
 
-## Áreas del Sistema
+---
+
+## Áreas del sistema
 
 ### Sitio público
-- Home, categorías, listado y detalle de productos.
-- Favoritos (wishlist) y comparador.
-- Carrito y checkout con métodos de pago: `ZELLE`, `TRANSFERENCIA`, `PAGO_MOVIL` (USD/VES).
-- Envío: automático según ciudad, o selección manual para Barinas (Retiro en tienda / Delivery).
+
+- Home con carrusel de héroes y categorías destacadas.
+- Listado y detalle de productos (incluye videos opcionales y botones sociales).
+- Wishlist (favoritos) y comparador de productos.
+- Carrito, cálculo de envíos y checkout.
+- Flujo asistido por IA para búsqueda de productos y ayuda en compras.
 
 ### Panel de Cliente (`/dashboard/cliente`)
-- Resumen, pedidos, envíos, favoritos, direcciones, perfil.
+
+- Resumen, pedidos, envíos, favoritos, direcciones y perfil.
+- Cambio de contraseña y administración básica de datos personales.
 
 ### Panel de Aliado (`/dashboard/aliado`)
-- Resumen con KPIs: ventas totales, ganancia estimada y cantidad de ventas.
-- Presupuestos del aliado: crear, listar, ver, enviar por WhatsApp, imprimir versión “Aliado (P2)”, editar.
-- Nueva venta: desde cero o convertida desde presupuesto (precarga de ítems). Selector P1/P2 por ítem.
-- Reportes: serie diaria (ingresos) y top productos por ingresos.
 
-Flujo Aliado:
-1) Crear presupuesto (P1 – precio cliente). 2) Enviar/editar; 3) Convertir a venta → verifica datos fiscales y pago; 4) Reportes con P1/P2 (ganancia estimada = (precio venta − P2) × cantidad).
+- Dashboard con KPIs: ventas totales, ganancia estimada, cantidad de ventas.
+- Presupuestos: crear, listar, ver, enviar por WhatsApp, imprimir versión “Aliado (P2)”, editar.
+- Nueva venta: desde cero o convertida desde presupuesto (precarga de ítems, selector P1/P2 por ítem).
+- Reportes: serie diaria de ingresos y top productos por ingresos.
 
 ### Panel de Admin (`/dashboard/admin`)
+
 - Productos, categorías, inventario y movimientos.
 - Compras (POs, recepción, costos), proveedores.
-- Ventas (tienda), presupuestos y conversión a venta.
-- Envíos y cuentas por cobrar (crédito).
-- Reportes (KPIs, series, por categoría y vendedor), mensajería, usuarios y ajustes del sistema.
+- Ventas (online/offline), presupuestos y conversión a venta.
+- Envíos, cuentas por cobrar y comisiones.
+- Reportes (KPIs, series, por categoría, vendedor, aliado).
+- Gestión de usuarios, roles y ajustes del sistema (colores, banners, márgenes, datos fiscales, etc.).
 
-## Precios P1/P2 y Ganancias
+### Panel de Delivery (`/dashboard/delivery`)
 
-- `Product.priceUSD` → P1 (cliente)
-- `Product.priceAllyUSD` → P2 (aliado)
-- Presupuesto: se genera con P1 (cliente).
-- “Presupuesto Aliado” (impresión): muestra total con P2 (costos del aliado). En reportes de aliado, la ganancia estimada usa P2 si existe.
-- En venta offline (admin/vendedor/aliado) se puede elegir P1/P2 por ítem.
+- Solicitud de registro como delivery con carga de cédula, selfie y datos del vehículo.
+- Listado de envíos asignados y actualización de estados.
 
-## Estado y Flujo de Presupuestos
+---
 
-Estados: `BORRADOR`, `ENVIADO`, `APROBADO`, `RECHAZADO`, `VENCIDO`.
-- Expiración configurable por fecha (marca `VENCIDO` automático).
-- Convertir a venta crea orden, pago (si contado), envío y registra auditoría.
+## Precios P1/P2 y ganancias
 
-## Pagos y Envíos
+- `Product.priceUSD` → P1 (precio cliente).
+- `Product.priceAllyUSD` → P2 (precio aliado).
+- Los presupuestos se generan con P1 (cliente).
+- La “impresión de Presupuesto Aliado” muestra totales con P2 (costos del aliado).
+- En reportes de aliado, la ganancia estimada usa P2 cuando existe; en venta offline se puede elegir P1/P2 por ítem.
 
-Pagos: `PAGO_MOVIL`, `TRANSFERENCIA`, `ZELLE` (USD o VES). Validaciones de campos por método.
+---
 
-Envíos:
-- Online: TEALCA/MRW por defecto; si ciudad contiene “Barinas”, canal TIENDA (Retiro/Delivery incluido) o selección manual.
-- Tienda (offline): lógica local (Retiro/Delivery) similar y auditoría.
+## Datos y modelos (Prisma)
 
-## Datos y Modelos (Prisma)
+Entidades principales (ver `prisma/schema.prisma`):
 
-Entidades principales: `User`, `Product` (incluye `priceAllyUSD` y márgenes), `Order`/`OrderItem`, `Quote`/`QuoteItem`, `Payment`, `Shipping`, `Receivable`, `Commission`, `SiteSettings`, `Category`, `Supplier`, `PurchaseOrder`.
+- `User`, `Product`, `Order`/`OrderItem`, `Quote`/`QuoteItem`, `Payment`, `Shipping`, `Receivable`, `Commission`, `SiteSettings`, `Category`, `Supplier`, `PurchaseOrder`, `Conversation`, etc.
 
 Estados relevantes:
-- Orden: `PENDIENTE`, `PAGADO`; Tipo: `CONTADO`/`CREDITO`.
-- Presupuesto: `BORRADOR`, `ENVIADO`, `APROBADO`, `RECHAZADO`, `VENCIDO`.
 
-## Endpoints y Acciones
+- Orden: `PENDIENTE`, `PAGADO` (tipo `CONTADO` / `CREDITO`).  
+- Presupuesto: `BORRADOR`, `ENVIADO`, `APROBADO`, `RECHAZADO`, `VENCIDO`.  
+- Usuario: `role` (CLIENTE, ALIADO, VENDEDOR, DESPACHO, ADMIN, DELIVERY) y `alliedStatus` (`NONE`, `PENDING`, `APPROVED`).  
+- Delivery: `deliveryStatus` (`NONE`, `PENDING`, `APPROVED`) + campos de vehículo y documentos.
 
-- API
-  - `GET /api/products/search?q=...` (ADMIN/VENDEDOR/ALIADO): búsqueda para formularios.
-  - `GET /api/quotes/:id/send` (ADMIN/VENDEDOR/ALIADO): abre WhatsApp con contenido del presupuesto.
-- Acciones de servidor (server/actions)
-  - `sales`: crear venta offline; listar ventas; comisiones.
-  - `quotes`: CRUD básico de presupuestos, expiración y conversión a venta.
-  - `ally`: KPIs del aliado, serie diaria y top productos.
-  - `orders`, `wishlist`, `reports`, `inventory`, `products`, etc.
+---
 
-## Estructura de Carpetas
+## Seguridad
 
-- `app/` páginas Next.js y rutas API.
-- `components/` UI compartida (admin, cliente, aliado) y utilitarios.
-- `server/actions/` lógica de negocio con Prisma.
-- `prisma/` schema y seeds.
-- `public/` estáticos.
+### Autenticación y verificación de email
 
-## Variables de Entorno
+- Sesiones gestionadas por `next-auth` con `Credentials` y Google OAuth.
+- Clave de sesión: `NEXTAUTH_SECRET` (obligatoria en producción).
+- Verificación de correo opcional pero recomendada:
+  - Variable `ENFORCE_EMAIL_VERIFICATION=true` fuerza email verificado para CLIENTE/ALIADO/DELIVERY al acceder a dashboards y checkout.
+  - Enlace de verificación se envía tras registro y puede reenviarse.
 
-Revisa `.env.example` y configura al menos:
-- `DATABASE_URL` (PostgreSQL)
-- `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
-- `EMAIL_ENABLED=true|false` y credenciales SMTP (si aplica): `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
-- `BLOB_READ_WRITE_TOKEN` (si usas @vercel/blob)
+### Políticas de contraseña
 
-## Desarrollo Local
+Implementadas en `lib/password.ts` y usadas en registro, reset y cambios de clave:
 
-1) Copia `.env.example` → `.env` y completa valores.
-2) Instala dependencias: `npm install`.
-3) Genera cliente Prisma: `npm run postinstall` (o `npx prisma generate`).
-4) Migra esquema:
-   - Desarrollo: `npx prisma migrate dev` (o usa `npm run prisma:deploy` si ya tienes migraciones).
-5) (Opcional) Seed de datos: `npm run seed` o scripts bajo `prisma/` (`seed:sales`, `seed:demo`, `root:create`).
-6) Inicia dev: `npm run dev`.
+- Mínimo 8 caracteres.
+- Debe contener al menos un número.
+- La validación se aplica en:
+  - Registro (`/api/auth/register` + formulario `/auth/register`).
+  - Reseteo de contraseña por token (`/api/auth/reset-password` → `server/actions/auth.ts`).
+  - Cambios desde panel de admin (`updateUserPasswordByForm`).
+  - “Bootstrap” de contraseñas para roles privilegiados en `lib/auth.ts`.
 
-## Scripts
+### Subida de archivos
 
-- `npm run dev` → servidor local.
+- Endpoint general `POST /api/upload`:
+  - Lista blanca de MIME:
+    - Imágenes: `image/jpeg`, `image/png`, `image/webp`, `image/gif`.
+    - Videos: `video/mp4`, `video/quicktime`.
+  - Usuarios no autenticados: sólo imágenes y máximo 5 MB (ej. registro de delivery).
+  - Se utiliza `@vercel/blob` como almacenamiento y `sharp` para extraer color dominante.
+- Soportes de pago (`/api/assistant/upload-proof`):
+  - Acepta imágenes en `JPG/PNG/WEBP/HEIC/HEIF` hasta 5 MB.
+  - Procesa la imagen con OpenAI para extraer método, moneda, montos y referencia.
+
+### Otras medidas
+
+- Protección por rol y verificación en `middleware.ts` y `server/actions/*`.
+- Tokens de reset y verificación de email almacenados hasheados o aleatorios, con expiración.
+- Auditoría de acciones críticas (ventas, presupuestos, envíos, pagos, cambios de usuario) mediante `AuditLog` (ver acciones de servidor).
+
+> Nota: se recomienda complementar con reglas de WAF / Firewall en Vercel Pro (rate limiting en `/api/auth/*`, `/api/upload`, bloqueo de IPs sospechosas, etc.).
+
+---
+
+## Variables de entorno
+
+Revisa `.env.example`. Mínimo requerido para producción:
+
+- Base de datos:
+  - `DATABASE_URL` (PostgreSQL, idealmente con SSL).
+- NextAuth:
+  - `NEXTAUTH_SECRET`
+  - `NEXTAUTH_URL` (ej. `https://carpihogar.com`)
+  - `NEXT_PUBLIC_URL` (misma URL pública).
+- Email:
+  - `EMAIL_ENABLED=true|false`
+  - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+- Archivos:
+  - `BLOB_READ_WRITE_TOKEN` (si usas @vercel/blob con token dedicado).
+- OpenAI / IA (opcionales pero recomendados):
+  - `OPENAI_API_KEY`
+- Seguridad extra:
+  - `ENFORCE_EMAIL_VERIFICATION=true` para obligar verificación de correo.
+- Otros:
+  - `ROOT_EMAIL` (usuario root/admin principal).
+  - Integraciones como ManyChat (`MANYCHAT_*`) según se necesite.
+
+En Vercel, configura estas variables en **Environment Variables** (Production/Preview) y nunca subas `.env` reales al repositorio público.
+
+---
+
+## Desarrollo local
+
+1. Copia `.env.example` a `.env` y completa valores mínimos (ver sección anterior).
+2. Instala dependencias:
+   - `npm install`
+3. Genera cliente Prisma:
+   - `npm run postinstall` o `npx prisma generate`
+4. Aplica migraciones de base de datos:
+   - Desarrollo: `npx prisma migrate dev`
+   - Producción / CI: `npm run prisma:deploy`
+5. (Opcional) Seed de datos:
+   - Scripts en `prisma/` (`seed.ts`, `seed_demo.ts`, `seed_sales.ts`, etc.).
+6. Inicia entorno de desarrollo:
+   - `npm run dev`
+
+---
+
+## Scripts principales
+
+- `npm run dev` → servidor local de desarrollo.
 - `npm run build` → `prisma migrate deploy` + build de Next.js.
-- `npm start` → producción local.
-- `npm run prisma:deploy` → aplica migraciones en prod.
-- `npm run seed*` → varios datos de prueba.
+- `npm start` → ejecutar build en modo producción.
+- `npm run prisma:deploy` → aplicar migraciones en el entorno actual.
+- `npm run seed*` → distintos scripts de carga de datos en `prisma/`.
 
-## Despliegue (Vercel)
+---
 
-1) Vincula el repo en Vercel y define variables del entorno.
-2) Rama: `master` (por defecto).
-3) Al hacer `git push`, Vercel construye y despliega.
+## Despliegue en Vercel
+
+1. Vincula el repositorio a un proyecto en Vercel.
+2. Configura las **Environment Variables** (Production/Preview) según lo descrito arriba.
+3. Define la rama de producción (por defecto `master`).
+4. En cada `git push` a la rama configurada Vercel construye y despliega automáticamente.
+5. Para bases de datos gestionadas (Neon, Supabase, etc.), usa `npx prisma migrate deploy` en el paso de build (ya incluido en `npm run build`).
+
+---
 
 ## Licencia
 
-- Copyright © 2025 Guntherdrb30. Todos los derechos reservados.
+- Copyright © 2025 **Guntherdrb30**. Todos los derechos reservados.
 - El código se publica con fines de evaluación y demostración no comercial.
 - Cualquier uso, copia, modificación o explotación comercial requiere licencia previa y por escrito del titular.
 - Consulta el archivo `LICENSE` para los términos completos.
 
-## Separación de lógica sensible (recomendado)
-
-Para minimizar el riesgo en un repositorio público:
-- Mueve reglas críticas a un servicio privado (microservicio o función) detrás de autenticación (API Key/JWT) y CORS cerrado.
-- Ejemplos de lógica a aislar: motor de precios/descuentos, cálculo de comisiones, validaciones de crédito, claves de aprobación, integraciones con pagos/bancos.
-- El frontend/Next.js invoca endpoints del servicio privado (REST/JSON):
-  - `POST /pricing/quote` → calcula precios finales y márgenes.
-  - `POST /sales/credit/validate` → valida claves y políticas de crédito.
-  - `POST /payments/intent` → crea intents de pago y firma tokens.
-- Mantén secretos solo en variables de entorno del servicio privado; nunca en el cliente.
-- Registra auditoría en el backend privado (acción, usuario, IP, timestamp).
-
-Si te interesa, puedo preparar una carpeta `services/` con contratos de API y un proxy serverless para Vercel.
-
-## Seguridad y Auditoría
-
-- Protección por rol en middleware.
-- Auditoría de acciones críticas (ventas, presupuestos, envíos, pagos) en `AuditLog`.
-
-## Notas de Internacionalización
-
-- La UI usa textos en español. Puedes factorizar textos a constantes/mensajes si deseas i18n.
-
-## Soporte y Mantenimiento
-
-- Para ajustes de branding, revisa `SiteSettings` (colores, logo, teléfonos, emails, márgenes por defecto).
-- Para precios aliados (P2), establece `priceAllyUSD` en productos o márgenes por defecto.
-
 ---
 
-© Carpihogar.ai – Este repositorio está pensado para despliegue en Vercel con base de datos PostgreSQL.
+## Notas finales
+
+- La UI está en español. Para internacionalización, se pueden extraer textos a constantes/mensajes y conectar un sistema de i18n.
+- Ajustes de branding (colores, logo, teléfonos, emails, márgenes por defecto) se gestionan vía `SiteSettings` desde el panel de Admin.
+- El proyecto está optimizado para despliegue en **Vercel** con base de datos PostgreSQL gestionada.
+
