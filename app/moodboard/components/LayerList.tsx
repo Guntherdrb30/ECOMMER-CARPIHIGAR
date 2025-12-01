@@ -37,7 +37,7 @@ export default function LayerList({ className }: LayerListProps) {
 
   return (
     <aside
-      className={`flex h-full flex-col rounded-xl bg-white p-4 shadow-md border border-gray-200 ${className ?? ""}`}
+      className={`relative z-20 flex h-full flex-col rounded-xl bg-white p-4 shadow-md border border-gray-200 ${className ?? ""}`}
     >
       <h2 className="mb-3 text-sm font-semibold text-gray-800">Capas</h2>
       <div className="flex-1 space-y-2 overflow-y-auto pr-1">
@@ -148,4 +148,3 @@ export default function LayerList({ className }: LayerListProps) {
     </aside>
   );
 }
-

@@ -18,6 +18,14 @@ export interface MoodboardElement {
     code?: string;
     name?: string;
     price?: number;
+    // Text styling (for type === 'text')
+    textColor?: string;
+    fontFamily?: 'system' | 'serif' | 'mono' | 'script';
+    fontSize?: number;
+    fontWeight?: 'normal' | 'bold';
+    fontStyle?: 'normal' | 'italic';
+    textAlign?: 'left' | 'center' | 'right';
+    backgroundColor?: string;
   };
 }
 

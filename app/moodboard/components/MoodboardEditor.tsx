@@ -2,7 +2,15 @@
 
 import React, { useCallback, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Layers, LayoutPanelLeft, Boxes, LayoutTemplate } from "lucide-react";
+import {
+  Layers,
+  LayoutPanelLeft,
+  Boxes,
+  LayoutTemplate,
+  Type,
+  Image as ImageIcon,
+  Link2,
+} from "lucide-react";
 import Toolbar from "@/app/moodboard/components/Toolbar";
 import ProductSidebar from "@/app/moodboard/components/ProductSidebar";
 import CanvasBoard from "@/app/moodboard/components/CanvasBoard";
@@ -20,16 +28,14 @@ import type { MoodboardElement } from "@/app/moodboard/lib/moodboardTypes";
 interface MoodboardEditorProps {
   activeMoodboardId: string | null;
   onSaved: (id: string) => void;
-  showGallery?: boolean;
-  onToggleGallery?: () => void;
+  gallerySlot?: React.ReactNode;
   className?: string;
 }
 
 export default function MoodboardEditor({
   activeMoodboardId,
   onSaved,
-  showGallery,
-  onToggleGallery,
+  gallerySlot,
   className,
 }: MoodboardEditorProps) {
   const { data: session } = useSession();
@@ -40,9 +46,9 @@ export default function MoodboardEditor({
 
   const [saving, setSaving] = useState(false);
   const [showLayers, setShowLayers] = useState(true);
-  const [activeTool, setActiveTool] = useState<"products" | "templates">(
-    "products",
-  );
+  const [activeTool, setActiveTool] = useState<
+    "products" | "templates" | "gallery"
+  >("products");
 
   const isAlly = (session?.user as any)?.role === "ALIADO";
 
@@ -63,6 +69,12 @@ export default function MoodboardEditor({
       locked: false,
       data: {
         textContent: "Nuevo texto",
+        textColor: "#111827",
+        fontFamily: "system",
+        fontSize: 14,
+        fontWeight: "normal",
+        fontStyle: "normal",
+        textAlign: "center",
       },
     };
     addElement(element);
@@ -255,59 +267,96 @@ export default function MoodboardEditor({
             {showLayers ? "Capas: visible" : "Capas: ocultas"}
           </span>
         </button>
-        {typeof showGallery === "boolean" && onToggleGallery && (
-          <button
-            type="button"
-            onClick={onToggleGallery}
-            className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white/70 px-3 py-1 hover:bg-gray-100"
-            aria-label={
-              showGallery
-                ? "Ocultar panel Mis moodboards"
-                : "Mostrar panel Mis moodboards"
-            }
-          >
-            <LayoutPanelLeft className="h-3.5 w-3.5 text-gray-700" />
-            <span className="hidden md:inline">
-              {showGallery ? "Mis moodboards: visible" : "Mis moodboards: oculto"}
-            </span>
-          </button>
-        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-4 lg:flex-row">
-        <div className="w-full lg:w-72 xl:w-80 flex">
+        <div className="flex w-full lg:w-72 xl:w-80">
           {/* Barra lateral estilo Canva */}
-          <div className="flex h-full flex-col items-center gap-2 rounded-xl bg-gray-900 px-1 py-3 text-white shadow-md">
-            <button
-              type="button"
-              onClick={() => setActiveTool("products")}
-              className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
-                activeTool === "products"
-                  ? "bg-white text-gray-900"
-                  : "bg-gray-800 hover:bg-gray-700"
-              }`}
-              title="Productos"
-            >
-              <Boxes className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTool("templates")}
-              className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
-                activeTool === "templates"
-                  ? "bg-white text-gray-900"
-                  : "bg-gray-800 hover:bg-gray-700"
-              }`}
-              title="Plantillas"
-            >
-              <LayoutTemplate className="h-4 w-4" />
-            </button>
+          <div className="flex h-full flex-col items-center justify-between gap-4 rounded-xl bg-gray-900 px-1 py-3 text-white shadow-md">
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTool("products")}
+                className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                  activeTool === "products"
+                    ? "bg-white text-gray-900"
+                    : "bg-gray-800 hover:bg-gray-700"
+                }`}
+                title="Productos"
+              >
+                <Boxes className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTool("templates")}
+                className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                  activeTool === "templates"
+                    ? "bg-white text-gray-900"
+                    : "bg-gray-800 hover:bg-gray-700"
+                }`}
+                title="Plantillas"
+              >
+                <LayoutTemplate className="h-4 w-4" />
+              </button>
+              {gallerySlot && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTool("gallery")}
+                  className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                    activeTool === "gallery"
+                      ? "bg-white text-gray-900"
+                      : "bg-gray-800 hover:bg-gray-700"
+                  }`}
+                  title="Mis moodboards"
+                >
+                  <LayoutPanelLeft className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Acciones rápidas: texto e imágenes */}
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={handleAddText}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-800 text-xs font-semibold hover:bg-gray-700"
+                title="Añadir texto"
+              >
+                <Type className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleAddImageFromUrl}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-800 text-xs font-semibold hover:bg-gray-700"
+                title="Añadir imagen por URL"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+              </button>
+              <label
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-gray-800 text-xs font-semibold hover:bg-gray-700"
+                title="Subir imagen"
+              >
+                <ImageIcon className="h-3.5 w-3.5" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      void handleAddImageFromFile(file);
+                      e.target.value = "";
+                    }
+                  }}
+                />
+              </label>
+            </div>
           </div>
           <div className="ml-2 flex-1">
-            {activeTool === "products" ? (
-              <ProductSidebar className="h-full" />
-            ) : (
-              <TemplateSidebar className="h-full" />
+            {activeTool === "products" && <ProductSidebar className="h-full" />}
+            {activeTool === "templates" && <TemplateSidebar className="h-full" />}
+            {activeTool === "gallery" && gallerySlot && (
+              <div className="h-full">{gallerySlot}</div>
             )}
           </div>
         </div>
@@ -331,4 +380,3 @@ export default function MoodboardEditor({
     </section>
   );
 }
-

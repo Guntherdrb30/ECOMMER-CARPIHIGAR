@@ -8,7 +8,6 @@ import type { Moodboard } from "@/app/moodboard/lib/moodboardTypes";
 
 export default function MoodboardPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [showGallery, setShowGallery] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const setFromServer = useMoodboardStore((s) => s.setFromServer);
 
@@ -33,28 +32,22 @@ export default function MoodboardPage() {
           </div>
         </header>
 
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <MoodboardEditor
-            className="flex-1"
-            activeMoodboardId={activeId}
-            onSaved={(id) => {
-              setActiveId(id);
-              setReloadKey((k) => k + 1);
-            }}
-            showGallery={showGallery}
-            onToggleGallery={() => setShowGallery((v) => !v)}
-          />
-          {showGallery && (
-            <div className="w-full lg:w-72 xl:w-80">
-              <MoodboardGallery
-                activeMoodboardId={activeId}
-                onOpen={handleOpenMoodboard}
-                onActiveIdChange={setActiveId}
-                reloadKey={reloadKey}
-              />
-            </div>
-          )}
-        </div>
+        <MoodboardEditor
+          className="flex-1"
+          activeMoodboardId={activeId}
+          onSaved={(id) => {
+            setActiveId(id);
+            setReloadKey((k) => k + 1);
+          }}
+          gallerySlot={
+            <MoodboardGallery
+              activeMoodboardId={activeId}
+              onOpen={handleOpenMoodboard}
+              onActiveIdChange={setActiveId}
+              reloadKey={reloadKey}
+            />
+          }
+        />
       </div>
     </div>
   );
