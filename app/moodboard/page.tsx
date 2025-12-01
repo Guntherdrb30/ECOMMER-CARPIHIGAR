@@ -8,6 +8,7 @@ import type { Moodboard } from "@/app/moodboard/lib/moodboardTypes";
 
 export default function MoodboardPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showGallery, setShowGallery] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const setFromServer = useMoodboardStore((s) => s.setFromServer);
 
@@ -21,7 +22,7 @@ export default function MoodboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-6 md:px-6 lg:px-10">
-      <div className="mx-auto flex max-w-6xl flex-col gap-5">
+      <div className="mx-auto flex max-w-7xl flex-col gap-5">
         <header className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Moodboard Carpihogar</h1>
@@ -32,20 +33,27 @@ export default function MoodboardPage() {
           </div>
         </header>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,2.3fr)_minmax(320px,1fr)]">
+        <div className="flex flex-col gap-4 lg:flex-row">
           <MoodboardEditor
+            className="flex-1"
             activeMoodboardId={activeId}
             onSaved={(id) => {
               setActiveId(id);
               setReloadKey((k) => k + 1);
             }}
+            showGallery={showGallery}
+            onToggleGallery={() => setShowGallery((v) => !v)}
           />
-          <MoodboardGallery
-            activeMoodboardId={activeId}
-            onOpen={handleOpenMoodboard}
-            onActiveIdChange={setActiveId}
-            reloadKey={reloadKey}
-          />
+          {showGallery && (
+            <div className="w-full lg:w-72 xl:w-80">
+              <MoodboardGallery
+                activeMoodboardId={activeId}
+                onOpen={handleOpenMoodboard}
+                onActiveIdChange={setActiveId}
+                reloadKey={reloadKey}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

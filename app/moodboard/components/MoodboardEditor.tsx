@@ -1,22 +1,32 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
+import { Layers, LayoutPanelLeft } from "lucide-react";
 import Toolbar from "@/app/moodboard/components/Toolbar";
 import ProductSidebar from "@/app/moodboard/components/ProductSidebar";
 import CanvasBoard from "@/app/moodboard/components/CanvasBoard";
 import LayerList from "@/app/moodboard/components/LayerList";
 import { useMoodboardStore } from "@/app/moodboard/hooks/useMoodboardStore";
-import { saveMoodboard, uploadMoodboardThumbnail } from "@/app/moodboard/lib/moodboardApi";
+import {
+  saveMoodboard,
+  uploadMoodboardThumbnail,
+} from "@/app/moodboard/lib/moodboardApi";
 import type { MoodboardElement } from "@/app/moodboard/lib/moodboardTypes";
 
 interface MoodboardEditorProps {
   activeMoodboardId: string | null;
   onSaved: (id: string) => void;
+  showGallery?: boolean;
+  onToggleGallery?: () => void;
+  className?: string;
 }
 
 export default function MoodboardEditor({
   activeMoodboardId,
   onSaved,
+  showGallery,
+  onToggleGallery,
+  className,
 }: MoodboardEditorProps) {
   const canvasWrapperRef = useRef<HTMLDivElement | null>(null);
   const elements = useMoodboardStore((s) => s.elements);
@@ -24,6 +34,7 @@ export default function MoodboardEditor({
   const addElement = useMoodboardStore((s) => s.addElement);
 
   const [saving, setSaving] = useState(false);
+  const [showLayers, setShowLayers] = useState(true);
 
   const handleAddText = () => {
     const id =
@@ -167,8 +178,8 @@ export default function MoodboardEditor({
         await uploadMoodboardThumbnail(activeMoodboardId, dataUrl);
       }
 
-      // TODO: en el futuro se puede conectar aquí una API de IA
-      // para generar thumbnails más avanzados a partir de los elementos.
+      // Punto de integración futuro:
+      // aquí se puede conectar una API de IA para generar thumbnails avanzados.
     } catch (e: any) {
       // eslint-disable-next-line no-alert
       alert(e?.message || "No se pudo exportar el moodboard.");
@@ -176,7 +187,11 @@ export default function MoodboardEditor({
   }, [activeMoodboardId, title]);
 
   return (
-    <section className="flex h-full flex-col gap-4 rounded-2xl bg-gray-50 p-4 shadow-md border border-gray-200">
+    <section
+      className={`flex h-full flex-col gap-4 rounded-2xl bg-gray-50 p-4 shadow-md border border-gray-200 ${
+        className ?? ""
+      }`}
+    >
       <Toolbar
         onSave={() => void handleSave()}
         onExport={() => void handleExport()}
@@ -185,6 +200,38 @@ export default function MoodboardEditor({
         onAddImageFromFile={handleAddImageFromFile}
         saving={saving}
       />
+
+      <div className="flex justify-end gap-2 text-[11px] text-gray-600">
+        <button
+          type="button"
+          onClick={() => setShowLayers((v) => !v)}
+          className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white/70 px-3 py-1 hover:bg-gray-100"
+          aria-label={showLayers ? "Ocultar panel de capas" : "Mostrar panel de capas"}
+        >
+          <Layers className="h-3.5 w-3.5 text-gray-700" />
+          <span className="hidden md:inline">
+            {showLayers ? "Capas: visible" : "Capas: ocultas"}
+          </span>
+        </button>
+        {typeof showGallery === "boolean" && onToggleGallery && (
+          <button
+            type="button"
+            onClick={onToggleGallery}
+            className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white/70 px-3 py-1 hover:bg-gray-100"
+            aria-label={
+              showGallery
+                ? "Ocultar panel Mis moodboards"
+                : "Mostrar panel Mis moodboards"
+            }
+          >
+            <LayoutPanelLeft className="h-3.5 w-3.5 text-gray-700" />
+            <span className="hidden md:inline">
+              {showGallery ? "Mis moodboards: visible" : "Mis moodboards: oculto"}
+            </span>
+          </button>
+        )}
+      </div>
+
       <div className="flex flex-1 flex-col gap-4 lg:flex-row">
         <div className="w-full lg:w-60 xl:w-64">
           <ProductSidebar />
@@ -197,10 +244,13 @@ export default function MoodboardEditor({
             <CanvasBoard />
           </div>
         </div>
-        <div className="w-full lg:w-56 xl:w-64">
-          <LayerList />
-        </div>
+        {showLayers && (
+          <div className="w-full lg:w-56 xl:w-64">
+            <LayerList />
+          </div>
+        )}
       </div>
     </section>
   );
 }
+
