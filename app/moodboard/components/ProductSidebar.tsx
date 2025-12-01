@@ -2,10 +2,38 @@
 
 import React, { useEffect, useState } from "react";
 import { fetchMoodboardProducts } from "@/app/moodboard/lib/moodboardApi";
-import type { ProductSummary } from "@/app/moodboard/lib/moodboardTypes";
+import type { ProductSummary, MoodboardElement } from "@/app/moodboard/lib/moodboardTypes";
+import { useMoodboardStore } from "@/app/moodboard/hooks/useMoodboardStore";
 
 interface ProductSidebarProps {
   className?: string;
+}
+
+function createElementFromProduct(product: ProductSummary): MoodboardElement {
+  const id =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  return {
+    id,
+    type: "product",
+    x: 80,
+    y: 80,
+    width: 240,
+    height: 240,
+    rotation: 0,
+    opacity: 1,
+    locked: false,
+    data: {
+      productId: product.id,
+      code: product.code,
+      name: product.name,
+      price: product.price,
+      imageUrl: product.imageUrl,
+      backgroundColor: "#F3F4F6",
+    },
+  };
 }
 
 export default function ProductSidebar({ className }: ProductSidebarProps) {
@@ -16,6 +44,9 @@ export default function ProductSidebar({ className }: ProductSidebarProps) {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<ProductSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const addElement = useMoodboardStore((s) => s.addElement);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -96,13 +127,23 @@ export default function ProductSidebar({ className }: ProductSidebarProps) {
             key={p.id}
             draggable
             onDragStart={(e) => {
+              setIsDragging(true);
               e.dataTransfer.setData(
                 "application/json",
                 JSON.stringify({ type: "product", product: p }),
               );
               e.dataTransfer.effectAllowed = "copy";
             }}
-            className="flex cursor-grab items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs hover:border-brand hover:bg-white"
+            onDragEnd={() => setIsDragging(false)}
+            onClick={() => {
+              if (isDragging) {
+                setIsDragging(false);
+                return;
+              }
+              const element = createElementFromProduct(p);
+              addElement(element);
+            }}
+            className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs hover:border-brand hover:bg-white"
           >
             <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-gray-200">
               {p.imageUrl ? (
@@ -115,19 +156,23 @@ export default function ProductSidebar({ className }: ProductSidebarProps) {
               ) : null}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-gray-800">{p.name}</p>
+              <p className="truncate text-xs font-semibold text-gray-800">
+                {p.name}
+              </p>
               <p className="truncate text-[11px] text-gray-500">
-                {p.code || "Sin código"} • ${p.price.toFixed(2)}
+                {p.code || "Sin código"} · ${p.price.toFixed(2)}
               </p>
               {p.category && (
-                <p className="truncate text-[11px] text-gray-400">{p.category}</p>
+                <p className="truncate text-[11px] text-gray-400">
+                  {p.category}
+                </p>
               )}
             </div>
           </div>
         ))}
       </div>
       <p className="mt-2 text-[10px] text-gray-400">
-        Arrastra un producto al lienzo para añadirlo al moodboard.
+        Haz clic en un producto para añadirlo, o arrástralo al lienzo para posicionarlo manualmente.
       </p>
     </aside>
   );

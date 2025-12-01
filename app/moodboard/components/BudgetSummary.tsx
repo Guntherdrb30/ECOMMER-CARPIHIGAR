@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { toast } from "sonner";
 import { useMoodboardStore } from "@/app/moodboard/hooks/useMoodboardStore";
 import type { MoodboardElement } from "@/app/moodboard/lib/moodboardTypes";
+import { useCartStore } from "@/store/cart";
 
 function isProductElement(el: MoodboardElement): boolean {
   return el.type === "product" && !!el.data.productId;
@@ -11,6 +13,7 @@ function isProductElement(el: MoodboardElement): boolean {
 export default function BudgetSummary() {
   const elements = useMoodboardStore((s) => s.elements);
   const updateElement = useMoodboardStore((s) => s.updateElement);
+  const addCartItem = useCartStore((s) => s.addItem);
 
   const rows = useMemo(() => {
     const groups = new Map<
@@ -22,6 +25,7 @@ export default function BudgetSummary() {
         name: string;
         price: number;
         quantity: number;
+        imageUrl?: string;
         elementIds: string[];
       }
     >();
@@ -45,6 +49,7 @@ export default function BudgetSummary() {
           name,
           price,
           quantity,
+          imageUrl: el.data.imageUrl,
           elementIds: [el.id],
         });
       }
@@ -53,20 +58,42 @@ export default function BudgetSummary() {
     return Array.from(groups.values());
   }, [elements]);
 
-  const total = useMemo(() => {
-    return rows.reduce((sum, row) => sum + row.quantity * row.price, 0);
-  }, [rows]);
+  const total = useMemo(
+    () => rows.reduce((sum, row) => sum + row.quantity * row.price, 0),
+    [rows],
+  );
+
+  const handleAddToCart = () => {
+    if (!rows.length) return;
+    rows.forEach((row) => {
+      if (!row.productId || row.quantity <= 0 || row.price <= 0) return;
+      addCartItem(
+        {
+          id: row.productId,
+          name: row.name,
+          priceUSD: row.price,
+          image: row.imageUrl,
+        },
+        row.quantity,
+      );
+    });
+    try {
+      toast.success("Productos del moodboard añadidos al carrito.");
+    } catch {
+      // ignore toast errors
+    }
+  };
 
   if (!rows.length) {
     return (
-      <section className="rounded-xl bg-white p-3 text-xs text-gray-500 shadow-sm border border-gray-200">
+      <section className="ml-auto w-full max-w-sm rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-500 shadow-sm">
         <p>No hay productos en el moodboard todavía.</p>
       </section>
     );
   }
 
   return (
-    <section className="rounded-xl bg-white p-3 text-xs shadow-sm border border-gray-200">
+    <section className="ml-auto w-full max-w-sm rounded-xl border border-gray-200 bg-white p-3 text-xs shadow-sm">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-800">
           Resumen de productos
@@ -89,7 +116,7 @@ export default function BudgetSummary() {
                   {row.name}
                 </p>
                 <p className="truncate text-[11px] text-gray-500">
-                  {row.code || "Sin código"} • ${row.price.toFixed(2)}
+                  {row.code || "Sin código"} · ${row.price.toFixed(2)}
                 </p>
               </div>
               <div className="flex items-center gap-1">
@@ -99,7 +126,7 @@ export default function BudgetSummary() {
                   value={qty}
                   onChange={(e) => {
                     const v = parseInt(e.target.value || "0", 10);
-                    const quantity = isNaN(v) || v < 0 ? 0 : v;
+                    const quantity = Number.isNaN(v) || v < 0 ? 0 : v;
                     if (!row.elementIds.length) return;
                     const [first, ...rest] = row.elementIds;
                     const firstEl = elements.find((el) => el.id === first);
@@ -127,13 +154,22 @@ export default function BudgetSummary() {
           );
         })}
       </div>
-      <div className="mt-2 flex items-center justify-between border-t border-gray-200 pt-2">
-        <span className="text-[11px] font-semibold text-gray-700">
-          Total estimado:
-        </span>
-        <span className="text-sm font-bold text-brand">
-          ${total.toFixed(2)}
-        </span>
+      <div className="mt-2 flex items-center justify-between gap-2 border-t border-gray-200 pt-2">
+        <div className="flex flex-col">
+          <span className="text-[11px] font-semibold text-gray-700">
+            Total estimado:
+          </span>
+          <span className="text-sm font-bold text-brand">
+            ${total.toFixed(2)}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          className="rounded-md bg-brand px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-brand/90"
+        >
+          Añadir al carrito
+        </button>
       </div>
     </section>
   );
