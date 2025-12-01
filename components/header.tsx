@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { useSession, signOut } from 'next-auth/react';
-import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X, Minus, Plus, Trash2, Search } from 'lucide-react';
+import { User, ShoppingCart, LogIn, LogOut, Home, Box, Star, Mail, Menu, X, Minus, Plus, Trash2, Search, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import ProductLiveSearch from '@/components/product-live-search';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -60,10 +60,14 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
 
+  const solutionsLinks = [
+    { href: '/moodboard', label: 'Moodboard' },
+    { href: '/personalizar-muebles', label: 'Configurador de mobiliario' },
+  ];
+
   const navLinks = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/productos', label: 'Productos', icon: Box },
-    { href: '/categorias', label: 'Categorias', icon: Star },
     { href: '/novedades', label: 'Novedades', icon: Star },
     { href: '/contacto', label: 'Contacto', icon: Mail },
   ];
@@ -161,6 +165,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
         </NavbarContent>
 
         <NavbarContent justify="end" className="hidden lg:flex items-center gap-1">
+          {/* Links principales */}
           {allLinks
             .filter((l) => l.href !== '/carrito')
             .map((link) => (
@@ -173,6 +178,30 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                 </Link>
               </NavbarItem>
             ))}
+
+          {/* Menú Experiencias (Moodboard + Configurador) */}
+          <NavbarItem className="px-1">
+            <div className="group relative">
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 text-gray-700/80 hover:text-brand transition-colors px-2 py-1 text-sm xl:text-base"
+              >
+                <Sparkles size={16} className="text-brand" />
+                <span>Experiencias</span>
+              </button>
+              <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-opacity duration-150 absolute left-0 mt-2 min-w-[220px] rounded-lg border bg-white shadow-lg py-2 z-[900]">
+                {solutionsLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center px-3 py-1.5 text-xs xl:text-sm text-gray-700 hover:bg-gray-50 hover:text-brand"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </NavbarItem>
 
           <NavbarItem>
             <div className="relative" ref={cartRef}>
