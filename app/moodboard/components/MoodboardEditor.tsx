@@ -139,6 +139,7 @@ export default function MoodboardEditor({
         backgroundColor: "#f9fafb",
         useCORS: true,
         scale: 2,
+        logging: false,
       });
 
       const ctx = canvas.getContext("2d");
@@ -175,7 +176,7 @@ export default function MoodboardEditor({
   }, [activeMoodboardId, title]);
 
   return (
-    <section className="flex h-full flex-col gap-4 rounded-2xl bg-gray-50 p-4 shadow-lg">
+    <section className="flex h-full flex-col gap-4 rounded-2xl bg-gray-50 p-4 shadow-md border border-gray-200">
       <Toolbar
         onSave={() => void handleSave()}
         onExport={() => void handleExport()}
@@ -185,22 +186,21 @@ export default function MoodboardEditor({
         saving={saving}
       />
       <div className="flex flex-1 flex-col gap-4 lg:flex-row">
-        <div className="w-full lg:w-72 xl:w-80">
+        <div className="w-full lg:w-60 xl:w-64">
           <ProductSidebar />
         </div>
         <div className="flex-1">
           <div
             ref={canvasWrapperRef}
-            className="flex h-full items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 p-4"
+            className="flex min-h-[620px] items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 p-4"
           >
             <CanvasBoard />
           </div>
         </div>
-        <div className="w-full lg:w-64 xl:w-72">
+        <div className="w-full lg:w-56 xl:w-64">
           <LayerList />
         </div>
       </div>
     </section>
   );
 }
-

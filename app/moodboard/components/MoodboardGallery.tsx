@@ -9,12 +9,14 @@ interface MoodboardGalleryProps {
   activeMoodboardId: string | null;
   onOpen: (m: Moodboard) => void;
   onActiveIdChange?: (id: string | null) => void;
+  reloadKey?: number;
 }
 
 export default function MoodboardGallery({
   activeMoodboardId,
   onOpen,
   onActiveIdChange,
+  reloadKey,
 }: MoodboardGalleryProps) {
   const [items, setItems] = useState<Moodboard[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export default function MoodboardGallery({
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [reloadKey]);
 
   const handleOpen = (m: Moodboard) => {
     onOpen(m);
@@ -156,4 +158,3 @@ export default function MoodboardGallery({
     </section>
   );
 }
-
