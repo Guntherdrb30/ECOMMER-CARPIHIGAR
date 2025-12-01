@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useMoodboardStore } from "@/app/moodboard/hooks/useMoodboardStore";
 import type { MoodboardElement } from "@/app/moodboard/lib/moodboardTypes";
+import { fetchMoodboardProducts } from "@/app/moodboard/lib/moodboardApi";
 
 interface CanvasBoardProps {
   className?: string;
@@ -83,6 +84,7 @@ function createElementFromProduct(
 
 export default function CanvasBoard({ className }: CanvasBoardProps) {
   const boardRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const elements = useMoodboardStore((s) => s.elements);
   const selectedElementId = useMoodboardStore((s) => s.selectedElementId);
@@ -98,6 +100,7 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [resizeState, setResizeState] = useState<ResizeState | null>(null);
   const [actionsForId, setActionsForId] = useState<string | null>(null);
+  const [imageTargetId, setImageTargetId] = useState<string | null>(null);
 
   const handleDrop: React.DragEventHandler<HTMLDivElement> = (e) => {
     e.preventDefault();
@@ -126,7 +129,6 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
     element: MoodboardElement,
   ) => {
     if (element.locked) return;
-
     const rect = e.currentTarget.getBoundingClientRect();
 
     setDragState({
@@ -177,7 +179,6 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
   ) => {
     if (element.locked) return;
     e.stopPropagation();
-
     setResizeState({
       id: element.id,
       startWidth: element.width,
@@ -186,6 +187,94 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
       startY: e.clientY,
     });
     setSelectedElement(element.id);
+  };
+
+  const handleImageFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !imageTargetId) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "image");
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        throw new Error("No se pudo subir la imagen.");
+      }
+      const data = (await res.json()) as { url?: string };
+      if (!data.url) {
+        throw new Error("Respuesta inválida al subir la imagen.");
+      }
+      const el = elements.find((x) => x.id === imageTargetId);
+      if (!el) return;
+      updateElement(imageTargetId, {
+        data: { ...el.data, imageUrl: data.url },
+      });
+    } catch (err: any) {
+      // eslint-disable-next-line no-alert
+      alert(err?.message || "Error subiendo imagen.");
+    } finally {
+      setImageTargetId(null);
+    }
+  };
+
+  const handleChangeImage = async (el: MoodboardElement) => {
+    if (el.type !== "image") return;
+    // eslint-disable-next-line no-alert
+    const option = window.prompt(
+      "¿Cómo quieres cambiar la imagen?\n1 - Usar imagen de un producto Carpihogar\n2 - Subir imagen desde tu computadora\n3 - Pegar URL de imagen\n\nEscribe 1, 2 o 3 (o deja vacío para cancelar):",
+      "1",
+    );
+    if (!option) return;
+
+    if (option === "1") {
+      // eslint-disable-next-line no-alert
+      const query = window.prompt(
+        "Escribe el nombre o código del producto:",
+        "",
+      );
+      if (!query) return;
+      try {
+        const products = await fetchMoodboardProducts({ q: query });
+        const candidate = products.find((p) => p.imageUrl) || products[0];
+        if (!candidate || !candidate.imageUrl) {
+          // eslint-disable-next-line no-alert
+          alert("No se encontró un producto con imagen para esa búsqueda.");
+          return;
+        }
+        updateElement(el.id, {
+          data: { ...el.data, imageUrl: candidate.imageUrl },
+        });
+      } catch (err: any) {
+        // eslint-disable-next-line no-alert
+        alert(err?.message || "No se pudieron buscar productos.");
+      }
+      return;
+    }
+
+    if (option === "2") {
+      setImageTargetId(el.id);
+      fileInputRef.current?.click();
+      return;
+    }
+
+    if (option === "3") {
+      // eslint-disable-next-line no-alert
+      const url = window.prompt(
+        "Pega la URL de la nueva imagen:",
+        el.data.imageUrl || "",
+      );
+      if (!url) return;
+      updateElement(el.id, {
+        data: { ...el.data, imageUrl: url },
+      });
+    }
   };
 
   const renderElementContent = (el: MoodboardElement, isSelected: boolean) => {
@@ -620,17 +709,10 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
                     <button
                       type="button"
                       className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600 hover:border-brand/60 hover:text-brand"
-                      title="Cambiar imagen (URL)"
+                      title="Cambiar imagen"
                       onClick={(ev) => {
                         ev.stopPropagation();
-                        const url = window.prompt(
-                          "Pega la URL de la nueva imagen:",
-                          el.data.imageUrl || "",
-                        );
-                        if (!url) return;
-                        updateElement(el.id, {
-                          data: { ...el.data, imageUrl: url },
-                        });
+                        void handleChangeImage(el);
                       }}
                     >
                       <ImageIcon className="h-3 w-3" />
@@ -705,6 +787,15 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
         <span>Arrastra productos aquí</span>
         <span>@Carpihogar</span>
       </div>
+
+      {/* Input oculto para subir imagen al cambiar una existente */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageFileChange}
+      />
     </div>
   );
 }

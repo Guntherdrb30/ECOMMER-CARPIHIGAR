@@ -170,29 +170,39 @@ export default function MoodboardEditor({
 
   const captureCanvasDataUrl = useCallback(async (): Promise<string | null> => {
     if (!canvasWrapperRef.current) return null;
-    const html2canvas = (await import("html2canvas")).default;
-    const node = canvasWrapperRef.current;
-    const canvas = await html2canvas(node, {
-      backgroundColor: "#f9fafb",
-      useCORS: true,
-      scale: 2,
-      logging: false,
-    });
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const node = canvasWrapperRef.current;
+      const canvas = await html2canvas(node, {
+        backgroundColor: "#f9fafb",
+        useCORS: true,
+        scale: 2,
+        logging: false,
+      });
 
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      const text = "Carpihogar.com";
-      const padding = 16;
-      ctx.font = "14px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-      const metrics = ctx.measureText(text);
-      const textWidth = metrics.width;
-      const x = canvas.width - textWidth - padding;
-      const y = canvas.height - padding;
-      ctx.fillStyle = "rgba(0,0,0,0.45)";
-      ctx.fillText(text, x, y);
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const text = "Carpihogar.com";
+        const padding = 16;
+        ctx.font =
+          "14px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+        const metrics = ctx.measureText(text);
+        const textWidth = metrics.width;
+        const x = canvas.width - textWidth - padding;
+        const y = canvas.height - padding;
+        ctx.fillStyle = "rgba(0,0,0,0.45)";
+        ctx.fillText(text, x, y);
+      }
+
+      return canvas.toDataURL("image/png");
+    } catch (e) {
+      // Si html2canvas falla (por ejemplo con colores oklch), evitamos romper el flujo
+      if (typeof window !== "undefined") {
+        // eslint-disable-next-line no-console
+        console.error("Error capturando moodboard:", e);
+      }
+      return null;
     }
-
-    return canvas.toDataURL("image/png");
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -220,7 +230,11 @@ export default function MoodboardEditor({
     if (!canvasWrapperRef.current) return;
     try {
       const dataUrl = await captureCanvasDataUrl();
-      if (!dataUrl) throw new Error("No se pudo capturar el moodboard.");
+      if (!dataUrl) {
+        throw new Error(
+          "No se pudo generar la imagen del moodboard en este navegador (algunos estilos de color no son compatibles). Tu moodboard igual queda guardado; mientras tanto puedes usar una captura de pantalla.",
+        );
+      }
 
       const link = document.createElement("a");
       link.href = dataUrl;
