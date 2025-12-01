@@ -43,6 +43,7 @@ export default async function AdminSettingsPage() {
                 lowStockThreshold: parseInt(String(formData.get('lowStockThreshold') ?? '5'), 10),
                 homeHeroUrls: Array.from({ length: 3 }).map((_, i) => formData.get(`homeHeroUrl${i + 1}`) as string).filter(Boolean),
                 ecpdHeroUrls: Array.from({ length: 3 }).map((_, i) => formData.get(`ecpdHeroUrl${i + 1}`) as string).filter(Boolean),
+                moodboardHeroUrls: Array.from({ length: 3 }).map((_, i) => formData.get(`moodboardHeroUrl${i + 1}`) as string).filter(Boolean),
                 heroAutoplayMs: parseInt(String(formData.get('heroAutoplayMs') || '5000'), 10),
                 sellerCommissionPercent: parseFloat(String(formData.get('sellerCommissionPercent') || '5')),
                 instagramHandle: String((formData.get('instagramHandle') as string) || '').replace(/^@+/, '').trim() || undefined,
@@ -156,6 +157,16 @@ export default async function AdminSettingsPage() {
                 fieldPrefix="ecpdHeroUrl"
               />
             </div>
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-2">Moodboard (hero)</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Sube hasta 3 imágenes que se mostrarán en la cabecera de la experiencia de moodboard.
+            </p>
+            <HeroCarouselEditor
+              defaultUrls={((settings as any).moodboardHeroUrls || []) as string[]}
+              fieldPrefix="moodboardHeroUrl"
+            />
+          </div>
             <EcpdColorsEditor defaultColors={((settings as any).ecpdColors || []) as any[]} />
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-2">Categorías del Home</h3>

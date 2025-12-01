@@ -16,6 +16,7 @@ async function ensureSiteSettingsColumns() {
         'ADD COLUMN IF NOT EXISTS "defaultMarginWholesalePct" DECIMAL(5,2), ' +
         'ADD COLUMN IF NOT EXISTS "heroAutoplayMs" INTEGER, ' +
         'ADD COLUMN IF NOT EXISTS "ecpdHeroUrls" TEXT[], ' +
+        'ADD COLUMN IF NOT EXISTS "moodboardHeroUrls" TEXT[], ' +
         'ADD COLUMN IF NOT EXISTS "ecpdColors" JSONB, ' +
         'ADD COLUMN IF NOT EXISTS "instagramHandle" TEXT, ' +
         'ADD COLUMN IF NOT EXISTS "tiktokHandle" TEXT, ' +
@@ -174,6 +175,9 @@ export async function getSettings() {
       defaultMarginAllyPct: (settings as any).defaultMarginAllyPct?.toNumber?.() ?? 30,
       defaultMarginWholesalePct: (settings as any).defaultMarginWholesalePct?.toNumber?.() ?? 20,
       heroAutoplayMs: Number((settings as any).heroAutoplayMs ?? 5000) || 5000,
+      moodboardHeroUrls: Array.isArray((settings as any).moodboardHeroUrls)
+        ? ((settings as any).moodboardHeroUrls as any[]).filter(Boolean)
+        : [],
       ecpdHeroUrls: Array.isArray((settings as any).ecpdHeroUrls)
         ? ((settings as any).ecpdHeroUrls as any[]).filter(Boolean)
         : [],
@@ -234,6 +238,7 @@ export async function getSettings() {
       homeHeroUrls: [],
       heroAutoplayMs: 5000,
       ecpdHeroUrls: [],
+      moodboardHeroUrls: [],
       ecpdColors: [
         { name: 'Arena', description: '', image: '' },
         { name: 'Nogal oscuro', description: '', image: '' },
@@ -436,6 +441,9 @@ export async function updateSettings(data: any) {
     const ecpdUrlsIn = Array.isArray(cleaned?.ecpdHeroUrls)
       ? (cleaned.ecpdHeroUrls as string[]).filter(Boolean)
       : [];
+    const moodboardUrlsIn = Array.isArray(cleaned?.moodboardHeroUrls)
+      ? (cleaned.moodboardHeroUrls as string[]).filter(Boolean)
+      : [];
   const isVideo = (u: string) => {
     const s = String(u || "").toLowerCase();
     return s.endsWith(".mp4") || s.endsWith(".webm") || s.endsWith(".ogg");
@@ -455,6 +463,7 @@ export async function updateSettings(data: any) {
       ...cleaned,
       homeHeroUrls: urlsIn,
       ecpdHeroUrls: ecpdUrlsIn,
+      moodboardHeroUrls: moodboardUrlsIn,
       heroAutoplayMs,
       categoryBannerCarpinteriaUrl: cleaned.categoryBannerCarpinteriaUrl || null,
       categoryBannerHogarUrl: cleaned.categoryBannerHogarUrl || null,

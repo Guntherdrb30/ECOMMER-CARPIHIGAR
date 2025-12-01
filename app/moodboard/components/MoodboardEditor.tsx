@@ -178,6 +178,30 @@ export default function MoodboardEditor({
         useCORS: true,
         scale: 2,
         logging: false,
+        onclone: (doc) => {
+          const root = doc.getElementById("moodboard-capture-root");
+          if (!root) return;
+          const walker = doc.createTreeWalker(
+            root,
+            // eslint-disable-next-line no-bitwise
+            (doc.defaultView?.NodeFilter?.SHOW_ELEMENT ?? NodeFilter.SHOW_ELEMENT) as number,
+          );
+          let current = root as Element | null;
+          while (current) {
+            const win = doc.defaultView || window;
+            const style = win.getComputedStyle(current);
+            const bg = style.backgroundColor || "";
+            const color = style.color || "";
+            const el = current as HTMLElement;
+            if (bg.includes("oklch(")) {
+              el.style.backgroundColor = "#f9fafb";
+            }
+            if (color.includes("oklch(")) {
+              el.style.color = "#111827";
+            }
+            current = walker.nextNode() as Element | null;
+          }
+        },
       });
 
       const ctx = canvas.getContext("2d");
@@ -196,7 +220,6 @@ export default function MoodboardEditor({
 
       return canvas.toDataURL("image/png");
     } catch (e) {
-      // Si html2canvas falla (por ejemplo con colores oklch), evitamos romper el flujo
       if (typeof window !== "undefined") {
         // eslint-disable-next-line no-console
         console.error("Error capturando moodboard:", e);
@@ -283,7 +306,7 @@ export default function MoodboardEditor({
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 lg:flex-row">
+        <div className="flex flex-1 flex-col gap-4 lg:flex-row">
         <div className="flex w-full lg:w-72 xl:w-80">
           {/* Barra lateral estilo Canva */}
           <div className="flex h-full flex-col items-center justify-between gap-4 rounded-xl bg-gray-900 px-1 py-3 text-white shadow-md">
@@ -376,6 +399,7 @@ export default function MoodboardEditor({
         </div>
         <div className="flex-1">
           <div
+            id="moodboard-capture-root"
             ref={canvasWrapperRef}
             className="flex min-h-[620px] items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 p-4"
           >

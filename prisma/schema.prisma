@@ -133,6 +133,8 @@ model SiteSettings {
   secondaryColor          String?
   logoUrl                 String?
   homeHeroUrls            String[]
+  // Hero específico para la experiencia de moodboard
+  moodboardHeroUrls       String[]
   // Mini hero para el personalizador de muebles (ECPD)
   ecpdHeroUrls            String[]
   // Paleta de colores para el personalizador (JSON con nombre, imagen, descripcion)
