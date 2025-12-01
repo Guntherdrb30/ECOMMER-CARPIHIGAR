@@ -46,9 +46,8 @@ export default function RegisterPage() {
     setError("");
 
     const pwd = String(password || "").trim();
-    const hasNumber = /\d/.test(pwd);
-    if (!pwd || pwd.length < 8 || !hasNumber) {
-      setError("La contrasena debe tener al menos 8 caracteres y contener al menos un numero.");
+    if (!pwd || pwd.length < 8 || pwd.length > 16) {
+      setError("La contrasena debe tener entre 8 y 16 caracteres.");
       return;
     }
 
@@ -213,8 +212,8 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg pr-10"
               minLength={8}
-              pattern="(?=.*\\d).{8,}"
-              title="Minimo 8 caracteres y al menos un numero"
+              maxLength={16}
+              title="Entre 8 y 16 caracteres (letras, numeros o simbolos)"
               required
             />
             <button
@@ -261,8 +260,8 @@ export default function RegisterPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg pr-10"
               minLength={8}
-              pattern="(?=.*\\d).{8,}"
-              title="Repite la contrasena (minimo 8 caracteres y al menos un numero)"
+              maxLength={16}
+              title="Repite la contrasena (entre 8 y 16 caracteres)"
               required
             />
             <button

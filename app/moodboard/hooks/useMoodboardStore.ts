@@ -20,6 +20,7 @@ interface MoodboardState {
   unlockElement: (id: string) => void;
   setSelectedElement: (id: string | null) => void;
   setFromServer: (moodboard: Moodboard) => void;
+  applyTemplate: (title: string, elements: MoodboardElement[]) => void;
   reset: () => void;
   undo: () => void;
   redo: () => void;
@@ -110,6 +111,15 @@ export const useMoodboardStore = create<MoodboardState>((set) => ({
       future: [],
     })),
 
+  applyTemplate: (title, tplElements) =>
+    set(() => ({
+      elements: tplElements,
+      title,
+      selectedElementId: null,
+      history: [],
+      future: [],
+    })),
+
   reset: () =>
     set(() => ({
       elements: [],
@@ -136,4 +146,3 @@ export const useMoodboardStore = create<MoodboardState>((set) => ({
       return { ...state, elements: next, history, future: rest, selectedElementId: null };
     }),
 }));
-

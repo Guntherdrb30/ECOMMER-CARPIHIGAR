@@ -86,3 +86,16 @@ export async function uploadMoodboardThumbnail(moodboardId: string, dataUrl: str
     await handleJson(res);
   }
 }
+
+export async function publishMoodboardNews(payload: {
+  imageDataUrl: string;
+  title?: string;
+  excerpt?: string;
+}): Promise<{ ok: boolean; id?: string }> {
+  const res = await fetch('/api/moodboard/publish-news', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleJson<{ ok: boolean; id?: string }>(res);
+}

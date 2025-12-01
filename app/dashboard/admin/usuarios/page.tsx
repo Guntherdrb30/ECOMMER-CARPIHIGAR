@@ -82,7 +82,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
         }} className="grid grid-cols-1 md:grid-cols-4 gap-2">
           <input name="dispatch_name" placeholder="Nombre" className="border rounded px-2 py-1" required />
           <input type="email" name="dispatch_email" placeholder="Email" className="border rounded px-2 py-1" required />
-          <input type="password" name="dispatch_password" placeholder="Contrasena" className="border rounded px-2 py-1" required minLength={8} pattern="(?=.*\\d).{8,}" title="Minimo 8 caracteres y al menos un numero" />
+          <input type="password" name="dispatch_password" placeholder="Contrasena" className="border rounded px-2 py-1" required minLength={8} maxLength={16} title="Entre 8 y 16 caracteres" />
           <PendingButton className="bg-purple-600 text-white px-3 py-1 rounded" pendingText="Creando...">Crear Despacho</PendingButton>
         </form>
       </div>

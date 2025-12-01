@@ -1,16 +1,19 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
-import { Layers, LayoutPanelLeft } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Layers, LayoutPanelLeft, Boxes, LayoutTemplate } from "lucide-react";
 import Toolbar from "@/app/moodboard/components/Toolbar";
 import ProductSidebar from "@/app/moodboard/components/ProductSidebar";
 import CanvasBoard from "@/app/moodboard/components/CanvasBoard";
 import LayerList from "@/app/moodboard/components/LayerList";
 import BudgetSummary from "@/app/moodboard/components/BudgetSummary";
+import TemplateSidebar from "@/app/moodboard/components/TemplateSidebar";
 import { useMoodboardStore } from "@/app/moodboard/hooks/useMoodboardStore";
 import {
   saveMoodboard,
   uploadMoodboardThumbnail,
+  publishMoodboardNews,
 } from "@/app/moodboard/lib/moodboardApi";
 import type { MoodboardElement } from "@/app/moodboard/lib/moodboardTypes";
 
@@ -29,6 +32,7 @@ export default function MoodboardEditor({
   onToggleGallery,
   className,
 }: MoodboardEditorProps) {
+  const { data: session } = useSession();
   const canvasWrapperRef = useRef<HTMLDivElement | null>(null);
   const elements = useMoodboardStore((s) => s.elements);
   const title = useMoodboardStore((s) => s.title);
@@ -36,6 +40,11 @@ export default function MoodboardEditor({
 
   const [saving, setSaving] = useState(false);
   const [showLayers, setShowLayers] = useState(true);
+  const [activeTool, setActiveTool] = useState<"products" | "templates">(
+    "products",
+  );
+
+  const isAlly = (session?.user as any)?.role === "ALIADO";
 
   const handleAddText = () => {
     const id =
@@ -124,6 +133,56 @@ export default function MoodboardEditor({
     }
   };
 
+  const maybePublishNews = useCallback(
+    async (dataUrl: string | null) => {
+      if (!isAlly || !dataUrl) return;
+      if (typeof window === "undefined") return;
+      const ok = window.confirm(
+        "¿Quieres publicar este moodboard en Novedades? (aparecerá en la sección Novedades de Carpihogar)",
+      );
+      if (!ok) return;
+      try {
+        await publishMoodboardNews({
+          imageDataUrl: dataUrl,
+          title: title.trim() || undefined,
+        });
+        // eslint-disable-next-line no-alert
+        alert("Tu moodboard fue enviado a Novedades.");
+      } catch (e: any) {
+        // eslint-disable-next-line no-alert
+        alert(e?.message || "No se pudo publicar en Novedades.");
+      }
+    },
+    [isAlly, title],
+  );
+
+  const captureCanvasDataUrl = useCallback(async (): Promise<string | null> => {
+    if (!canvasWrapperRef.current) return null;
+    const html2canvas = (await import("html2canvas")).default;
+    const node = canvasWrapperRef.current;
+    const canvas = await html2canvas(node, {
+      backgroundColor: "#f9fafb",
+      useCORS: true,
+      scale: 2,
+      logging: false,
+    });
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const text = "Carpihogar.com";
+      const padding = 16;
+      ctx.font = "14px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+      const metrics = ctx.measureText(text);
+      const textWidth = metrics.width;
+      const x = canvas.width - textWidth - padding;
+      const y = canvas.height - padding;
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      ctx.fillText(text, x, y);
+    }
+
+    return canvas.toDataURL("image/png");
+  }, []);
+
   const handleSave = useCallback(async () => {
     try {
       setSaving(true);
@@ -134,40 +193,23 @@ export default function MoodboardEditor({
       };
       const saved = await saveMoodboard(payload);
       onSaved(saved.id);
+
+      const dataUrl = await captureCanvasDataUrl();
+      await maybePublishNews(dataUrl);
     } catch (e: any) {
       // eslint-disable-next-line no-alert
       alert(e?.message || "No se pudo guardar el moodboard.");
     } finally {
       setSaving(false);
     }
-  }, [activeMoodboardId, elements, onSaved, title]);
+  }, [activeMoodboardId, captureCanvasDataUrl, elements, maybePublishNews, onSaved, title]);
 
   const handleExport = useCallback(async () => {
     if (!canvasWrapperRef.current) return;
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const node = canvasWrapperRef.current;
-      const canvas = await html2canvas(node, {
-        backgroundColor: "#f9fafb",
-        useCORS: true,
-        scale: 2,
-        logging: false,
-      });
+      const dataUrl = await captureCanvasDataUrl();
+      if (!dataUrl) throw new Error("No se pudo capturar el moodboard.");
 
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        const text = "Carpihogar.com";
-        const padding = 16;
-        ctx.font = "14px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-        const metrics = ctx.measureText(text);
-        const textWidth = metrics.width;
-        const x = canvas.width - textWidth - padding;
-        const y = canvas.height - padding;
-        ctx.fillStyle = "rgba(0,0,0,0.45)";
-        ctx.fillText(text, x, y);
-      }
-
-      const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = `${title || "moodboard"}-carpihogar.png`;
@@ -179,13 +221,12 @@ export default function MoodboardEditor({
         await uploadMoodboardThumbnail(activeMoodboardId, dataUrl);
       }
 
-      // Punto de integración futuro:
-      // aquí se puede conectar una API de IA para generar thumbnails avanzados.
+      await maybePublishNews(dataUrl);
     } catch (e: any) {
       // eslint-disable-next-line no-alert
       alert(e?.message || "No se pudo exportar el moodboard.");
     }
-  }, [activeMoodboardId, title]);
+  }, [activeMoodboardId, captureCanvasDataUrl, maybePublishNews, title]);
 
   return (
     <section
@@ -234,8 +275,41 @@ export default function MoodboardEditor({
       </div>
 
       <div className="flex flex-1 flex-col gap-4 lg:flex-row">
-        <div className="w-full lg:w-60 xl:w-64">
-          <ProductSidebar />
+        <div className="w-full lg:w-72 xl:w-80 flex">
+          {/* Barra lateral estilo Canva */}
+          <div className="flex h-full flex-col items-center gap-2 rounded-xl bg-gray-900 px-1 py-3 text-white shadow-md">
+            <button
+              type="button"
+              onClick={() => setActiveTool("products")}
+              className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                activeTool === "products"
+                  ? "bg-white text-gray-900"
+                  : "bg-gray-800 hover:bg-gray-700"
+              }`}
+              title="Productos"
+            >
+              <Boxes className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTool("templates")}
+              className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                activeTool === "templates"
+                  ? "bg-white text-gray-900"
+                  : "bg-gray-800 hover:bg-gray-700"
+              }`}
+              title="Plantillas"
+            >
+              <LayoutTemplate className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="ml-2 flex-1">
+            {activeTool === "products" ? (
+              <ProductSidebar className="h-full" />
+            ) : (
+              <TemplateSidebar className="h-full" />
+            )}
+          </div>
         </div>
         <div className="flex-1">
           <div
@@ -257,3 +331,4 @@ export default function MoodboardEditor({
     </section>
   );
 }
+
