@@ -65,8 +65,8 @@ function createElementFromProduct(
     type: "product",
     x,
     y,
-    width: 220,
-    height: 260,
+    width: 240,
+    height: 240,
     rotation: 0,
     opacity: 1,
     locked: false,
@@ -76,6 +76,7 @@ function createElementFromProduct(
       name: product.name,
       price: product.price,
       imageUrl: product.imageUrl,
+      backgroundColor: "#F3F4F6",
     },
   };
 }
@@ -110,8 +111,8 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
     try {
       const payload = JSON.parse(data);
       if (payload.type === "product" && payload.product) {
-        const x = e.clientX - rect.left - 110;
-        const y = e.clientY - rect.top - 130;
+        const x = e.clientX - rect.left - 120;
+        const y = e.clientY - rect.top - 120;
         const element = createElementFromProduct(payload.product, x, y);
         addElement(element);
       }
@@ -189,33 +190,24 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
 
   const renderElementContent = (el: MoodboardElement, isSelected: boolean) => {
     if (el.type === "product") {
+      const backgroundColor = el.data.backgroundColor || "#F3F4F6";
       return (
-        <div className="flex h-full flex-col overflow-hidden rounded-lg bg-white">
-          <div className="h-24 w-full flex-shrink-0 bg-gray-200">
-            {el.data.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={el.data.imageUrl}
-                alt={el.data.name || ""}
-                className="h-full w-full object-cover"
-              />
-            ) : null}
-          </div>
-          <div className="flex flex-1 flex-col justify-between p-2">
-            <div>
-              <p className="line-clamp-2 text-xs font-semibold text-gray-800">
-                {el.data.name}
-              </p>
-              <p className="text-[11px] text-gray-500">
-                {el.data.code || "Sin código"}
-              </p>
+        <div
+          className="h-full w-full overflow-hidden rounded-lg"
+          style={{ backgroundColor }}
+        >
+          {el.data.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={el.data.imageUrl}
+              alt={el.data.name || ""}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center px-2 text-center text-[11px] text-gray-500">
+              {el.data.name || el.data.code || "Producto sin imagen"}
             </div>
-            {typeof el.data.price === "number" && (
-              <p className="mt-1 text-xs font-bold text-brand">
-                ${el.data.price.toFixed(2)}
-              </p>
-            )}
-          </div>
+          )}
         </div>
       );
     }
