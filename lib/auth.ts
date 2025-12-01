@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import type { AuthOptions } from "next-auth";
 import { randomBytes } from "crypto";
+import { isStrongPassword } from "@/lib/password";
 
 const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
@@ -63,7 +64,7 @@ export const authOptions: AuthOptions = {
         // This helps when admins promote a user (e.g., to ALIADO) that was created without a password.
         if ((!user.password || !user.password.trim()) && user.role !== 'CLIENTE') {
           const newPwd = String(credentials.password || '').trim();
-          if (newPwd.length >= 6) {
+          if (isStrongPassword(newPwd)) {
             const hashed = await bcrypt.hash(newPwd, 10);
             await prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
             user.password = hashed;

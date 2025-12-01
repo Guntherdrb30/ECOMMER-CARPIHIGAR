@@ -45,6 +45,13 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
+    const pwd = String(password || "").trim();
+    const hasNumber = /\d/.test(pwd);
+    if (!pwd || pwd.length < 8 || !hasNumber) {
+      setError("La contrasena debe tener al menos 8 caracteres y contener al menos un numero.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Las contrasenas no coinciden");
       return;
@@ -205,6 +212,9 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg pr-10"
+              minLength={8}
+              pattern="(?=.*\\d).{8,}"
+              title="Minimo 8 caracteres y al menos un numero"
               required
             />
             <button
@@ -250,6 +260,9 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg pr-10"
+              minLength={8}
+              pattern="(?=.*\\d).{8,}"
+              title="Repite la contrasena (minimo 8 caracteres y al menos un numero)"
               required
             />
             <button

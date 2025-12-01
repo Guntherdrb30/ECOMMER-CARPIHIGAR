@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { isStrongPassword } from '@/lib/password';
 
 const prisma = new PrismaClient();
 
@@ -9,9 +10,17 @@ export async function POST(req: Request) {
   try {
     const { name, email, password, isAlly, isDelivery, deliveryCedula, deliveryPhone, deliveryAddress, deliveryVehicleType, deliveryVehicleBrand, deliveryVehicleModel, deliveryMotoPlate, deliveryChassisSerial, deliveryIdImageUrl, deliverySelfieUrl, agreeDelivery } = await req.json();
     const emailLc = String(email || '').trim().toLowerCase();
+    const pwd = String(password || '').trim();
 
-    if (!name || !emailLc || !password) {
+    if (!name || !emailLc || !pwd) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
+    }
+
+    if (!isStrongPassword(pwd)) {
+      return NextResponse.json(
+        { message: 'La contrasena debe tener al menos 8 caracteres y contener al menos un numero.' },
+        { status: 400 }
+      );
     }
 
     const exist = await prisma.user.findUnique({
@@ -22,7 +31,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Email already exists' }, { status: 400 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(pwd, 10);
 
     // Basic delivery validation (backend) to match UI
     if (isDelivery) {

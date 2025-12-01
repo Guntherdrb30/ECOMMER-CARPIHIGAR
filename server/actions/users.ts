@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDeleteSecret } from '@/server/actions/settings';
+import { isStrongPassword } from '@/lib/password';
 
 const prisma = new PrismaClient();
 
@@ -285,7 +286,7 @@ export async function updateUserPasswordByForm(formData: FormData) {
   const newPassword = String(formData.get('newPassword') || '').trim();
   const confirm = String(formData.get('confirm') || '').trim();
   if (!id) redirect('/dashboard/admin/usuarios?pw=err');
-  const hasNumber = /\d/.test(newPassword); if (!newPassword || newPassword.length < 8 || !hasNumber) redirect('/dashboard/admin/usuarios?pw=err');
+  if (!isStrongPassword(newPassword)) redirect('/dashboard/admin/usuarios?pw=err');
   if (newPassword !== confirm) redirect('/dashboard/admin/usuarios?pw=err');
   const target = await prisma.user.findUnique({ where: { id }, select: { id:true, email:true } }); if (!target) redirect('/dashboard/admin/usuarios?pw=err');
   try { const bcrypt = (await import('bcrypt')).default; const hashed = await bcrypt.hash(newPassword, 10); await prisma.user.update({ where: { id }, data: { password: hashed } }); try { await prisma.auditLog.create({ data: { userId: (session?.user as any)?.id, action: 'USER_PASSWORD_RESET', details: `target:${id};by:${email}` } }); } catch {}; revalidatePath('/dashboard/admin/usuarios'); redirect('/dashboard/admin/usuarios?pw=ok'); } catch { redirect('/dashboard/admin/usuarios?pw=err'); }
