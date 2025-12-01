@@ -169,54 +169,136 @@ export default function MoodboardEditor({
   );
 
   const captureCanvasDataUrl = useCallback(async (): Promise<string | null> => {
-    if (!canvasWrapperRef.current) return null;
+    if (typeof window === "undefined") return null;
+    if (!elements.length) return null;
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const node = canvasWrapperRef.current;
-      const canvas = await html2canvas(node, {
-        backgroundColor: "#f9fafb",
-        useCORS: true,
-        scale: 2,
-        logging: false,
-        onclone: (doc) => {
-          const root = doc.getElementById("moodboard-capture-root");
-          if (!root) return;
-          const walker = doc.createTreeWalker(
-            root,
-            // eslint-disable-next-line no-bitwise
-            (doc.defaultView?.NodeFilter?.SHOW_ELEMENT ?? NodeFilter.SHOW_ELEMENT) as number,
-          );
-          let current = root as Element | null;
-          while (current) {
-            const win = doc.defaultView || window;
-            const style = win.getComputedStyle(current);
-            const bg = style.backgroundColor || "";
-            const color = style.color || "";
-            const el = current as HTMLElement;
-            if (bg.includes("oklch(")) {
-              el.style.backgroundColor = "#f9fafb";
-            }
-            if (color.includes("oklch(")) {
-              el.style.color = "#111827";
-            }
-            current = walker.nextNode() as Element | null;
-          }
-        },
+      // Calculamos el tamaño mínimo necesario a partir de los elementos
+      const margin = 40;
+      let maxX = 0;
+      let maxY = 0;
+      elements.forEach((el) => {
+        maxX = Math.max(maxX, el.x + el.width);
+        maxY = Math.max(maxY, el.y + el.height);
+      });
+      const width = Math.max(800, Math.ceil(maxX + margin));
+      const height = Math.max(600, Math.ceil(maxY + margin));
+
+      const canvas = document.createElement("canvas");
+      // Doblamos la resolución para exportar en alta calidad
+      canvas.width = width * 2;
+      canvas.height = height * 2;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.scale(2, 2);
+
+      // Fondo
+      ctx.fillStyle = "#f9fafb";
+      ctx.fillRect(0, 0, width, height);
+
+      // Cargamos todas las imágenes necesarias
+      const urls = new Set<string>();
+      elements.forEach((el) => {
+        const url = el.data.imageUrl;
+        if (url) urls.add(url);
       });
 
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        const text = "Carpihogar.com";
-        const padding = 16;
-        ctx.font =
-          "14px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-        const metrics = ctx.measureText(text);
-        const textWidth = metrics.width;
-        const x = canvas.width - textWidth - padding;
-        const y = canvas.height - padding;
-        ctx.fillStyle = "rgba(0,0,0,0.45)";
-        ctx.fillText(text, x, y);
-      }
+      const imageMap = new Map<string, HTMLImageElement>();
+      await Promise.all(
+        Array.from(urls).map(
+          (url) =>
+            new Promise<void>((resolve) => {
+              const img = new Image();
+              img.crossOrigin = "anonymous";
+              img.onload = () => {
+                imageMap.set(url, img);
+                resolve();
+              };
+              img.onerror = () => resolve();
+              img.src = url;
+            }),
+        ),
+      );
+
+      const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+      elements.forEach((el) => {
+        const opacity = el.opacity ?? 1;
+        const rotation = el.rotation ?? 0;
+        const cx = el.x + el.width / 2;
+        const cy = el.y + el.height / 2;
+
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.translate(cx, cy);
+        ctx.rotate(toRad(rotation));
+        ctx.translate(-el.width / 2, -el.height / 2);
+
+        if (el.type === "product" || el.type === "image") {
+          const bg = el.data.backgroundColor || "#F3F4F6";
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, el.width, el.height);
+
+          const url = el.data.imageUrl;
+          const img = url ? imageMap.get(url) : undefined;
+          if (img) {
+            ctx.drawImage(img, 0, 0, el.width, el.height);
+          }
+        } else if (el.type === "text") {
+          const bg = el.data.backgroundColor || "#FFFFFF";
+          const textColor = el.data.textColor || "#111827";
+          const fontSize = el.data.fontSize ?? 14;
+          const fontFamilyKey = el.data.fontFamily || "system";
+          const fontWeight = el.data.fontWeight || "normal";
+          const fontStyle = el.data.fontStyle || "normal";
+          const textAlign = el.data.textAlign || "center";
+          const value = el.data.textContent ?? "";
+
+          const fontFamily =
+            fontFamilyKey === "serif"
+              ? "Georgia, Cambria, 'Times New Roman', serif"
+              : fontFamilyKey === "mono"
+              ? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"
+              : fontFamilyKey === "script"
+              ? "'Segoe Script', 'Brush Script MT', cursive"
+              : "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, el.width, el.height);
+
+          ctx.fillStyle = textColor;
+          ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+          ctx.textAlign = textAlign as CanvasTextAlign;
+          ctx.textBaseline = "middle";
+
+          const lines = value.split(/\r?\n/);
+          const lineHeight = fontSize * 1.3;
+          const totalHeight = lineHeight * lines.length;
+
+          lines.forEach((line, index) => {
+            const y = el.height / 2 - totalHeight / 2 + lineHeight * (index + 0.5);
+            let x = el.width / 2;
+            if (textAlign === "left") x = 8;
+            if (textAlign === "right") x = el.width - 8;
+            ctx.fillText(line, x, y);
+          });
+        }
+
+        ctx.restore();
+      });
+
+      // Marca de agua
+      ctx.save();
+      const text = "Carpihogar.com";
+      const padding = 16;
+      ctx.font =
+        "14px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      const metrics = ctx.measureText(text);
+      const textWidth = metrics.width;
+      const x = width - textWidth - padding;
+      const y = height - padding;
+      ctx.fillText(text, x, y);
+      ctx.restore();
 
       return canvas.toDataURL("image/png");
     } catch (e) {
@@ -226,7 +308,7 @@ export default function MoodboardEditor({
       }
       return null;
     }
-  }, []);
+  }, [elements]);
 
   const handleSave = useCallback(async () => {
     try {
