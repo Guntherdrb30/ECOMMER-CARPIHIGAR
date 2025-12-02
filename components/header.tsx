@@ -383,6 +383,24 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
                 </span>
               </Link>
             ))}
+
+            {/* Sección Experiencias en móvil */}
+            <div className="mt-3 border-t pt-3">
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                Experiencias
+              </p>
+              {solutionsLinks.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="px-3 py-2 rounded text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Sparkles size={18} className="text-brand" />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+            </div>
             {status === 'authenticated' && (
               <Button variant="light" startContent={<LogOut size={18} />} onPress={() => { signOut(); setIsOpen(false); }}>
                 Cerrar Sesion
