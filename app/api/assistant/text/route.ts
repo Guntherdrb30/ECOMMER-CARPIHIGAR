@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { runPurchaseConversation } from '@/server/assistant/purchase/flowController';
 import * as ProductsSearch from '@/agents/carpihogar-ai-actions/tools/products/searchProducts';
+import { getOpenAIChatCompletion } from '@/lib/openai';
 import crypto from 'crypto';
 
 const ASSISTANT_SESSION_COOKIE = 'assistant_session';
@@ -16,7 +17,9 @@ function getOrCreateAssistantSession(req: Request) {
     return { sessionId: decodeURIComponent(match[1]), setCookieHeader: null as string | null };
   }
   const sessionId = crypto.randomUUID();
-  const setCookieHeader = `${ASSISTANT_SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Path=/; Max-Age=${SESSION_MAX_AGE_SECONDS}; SameSite=Lax; HttpOnly`;
+  const setCookieHeader = `${ASSISTANT_SESSION_COOKIE}=${encodeURIComponent(
+    sessionId,
+  )}; Path=/; Max-Age=${SESSION_MAX_AGE_SECONDS}; SameSite=Lax; HttpOnly`;
   return { sessionId, setCookieHeader };
 }
 
@@ -45,7 +48,7 @@ export async function POST(req: Request) {
 
       (async () => {
         try {
-          // Intentar primero el flujo de compra guiado
+          // 1) Intentar primero el flujo de compra guiado (add_to_cart, buy, greet, site_help, etc.)
           const flow = await runPurchaseConversation({ customerId, sessionId, message: text });
           const msgs = Array.isArray(flow?.messages) ? flow.messages : [];
           const ui = Array.isArray(flow?.uiActions) ? flow.uiActions : [];
@@ -60,15 +63,77 @@ export async function POST(req: Request) {
             for (const a of ui) emit(a);
             return;
           }
-          // Busqueda de productos (fallback)
+
+          // 2) Búsqueda de productos (fallback) + respuesta conversacional
           const res = await ProductsSearch.run({ q: text });
-          if (res?.success && Array.isArray(res.data) && res.data.length) {
-            emit({ type: 'text', message: 'Perfecto, aquí tienes algunas opciones:' });
-            emit({ type: 'products', products: res.data } as any);
-          } else {
+          const products = Array.isArray(res?.data) ? res.data : [];
+
+          if (products.length) {
+            let reply: string | null = null;
+            try {
+              const summary = products.slice(0, 5).map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                slug: p.slug,
+                priceUSD: p.priceUSD,
+              }));
+              reply = await getOpenAIChatCompletion([
+                {
+                  role: 'system',
+                  content:
+                    'Eres Carpihogar AI, un asistente de compras en español. ' +
+                    'Tu tono es cálido, experto y muy claro. ' +
+                    'Ya se ejecutó una búsqueda de productos en el catálogo de Carpihogar.com. ' +
+                    'Comenta brevemente los resultados (sin listar todos uno por uno), ' +
+                    'sugiere cómo elegir la mejor opción y recuerda que el usuario puede decir cosas como "agrégala al carrito" para añadir el producto que le guste. ' +
+                    'Cuando sea útil, puedes mencionar que existe el personalizador de muebles en /personalizar-muebles y el Moodboard en /moodboard para armar proyectos completos. ' +
+                    'Responde en 1‑3 frases, únicamente texto plano.',
+                },
+                {
+                  role: 'system',
+                  content: `Resultados de búsqueda (resumen JSON): ${JSON.stringify(summary)}`,
+                },
+                {
+                  role: 'user',
+                  content: text,
+                },
+              ]);
+            } catch {
+              // si falla OpenAI, usamos mensaje simple por defecto
+            }
+
             emit({
               type: 'text',
-              message: 'No encontré coincidencias exactas. ¿Puedes darme más detalles? (marca, tipo, color, medida)',
+              message:
+                reply ||
+                'Perfecto, encontré varias opciones que pueden servirte. Te muestro algunas para que elijas la que mejor se adapta a tu espacio.',
+            });
+            emit({ type: 'products', products } as any);
+          } else {
+            let reply: string | null = null;
+            try {
+              reply = await getOpenAIChatCompletion([
+                {
+                  role: 'system',
+                  content:
+                    'Eres Carpihogar AI, un asistente de compras en español. ' +
+                    'No se encontraron productos exactos para la búsqueda del usuario. ' +
+                    'Haz 1‑3 frases muy claras pidiendo más detalles útiles (medidas, color, estilo, ambiente), ' +
+                    'y si tiene sentido sugiere explorar la sección de Moodboard (/moodboard) o el personalizador de muebles (/personalizar-muebles).',
+                },
+                {
+                  role: 'user',
+                  content: text,
+                },
+              ]);
+            } catch {
+              // ignore
+            }
+            emit({
+              type: 'text',
+              message:
+                reply ||
+                'No encontré coincidencias exactas. ¿Puedes darme un poco más de detalles? (marca, tipo, color, medida o dónde lo quieres usar)',
             });
           }
         } catch (e) {
@@ -94,3 +159,4 @@ export async function POST(req: Request) {
   if (setCookieHeader) response.headers.append('Set-Cookie', setCookieHeader);
   return response;
 }
+

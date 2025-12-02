@@ -99,6 +99,7 @@ function mapStreamChunkToContent(raw: any): AssistantContent | null {
 }
 
 export function useAssistant() {
+  const lastProductsRef = useRef<any[]>([]);
   const [state, setState] = useState<State>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -123,7 +124,7 @@ export function useAssistant() {
             content: {
               type: "text",
               message:
-                "Hola, soy tu asistente Carpihogar. ¿Qué deseas comprar hoy?",
+                "Hola, soy tu asistente Carpihogar. Puedo ayudarte a buscar productos, armar tu carrito, personalizar muebles y usar el Moodboard. ¿Qué deseas hacer hoy?",
             },
           },
         ],
@@ -178,6 +179,65 @@ export function useAssistant() {
         messages: [...s.messages, userMsg],
         loading: true,
       }));
+
+      // Comandos simples manejados en el cliente (ej. "agrégala al carrito")
+      const normalized = (() => {
+        try {
+          return text
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
+        } catch {
+          return text.toLowerCase();
+        }
+      })();
+      const wantsAddLastToCart =
+        /agreg(a|alo|ala|alos|alas)\s+(al|a[l]?\s+)?carrito/.test(
+          normalized,
+        ) || /meter(l[oa]s?)?\s+al\s+carrito/.test(normalized);
+      if (wantsAddLastToCart && Array.isArray(lastProductsRef.current) && lastProductsRef.current.length) {
+        const p = lastProductsRef.current[0];
+        try {
+          const store = useCartStore.getState();
+          const price =
+            typeof p.priceUSD === "number" ? p.priceUSD : 0;
+          const img =
+            Array.isArray(p.images) && p.images.length
+              ? p.images[0]
+              : undefined;
+          store.addItem(
+            { id: p.id, name: p.name, priceUSD: price, image: img },
+            1,
+          );
+        } catch {
+          // ignore cart sync errors
+        }
+        try {
+          await fetch("/api/assistant/ui-event", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              key: "add_to_cart",
+              productId: String(p.id || ""),
+              qty: 1,
+            }),
+          });
+        } catch {
+          // ignore backend errors
+        }
+        append({
+          id: crypto.randomUUID(),
+          from: "agent",
+          at: Date.now(),
+          content: {
+            type: "text",
+            message: `Agregado al carrito: ${String(p.name || "")}`,
+          },
+        });
+        setState((s) => ({ ...s, loading: false }));
+        return;
+      }
+
       try {
         const res = await fetch("/api/assistant/text", {
           method: "POST",
@@ -233,6 +293,13 @@ export function useAssistant() {
                 const raw = JSON.parse(rawText);
                 const content = mapStreamChunkToContent(raw);
                 if (!content) continue;
+                if (
+                  content.type === "rich" &&
+                  Array.isArray(content.products) &&
+                  content.products.length
+                ) {
+                  lastProductsRef.current = content.products;
+                }
                 receivedAny = true;
                 append({
                   id: crypto.randomUUID(),
@@ -331,6 +398,13 @@ export function useAssistant() {
                 const raw = JSON.parse(rawText);
                 const content = mapStreamChunkToContent(raw);
                 if (!content) continue;
+                if (
+                  content.type === "rich" &&
+                  Array.isArray(content.products) &&
+                  content.products.length
+                ) {
+                  lastProductsRef.current = content.products;
+                }
                 receivedAny = true;
                 append({
                   id: crypto.randomUUID(),
@@ -433,7 +507,7 @@ export function useAssistant() {
           content: {
             type: "text",
             message:
-              "Hola, soy tu asistente Carpihogar. ¿Qué deseas comprar hoy?",
+              "Hola, soy tu asistente Carpihogar. Puedo ayudarte a buscar productos, armar tu carrito, personalizar muebles y usar el Moodboard. ¿Qué deseas hacer hoy?",
           },
         },
       ],
@@ -457,3 +531,4 @@ export function useAssistant() {
     [state, setOpen, sendMessage, sendAudio, reset, append]
   );
 }
+
