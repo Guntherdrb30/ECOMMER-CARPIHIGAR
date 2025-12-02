@@ -56,6 +56,7 @@ export default function MoodboardGallery({
       const copy = await saveMoodboard({
         title: `${m.title} (copia)`,
         elements: m.elements,
+        backgroundColor: m.backgroundColor,
         thumbnailDataUrl: m.thumbnailUrl ?? undefined,
       });
       setItems((prev) => [copy, ...prev]);

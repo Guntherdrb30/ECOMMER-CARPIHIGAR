@@ -7,10 +7,12 @@ interface MoodboardState {
   elements: MoodboardElement[];
   selectedElementId: string | null;
   title: string;
+  backgroundColor: string;
   history: MoodboardElement[][];
   future: MoodboardElement[][];
 
   setTitle: (title: string) => void;
+  setBackgroundColor: (color: string) => void;
   addElement: (element: MoodboardElement) => void;
   updateElement: (id: string, partial: Partial<MoodboardElement>) => void;
   removeElement: (id: string) => void;
@@ -41,10 +43,12 @@ export const useMoodboardStore = create<MoodboardState>((set) => ({
   elements: [],
   selectedElementId: null,
   title: 'Nuevo moodboard',
+  backgroundColor: '#f9fafb',
   history: [],
   future: [],
 
   setTitle: (title) => set(() => ({ title })),
+  setBackgroundColor: (color) => set(() => ({ backgroundColor: color })),
 
   addElement: (element) =>
     set((state) => {
@@ -106,6 +110,7 @@ export const useMoodboardStore = create<MoodboardState>((set) => ({
     set(() => ({
       elements: moodboard.elements ?? [],
       title: moodboard.title,
+      backgroundColor: moodboard.backgroundColor || '#f9fafb',
       selectedElementId: null,
       history: [],
       future: [],
@@ -115,6 +120,7 @@ export const useMoodboardStore = create<MoodboardState>((set) => ({
     set(() => ({
       elements: tplElements,
       title,
+      backgroundColor: '#f9fafb',
       selectedElementId: null,
       history: [],
       future: [],
@@ -125,6 +131,7 @@ export const useMoodboardStore = create<MoodboardState>((set) => ({
       elements: [],
       selectedElementId: null,
       title: 'Nuevo moodboard',
+      backgroundColor: '#f9fafb',
       history: [],
       future: [],
     })),

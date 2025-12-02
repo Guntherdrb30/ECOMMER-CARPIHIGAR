@@ -2,7 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { fetchMoodboardProducts } from "@/app/moodboard/lib/moodboardApi";
-import type { ProductSummary, MoodboardElement } from "@/app/moodboard/lib/moodboardTypes";
+import type {
+  ProductSummary,
+  MoodboardElement,
+} from "@/app/moodboard/lib/moodboardTypes";
 import { useMoodboardStore } from "@/app/moodboard/hooks/useMoodboardStore";
 
 interface ProductSidebarProps {
@@ -73,7 +76,9 @@ export default function ProductSidebar({ className }: ProductSidebarProps) {
 
   return (
     <aside
-      className={`flex h-full flex-col rounded-xl bg-white p-4 shadow-md border border-gray-200 ${className ?? ""}`}
+      className={`flex h-full flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-md ${
+        className ?? ""
+      }`}
     >
       <h2 className="mb-3 text-sm font-semibold text-gray-800">Productos</h2>
       <div className="mb-3 space-y-2">
@@ -116,8 +121,10 @@ export default function ProductSidebar({ className }: ProductSidebarProps) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-        {loading && <p className="text-xs text-gray-500">Cargando productos...</p>}
+      <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+        {loading && (
+          <p className="text-xs text-gray-500">Cargando productos...</p>
+        )}
         {error && <p className="text-xs text-red-500">{error}</p>}
         {!loading && !error && products.length === 0 && (
           <p className="text-xs text-gray-500">No se encontraron productos.</p>
@@ -160,7 +167,7 @@ export default function ProductSidebar({ className }: ProductSidebarProps) {
                 {p.name}
               </p>
               <p className="truncate text-[11px] text-gray-500">
-                {p.code || "Sin código"} · ${p.price.toFixed(2)}
+                {(p.code || "Sin código") + " · $" + p.price.toFixed(2)}
               </p>
               {p.category && (
                 <p className="truncate text-[11px] text-gray-400">
@@ -172,7 +179,8 @@ export default function ProductSidebar({ className }: ProductSidebarProps) {
         ))}
       </div>
       <p className="mt-2 text-[10px] text-gray-400">
-        Haz clic en un producto para añadirlo, o arrástralo al lienzo para posicionarlo manualmente.
+        Haz clic en un producto para añadirlo, o arrástralo al lienzo para
+        posicionarlo manualmente.
       </p>
     </aside>
   );

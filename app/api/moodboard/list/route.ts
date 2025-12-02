@@ -18,15 +18,27 @@ export async function GET(req: Request) {
       orderBy: { updatedAt: 'desc' },
     });
 
-    const mapped = items.map((m) => ({
-      id: m.id,
-      title: m.title,
-      userId: m.userId,
-      thumbnailUrl: m.thumbnail || undefined,
-      elements: (m.jsonData as any) || [],
-      createdAt: m.createdAt.toISOString(),
-      updatedAt: m.updatedAt.toISOString(),
-    }));
+    const mapped = items.map((m) => {
+      const raw = m.jsonData as any;
+      const elements = Array.isArray(raw)
+        ? (raw as any[])
+        : Array.isArray(raw?.elements)
+        ? (raw.elements as any[])
+        : [];
+      const backgroundColor =
+        typeof raw?.backgroundColor === 'string' ? (raw.backgroundColor as string) : undefined;
+
+      return {
+        id: m.id,
+        title: m.title,
+        userId: m.userId,
+        thumbnailUrl: m.thumbnail || undefined,
+        backgroundColor,
+        elements,
+        createdAt: m.createdAt.toISOString(),
+        updatedAt: m.updatedAt.toISOString(),
+      };
+    });
 
     return NextResponse.json(mapped);
   } catch (e: any) {
@@ -36,4 +48,3 @@ export async function GET(req: Request) {
     );
   }
 }
-

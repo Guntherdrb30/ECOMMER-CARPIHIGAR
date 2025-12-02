@@ -96,6 +96,7 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
   const lockElement = useMoodboardStore((s) => s.lockElement);
   const unlockElement = useMoodboardStore((s) => s.unlockElement);
   const removeElement = useMoodboardStore((s) => s.removeElement);
+  const boardBackground = useMoodboardStore((s) => s.backgroundColor);
 
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [resizeState, setResizeState] = useState<ResizeState | null>(null);
@@ -392,9 +393,10 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
   return (
     <div
       ref={boardRef}
-      className={`relative z-0 h-[600px] w-full rounded-xl border border-dashed border-gray-300 bg-gray-50 shadow-inner ${
+      className={`relative z-0 h-[600px] w-full rounded-xl border border-dashed border-gray-300 shadow-inner ${
         className ?? ""
       }`}
+      style={{ backgroundColor: boardBackground || "#f9fafb" }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
       onMouseMove={handleMouseMove}
@@ -799,4 +801,3 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
     </div>
   );
 }
-

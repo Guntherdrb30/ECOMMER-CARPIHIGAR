@@ -10,6 +10,7 @@ import {
   Type,
   Image as ImageIcon,
   Link2,
+  StickyNote,
 } from "lucide-react";
 import Toolbar from "@/app/moodboard/components/Toolbar";
 import ProductSidebar from "@/app/moodboard/components/ProductSidebar";
@@ -17,6 +18,7 @@ import CanvasBoard from "@/app/moodboard/components/CanvasBoard";
 import LayerList from "@/app/moodboard/components/LayerList";
 import BudgetSummary from "@/app/moodboard/components/BudgetSummary";
 import TemplateSidebar from "@/app/moodboard/components/TemplateSidebar";
+import TextCardSidebar from "@/app/moodboard/components/TextCardSidebar";
 import { useMoodboardStore } from "@/app/moodboard/hooks/useMoodboardStore";
 import {
   saveMoodboard,
@@ -32,6 +34,8 @@ interface MoodboardEditorProps {
   className?: string;
 }
 
+const BOARD_BG_COLORS = ["#f9fafb", "#ffffff", "#fef3c7", "#e0f2fe", "#f5f5f4"];
+
 export default function MoodboardEditor({
   activeMoodboardId,
   onSaved,
@@ -40,14 +44,17 @@ export default function MoodboardEditor({
 }: MoodboardEditorProps) {
   const { data: session } = useSession();
   const canvasWrapperRef = useRef<HTMLDivElement | null>(null);
+
   const elements = useMoodboardStore((s) => s.elements);
   const title = useMoodboardStore((s) => s.title);
   const addElement = useMoodboardStore((s) => s.addElement);
+  const backgroundColor = useMoodboardStore((s) => s.backgroundColor);
+  const setBackgroundColor = useMoodboardStore((s) => s.setBackgroundColor);
 
   const [saving, setSaving] = useState(false);
   const [showLayers, setShowLayers] = useState(true);
   const [activeTool, setActiveTool] = useState<
-    "products" | "templates" | "gallery"
+    "products" | "templates" | "cards" | "gallery" | null
   >("products");
 
   const isAlly = (session?.user as any)?.role === "ALIADO";
@@ -81,7 +88,7 @@ export default function MoodboardEditor({
   };
 
   const handleAddImageFromUrl = () => {
-    const url = prompt("Pega la URL de la imagen:");
+    const url = window.prompt("Pega la URL de la imagen:");
     if (!url) return;
     const id =
       typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -191,8 +198,9 @@ export default function MoodboardEditor({
       if (!ctx) return null;
       ctx.scale(2, 2);
 
-      // Fondo
-      ctx.fillStyle = "#f9fafb";
+      // Fondo del lienzo
+      const boardBg = backgroundColor || "#f9fafb";
+      ctx.fillStyle = boardBg;
       ctx.fillRect(0, 0, width, height);
 
       // Cargamos todas las imágenes necesarias
@@ -275,7 +283,8 @@ export default function MoodboardEditor({
           const totalHeight = lineHeight * lines.length;
 
           lines.forEach((line, index) => {
-            const y = el.height / 2 - totalHeight / 2 + lineHeight * (index + 0.5);
+            const y =
+              el.height / 2 - totalHeight / 2 + lineHeight * (index + 0.5);
             let x = el.width / 2;
             if (textAlign === "left") x = 8;
             if (textAlign === "right") x = el.width - 8;
@@ -308,7 +317,7 @@ export default function MoodboardEditor({
       }
       return null;
     }
-  }, [elements]);
+  }, [backgroundColor, elements]);
 
   const handleSave = useCallback(async () => {
     try {
@@ -317,6 +326,7 @@ export default function MoodboardEditor({
         id: activeMoodboardId ?? undefined,
         title: title.trim() || "Moodboard sin título",
         elements,
+        backgroundColor,
       };
       const saved = await saveMoodboard(payload);
       onSaved(saved.id);
@@ -329,7 +339,15 @@ export default function MoodboardEditor({
     } finally {
       setSaving(false);
     }
-  }, [activeMoodboardId, captureCanvasDataUrl, elements, maybePublishNews, onSaved, title]);
+  }, [
+    activeMoodboardId,
+    backgroundColor,
+    captureCanvasDataUrl,
+    elements,
+    maybePublishNews,
+    onSaved,
+    title,
+  ]);
 
   const handleExport = useCallback(async () => {
     if (!canvasWrapperRef.current) return;
@@ -359,43 +377,40 @@ export default function MoodboardEditor({
     }
   }, [activeMoodboardId, captureCanvasDataUrl, maybePublishNews, title]);
 
+  const handleToggleTool = (
+    tool: "products" | "templates" | "cards" | "gallery",
+  ) => {
+    setActiveTool((current) => (current === tool ? null : tool));
+  };
+
+  const hasSidebarContent = activeTool !== null;
+
   return (
     <section
-      className={`flex h-full flex-col gap-4 rounded-2xl bg-gray-50 p-4 shadow-md border border-gray-200 ${
+      className={`flex h-full flex-col gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 shadow-md ${
         className ?? ""
       }`}
     >
       <Toolbar
         onSave={() => void handleSave()}
         onExport={() => void handleExport()}
-        onAddText={handleAddText}
-        onAddImageFromUrl={handleAddImageFromUrl}
-        onAddImageFromFile={handleAddImageFromFile}
         saving={saving}
       />
 
-      <div className="flex justify-end gap-2 text-[11px] text-gray-600">
-        <button
-          type="button"
-          onClick={() => setShowLayers((v) => !v)}
-          className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white/70 px-3 py-1 hover:bg-gray-100"
-          aria-label={showLayers ? "Ocultar panel de capas" : "Mostrar panel de capas"}
+      <div className="flex flex-1 flex-col gap-4 lg:flex-row">
+        <div
+          className={`flex ${
+            hasSidebarContent
+              ? "w-full lg:w-72 xl:w-80"
+              : "w-[64px] lg:w-[64px] xl:w-[64px]"
+          }`}
         >
-          <Layers className="h-3.5 w-3.5 text-gray-700" />
-          <span className="hidden md:inline">
-            {showLayers ? "Capas: visible" : "Capas: ocultas"}
-          </span>
-        </button>
-      </div>
-
-        <div className="flex flex-1 flex-col gap-4 lg:flex-row">
-        <div className="flex w-full lg:w-72 xl:w-80">
           {/* Barra lateral estilo Canva */}
           <div className="flex h-full flex-col items-center justify-between gap-4 rounded-xl bg-gray-900 px-1 py-3 text-white shadow-md">
             <div className="flex flex-col items-center gap-2">
               <button
                 type="button"
-                onClick={() => setActiveTool("products")}
+                onClick={() => handleToggleTool("products")}
                 className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                   activeTool === "products"
                     ? "bg-white text-gray-900"
@@ -407,7 +422,7 @@ export default function MoodboardEditor({
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTool("templates")}
+                onClick={() => handleToggleTool("templates")}
                 className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                   activeTool === "templates"
                     ? "bg-white text-gray-900"
@@ -417,10 +432,22 @@ export default function MoodboardEditor({
               >
                 <LayoutTemplate className="h-4 w-4" />
               </button>
+              <button
+                type="button"
+                onClick={() => handleToggleTool("cards")}
+                className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                  activeTool === "cards"
+                    ? "bg-white text-gray-900"
+                    : "bg-gray-800 hover:bg-gray-700"
+                }`}
+                title="Tarjetas de texto"
+              >
+                <StickyNote className="h-4 w-4" />
+              </button>
               {gallerySlot && (
                 <button
                   type="button"
-                  onClick={() => setActiveTool("gallery")}
+                  onClick={() => handleToggleTool("gallery")}
                   className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                     activeTool === "gallery"
                       ? "bg-white text-gray-900"
@@ -433,8 +460,9 @@ export default function MoodboardEditor({
               )}
             </div>
 
-            {/* Acciones rápidas: texto e imágenes */}
+            {/* Acciones rápidas y utilidades */}
             <div className="flex flex-col items-center gap-2">
+              {/* Texto e imágenes */}
               <button
                 type="button"
                 onClick={handleAddText}
@@ -469,16 +497,65 @@ export default function MoodboardEditor({
                   }}
                 />
               </label>
+
+              {/* Capas */}
+              <button
+                type="button"
+                onClick={() => setShowLayers((v) => !v)}
+                className={`mt-4 flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                  showLayers
+                    ? "bg-white text-gray-900"
+                    : "bg-gray-800 text-white hover:bg-gray-700"
+                }`}
+                title={showLayers ? "Ocultar capas" : "Mostrar capas"}
+                aria-label={
+                  showLayers ? "Ocultar panel de capas" : "Mostrar panel de capas"
+                }
+              >
+                <Layers className="h-4 w-4" />
+              </button>
+
+              {/* Color de fondo del lienzo */}
+              <div className="mt-3 flex flex-col items-center gap-1">
+                <span className="text-[9px] text-gray-300">Fondo</span>
+                <div className="flex flex-wrap justify-center gap-1">
+                  {BOARD_BG_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={`h-4 w-4 rounded-full border ${
+                        backgroundColor === color
+                          ? "border-white ring-2 ring-brand"
+                          : "border-gray-600"
+                      }`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setBackgroundColor(color)}
+                      aria-label={`Cambiar fondo a ${color}`}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-          <div className="ml-2 flex-1">
-            {activeTool === "products" && <ProductSidebar className="h-full" />}
-            {activeTool === "templates" && <TemplateSidebar className="h-full" />}
-            {activeTool === "gallery" && gallerySlot && (
-              <div className="h-full">{gallerySlot}</div>
-            )}
-          </div>
+
+          {hasSidebarContent && (
+            <div className="ml-2 flex-1">
+              {activeTool === "products" && (
+                <ProductSidebar className="h-full" />
+              )}
+              {activeTool === "templates" && (
+                <TemplateSidebar className="h-full" />
+              )}
+              {activeTool === "cards" && (
+                <TextCardSidebar className="h-full" />
+              )}
+              {activeTool === "gallery" && gallerySlot && (
+                <div className="h-full">{gallerySlot}</div>
+              )}
+            </div>
+          )}
         </div>
+
         <div className="flex-1">
           <div
             id="moodboard-capture-root"
@@ -491,6 +568,7 @@ export default function MoodboardEditor({
             <BudgetSummary />
           </div>
         </div>
+
         {showLayers && (
           <div className="w-full lg:w-56 xl:w-64">
             <LayerList />
@@ -500,3 +578,4 @@ export default function MoodboardEditor({
     </section>
   );
 }
+

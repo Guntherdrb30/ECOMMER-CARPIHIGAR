@@ -34,6 +34,7 @@ export interface Moodboard {
   title: string;
   userId: string;
   thumbnailUrl?: string;
+  backgroundColor?: string;
   elements: MoodboardElement[];
   createdAt: string;
   updatedAt: string;
@@ -52,5 +53,6 @@ export interface SaveMoodboardPayload {
   id?: string;
   title: string;
   elements: MoodboardElement[];
+  backgroundColor?: string;
   thumbnailDataUrl?: string | null;
 }

@@ -25,6 +25,10 @@ export async function POST(req: Request) {
     const titleRaw = String(body.title || '').trim();
     const title = titleRaw || 'Moodboard sin titulo';
     const elements = Array.isArray(body.elements) ? body.elements : [];
+    const backgroundColor =
+      typeof body.backgroundColor === 'string' && body.backgroundColor.trim().length
+        ? (body.backgroundColor as string)
+        : '#f9fafb';
     const thumbnailDataUrl =
       typeof body.thumbnailDataUrl === 'string' && body.thumbnailDataUrl.trim().length
         ? (body.thumbnailDataUrl as string)
@@ -37,13 +41,18 @@ export async function POST(req: Request) {
       );
     }
 
+    const jsonData: any = {
+      elements,
+      backgroundColor,
+    };
+
     let record;
     if (id) {
       record = await prisma.moodboard.update({
         where: { id, userId },
         data: {
           title,
-          jsonData: elements as any,
+          jsonData,
           thumbnail: thumbnailDataUrl ?? undefined,
         },
       });
@@ -52,18 +61,28 @@ export async function POST(req: Request) {
         data: {
           userId,
           title,
-          jsonData: elements as any,
+          jsonData,
           thumbnail: thumbnailDataUrl ?? undefined,
         },
       });
     }
+
+    const raw = record.jsonData as any;
+    const elementsOut = Array.isArray(raw)
+      ? (raw as any[])
+      : Array.isArray(raw?.elements)
+      ? (raw.elements as any[])
+      : [];
+    const backgroundColorOut =
+      typeof raw?.backgroundColor === 'string' ? (raw.backgroundColor as string) : undefined;
 
     const mapped = {
       id: record.id,
       title: record.title,
       userId: record.userId,
       thumbnailUrl: record.thumbnail || undefined,
-      elements: (record.jsonData as any) || [],
+      backgroundColor: backgroundColorOut,
+      elements: elementsOut,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
     };
