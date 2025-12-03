@@ -13,6 +13,67 @@
   .form-select { @apply w-full border rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500; }
   .form-textarea { @apply w-full border rounded px-2 py-1 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500; }
   .form-actions { @apply flex flex-wrap items-center gap-2; }
+
+  /* Animaciones simples para elementos del moodboard */
+  .moodboard-anim-fade-in {
+    animation: moodboard-fade-in 450ms ease-out both;
+  }
+
+  .moodboard-anim-zoom-in {
+    animation: moodboard-zoom-in 450ms ease-out both;
+  }
+
+  .moodboard-anim-slide-up {
+    animation: moodboard-slide-up 450ms ease-out both;
+  }
+
+  .moodboard-anim-slide-left {
+    animation: moodboard-slide-left 450ms ease-out both;
+  }
+}
+
+@keyframes moodboard-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes moodboard-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes moodboard-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes moodboard-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Assistant styles */

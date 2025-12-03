@@ -1,5 +1,11 @@
 export type MoodboardElementType = 'product' | 'image' | 'text';
 
+export type MoodboardAnimation =
+  | 'fade'
+  | 'zoom'
+  | 'slide-up'
+  | 'slide-left';
+
 export interface MoodboardElement {
   id: string;
   type: MoodboardElementType;
@@ -26,6 +32,9 @@ export interface MoodboardElement {
     fontStyle?: 'normal' | 'italic';
     textAlign?: 'left' | 'center' | 'right';
     backgroundColor?: string;
+    // Simple animation metadata for interactive moodboards
+    animationIn?: MoodboardAnimation;
+    animationOut?: MoodboardAnimation;
   };
 }
 

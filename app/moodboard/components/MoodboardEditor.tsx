@@ -52,18 +52,21 @@ export default function MoodboardEditor({
   const setBackgroundColor = useMoodboardStore((s) => s.setBackgroundColor);
 
   const [saving, setSaving] = useState(false);
-  const [showLayers, setShowLayers] = useState(true);
   const [activeTool, setActiveTool] = useState<
-    "products" | "templates" | "cards" | "gallery" | null
-  >("products");
+    "products" | "templates" | "cards" | "gallery" | "layers" | null
+  >(null);
 
   const isAlly = (session?.user as any)?.role === "ALIADO";
 
+  const createElementId = () => {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
+
   const handleAddText = () => {
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const id = createElementId();
     const element: MoodboardElement = {
       id,
       type: "text",
@@ -90,10 +93,8 @@ export default function MoodboardEditor({
   const handleAddImageFromUrl = () => {
     const url = window.prompt("Pega la URL de la imagen:");
     if (!url) return;
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const id = createElementId();
     const element: MoodboardElement = {
       id,
       type: "image",
@@ -127,10 +128,8 @@ export default function MoodboardEditor({
       if (!data.url) {
         throw new Error("Respuesta inválida al subir la imagen.");
       }
-      const id =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+      const id = createElementId();
       const element: MoodboardElement = {
         id,
         type: "image",
@@ -156,10 +155,12 @@ export default function MoodboardEditor({
     async (dataUrl: string | null) => {
       if (!isAlly || !dataUrl) return;
       if (typeof window === "undefined") return;
+
       const ok = window.confirm(
         "¿Quieres publicar este moodboard en Novedades? (aparecerá en la sección Novedades de Carpihogar)",
       );
       if (!ok) return;
+
       try {
         await publishMoodboardNews({
           imageDataUrl: dataUrl,
@@ -178,32 +179,32 @@ export default function MoodboardEditor({
   const captureCanvasDataUrl = useCallback(async (): Promise<string | null> => {
     if (typeof window === "undefined") return null;
     if (!elements.length) return null;
+
     try {
-      // Calculamos el tamaño mínimo necesario a partir de los elementos
       const margin = 40;
       let maxX = 0;
       let maxY = 0;
+
       elements.forEach((el) => {
         maxX = Math.max(maxX, el.x + el.width);
         maxY = Math.max(maxY, el.y + el.height);
       });
+
       const width = Math.max(800, Math.ceil(maxX + margin));
       const height = Math.max(600, Math.ceil(maxY + margin));
 
       const canvas = document.createElement("canvas");
-      // Doblamos la resolución para exportar en alta calidad
       canvas.width = width * 2;
       canvas.height = height * 2;
       const ctx = canvas.getContext("2d");
       if (!ctx) return null;
+
       ctx.scale(2, 2);
 
-      // Fondo del lienzo
       const boardBg = backgroundColor || "#f9fafb";
       ctx.fillStyle = boardBg;
       ctx.fillRect(0, 0, width, height);
 
-      // Cargamos todas las imágenes necesarias
       const urls = new Set<string>();
       elements.forEach((el) => {
         const url = el.data.imageUrl;
@@ -297,16 +298,16 @@ export default function MoodboardEditor({
 
       // Marca de agua
       ctx.save();
-      const text = "Carpihogar.com";
+      const watermark = "Carpihogar.com";
       const padding = 16;
       ctx.font =
         "14px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
       ctx.fillStyle = "rgba(0,0,0,0.45)";
-      const metrics = ctx.measureText(text);
+      const metrics = ctx.measureText(watermark);
       const textWidth = metrics.width;
       const x = width - textWidth - padding;
       const y = height - padding;
-      ctx.fillText(text, x, y);
+      ctx.fillText(watermark, x, y);
       ctx.restore();
 
       return canvas.toDataURL("image/png");
@@ -328,6 +329,7 @@ export default function MoodboardEditor({
         elements,
         backgroundColor,
       };
+
       const saved = await saveMoodboard(payload);
       onSaved(saved.id);
 
@@ -378,12 +380,10 @@ export default function MoodboardEditor({
   }, [activeMoodboardId, captureCanvasDataUrl, maybePublishNews, title]);
 
   const handleToggleTool = (
-    tool: "products" | "templates" | "cards" | "gallery",
+    tool: "products" | "templates" | "cards" | "gallery" | "layers",
   ) => {
     setActiveTool((current) => (current === tool ? null : tool));
   };
-
-  const hasSidebarContent = activeTool !== null;
 
   return (
     <section
@@ -397,15 +397,9 @@ export default function MoodboardEditor({
         saving={saving}
       />
 
-      <div className="flex flex-1 flex-col gap-4 lg:flex-row">
-        <div
-          className={`flex ${
-            hasSidebarContent
-              ? "w-full lg:w-72 xl:w-80"
-              : "w-[64px] lg:w-[64px] xl:w-[64px]"
-          }`}
-        >
-          {/* Barra lateral estilo Canva */}
+      <div className="flex flex-1 gap-4">
+        {/* Barra lateral fija (área azul) */}
+        <div className="flex w-[64px] flex-col">
           <div className="flex h-full flex-col items-center justify-between gap-4 rounded-xl bg-gray-900 px-1 py-3 text-white shadow-md">
             <div className="flex flex-col items-center gap-2">
               <button
@@ -498,18 +492,24 @@ export default function MoodboardEditor({
                 />
               </label>
 
-              {/* Capas */}
+              {/* Capas (panel flotante) */}
               <button
                 type="button"
-                onClick={() => setShowLayers((v) => !v)}
+                onClick={() => handleToggleTool("layers")}
                 className={`mt-4 flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
-                  showLayers
+                  activeTool === "layers"
                     ? "bg-white text-gray-900"
                     : "bg-gray-800 text-white hover:bg-gray-700"
                 }`}
-                title={showLayers ? "Ocultar capas" : "Mostrar capas"}
+                title={
+                  activeTool === "layers"
+                    ? "Ocultar capas"
+                    : "Mostrar capas"
+                }
                 aria-label={
-                  showLayers ? "Ocultar panel de capas" : "Mostrar panel de capas"
+                  activeTool === "layers"
+                    ? "Ocultar panel de capas"
+                    : "Mostrar panel de capas"
                 }
               >
                 <Layers className="h-4 w-4" />
@@ -537,26 +537,32 @@ export default function MoodboardEditor({
               </div>
             </div>
           </div>
-
-          {hasSidebarContent && (
-            <div className="ml-2 flex-1">
-              {activeTool === "products" && (
-                <ProductSidebar className="h-full" />
-              )}
-              {activeTool === "templates" && (
-                <TemplateSidebar className="h-full" />
-              )}
-              {activeTool === "cards" && (
-                <TextCardSidebar className="h-full" />
-              )}
-              {activeTool === "gallery" && gallerySlot && (
-                <div className="h-full">{gallerySlot}</div>
-              )}
-            </div>
-          )}
         </div>
 
-        <div className="flex-1">
+        {/* Zona principal: lienzo + paneles flotantes */}
+        <div className="relative flex-1">
+          {activeTool && (
+            <div className="pointer-events-none absolute inset-0 z-20 flex justify-start">
+              <div className="pointer-events-auto mt-1 h-full w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
+                {activeTool === "products" && (
+                  <ProductSidebar className="h-full" />
+                )}
+                {activeTool === "templates" && (
+                  <TemplateSidebar className="h-full" />
+                )}
+                {activeTool === "cards" && (
+                  <TextCardSidebar className="h-full" />
+                )}
+                {activeTool === "gallery" && gallerySlot && (
+                  <div className="h-full">{gallerySlot}</div>
+                )}
+                {activeTool === "layers" && (
+                  <LayerList className="h-full" />
+                )}
+              </div>
+            </div>
+          )}
+
           <div
             id="moodboard-capture-root"
             ref={canvasWrapperRef}
@@ -568,14 +574,7 @@ export default function MoodboardEditor({
             <BudgetSummary />
           </div>
         </div>
-
-        {showLayers && (
-          <div className="w-full lg:w-56 xl:w-64">
-            <LayerList />
-          </div>
-        )}
       </div>
     </section>
   );
 }
-

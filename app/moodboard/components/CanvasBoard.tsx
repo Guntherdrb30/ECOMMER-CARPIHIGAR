@@ -15,6 +15,8 @@ import {
   AlignCenter,
   AlignRight,
   Image as ImageIcon,
+  Move,
+  Sparkles,
 } from "lucide-react";
 import { useMoodboardStore } from "@/app/moodboard/hooks/useMoodboardStore";
 import type { MoodboardElement } from "@/app/moodboard/lib/moodboardTypes";
@@ -140,6 +142,23 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
     setSelectedElement(element.id);
   };
 
+  const handleTouchStartElement = (
+    e: React.TouchEvent<HTMLDivElement>,
+    element: MoodboardElement,
+  ) => {
+    if (element.locked) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    setDragState({
+      id: element.id,
+      offsetX: touch.clientX - rect.left,
+      offsetY: touch.clientY - rect.top,
+    });
+    setSelectedElement(element.id);
+  };
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const board = boardRef.current;
     if (!board) return;
@@ -169,6 +188,40 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
     if (resizeState) setResizeState(null);
   };
 
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    const rect = board.getBoundingClientRect();
+
+    if (dragState || resizeState) {
+      e.preventDefault();
+    }
+
+    if (dragState) {
+      const x = touch.clientX - rect.left - dragState.offsetX;
+      const y = touch.clientY - rect.top - dragState.offsetY;
+      updateElement(dragState.id, { x, y });
+      return;
+    }
+
+    if (resizeState) {
+      const deltaX = touch.clientX - resizeState.startX;
+      const deltaY = touch.clientY - resizeState.startY;
+      const width = Math.max(80, resizeState.startWidth + deltaX);
+      const height = Math.max(80, resizeState.startHeight + deltaY);
+      updateElement(resizeState.id, { width, height });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragState) setDragState(null);
+    if (resizeState) setResizeState(null);
+  };
+
   const handleCanvasClick = () => {
     setSelectedElement(null);
     setActionsForId(null);
@@ -186,6 +239,24 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
       startHeight: element.height,
       startX: e.clientX,
       startY: e.clientY,
+    });
+    setSelectedElement(element.id);
+  };
+
+  const handleResizeTouchStart = (
+    e: React.TouchEvent<HTMLDivElement>,
+    element: MoodboardElement,
+  ) => {
+    if (element.locked) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    e.stopPropagation();
+    setResizeState({
+      id: element.id,
+      startWidth: element.width,
+      startHeight: element.height,
+      startX: touch.clientX,
+      startY: touch.clientY,
     });
     setSelectedElement(element.id);
   };
@@ -402,17 +473,34 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
       onClick={handleCanvasClick}
     >
       {elements.map((el) => {
         const isSelected = el.id === selectedElementId;
+        const animationIn = el.data.animationIn;
+        const animationOut = el.data.animationOut;
+        let animationClass = "";
+        if (animationIn === "fade") animationClass = "moodboard-anim-fade-in";
+        else if (animationIn === "zoom")
+          animationClass = "moodboard-anim-zoom-in";
+        else if (animationIn === "slide-up")
+          animationClass = "moodboard-anim-slide-up";
+        else if (animationIn === "slide-left")
+          animationClass = "moodboard-anim-slide-left";
 
         return (
           <div
-            key={el.id}
+            key={`${el.id}-${animationIn || ""}-${animationOut || ""}`}
             onMouseDown={(e) => {
               e.stopPropagation();
               handleDragStart(e, el);
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              handleTouchStartElement(e, el);
             }}
             onDoubleClick={(e) => {
               e.stopPropagation();
@@ -433,13 +521,14 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
               isSelected
                 ? "border-brand ring-2 ring-brand/60"
                 : "border-gray-200 hover:shadow-lg"
-            } ${el.locked ? "opacity-80" : ""}`}
+            } ${el.locked ? "opacity-80" : ""} ${animationClass}`}
           >
             {renderElementContent(el, isSelected)}
 
             {!el.locked && (
               <div
                 onMouseDown={(e) => handleResizeStart(e, el)}
+                onTouchStart={(e) => handleResizeTouchStart(e, el)}
                 className="absolute bottom-1 right-1 h-3 w-3 cursor-se-resize rounded-sm bg-brand shadow-sm"
               />
             )}
@@ -492,6 +581,21 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
                   }}
                 >
                   <ArrowDownToLine className="h-3.5 w-3.5" />
+                </button>
+
+                {/* Movimiento para ayudar en móvil */}
+                <span className="mx-1 h-4 w-px bg-gray-200" />
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600 hover:border-brand/60 hover:text-brand"
+                  title="Mover: toca y arrastra el recuadro"
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    setSelectedElement(el.id);
+                  }}
+                >
+                  <Move className="h-3 w-3" />
+                  <span>Mover</span>
                 </button>
 
                 {/* Estilos de texto (solo para elementos de texto) */}
@@ -740,6 +844,66 @@ export default function CanvasBoard({ className }: CanvasBoardProps) {
                           }}
                         />
                       ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Efectos de entrada y salida para imágenes y productos */}
+                {(el.type === "image" || el.type === "product") && (
+                  <>
+                    <span className="mx-1 h-4 w-px bg-gray-200" />
+                    <div className="flex items-center gap-1">
+                      <Sparkles className="h-3 w-3 text-gray-500" />
+                      <select
+                        className="rounded border border-gray-200 bg-white px-1 py-0.5 text-[10px] text-gray-600 focus:border-brand focus:outline-none"
+                        value={animationIn || ""}
+                        onChange={(ev) => {
+                          ev.stopPropagation();
+                          const value = ev.target.value as
+                            | "fade"
+                            | "zoom"
+                            | "slide-up"
+                            | "slide-left"
+                            | "";
+                          updateElement(el.id, {
+                            data: {
+                              ...el.data,
+                              animationIn: value || undefined,
+                            },
+                          });
+                        }}
+                      >
+                        <option value="">Entrada</option>
+                        <option value="fade">Aparecer</option>
+                        <option value="zoom">Zoom</option>
+                        <option value="slide-up">Subir</option>
+                        <option value="slide-left">Desde la izquierda</option>
+                      </select>
+                      <select
+                        className="rounded border border-gray-200 bg-white px-1 py-0.5 text-[10px] text-gray-600 focus:border-brand focus:outline-none"
+                        value={animationOut || ""}
+                        onChange={(ev) => {
+                          ev.stopPropagation();
+                          const value = ev.target.value as
+                            | "fade"
+                            | "zoom"
+                            | "slide-up"
+                            | "slide-left"
+                            | "";
+                          updateElement(el.id, {
+                            data: {
+                              ...el.data,
+                              animationOut: value || undefined,
+                            },
+                          });
+                        }}
+                      >
+                        <option value="">Salida</option>
+                        <option value="fade">Desvanecer</option>
+                        <option value="zoom">Zoom</option>
+                        <option value="slide-up">Subir</option>
+                        <option value="slide-left">Hacia la izquierda</option>
+                      </select>
                     </div>
                   </>
                 )}
