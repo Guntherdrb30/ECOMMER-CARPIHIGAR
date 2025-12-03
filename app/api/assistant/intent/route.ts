@@ -29,7 +29,7 @@ Devuelve SOLO un JSON con la siguiente forma:
     "productName"?: string,
     "quantity"?: number,
     "addressId"?: string,
-    "paymentMethod"?: string,
+    "paymentMethod"?: "ZELLE"|"PAGO_MOVIL"|"TRANSFERENCIA"|"OTRO",
     "color"?: string,
     "model"?: string,
     "section"?: "moodboard"|"personalizador"|"home"|"productos"|"novedades"|"contacto"|"cart"
@@ -38,7 +38,8 @@ Devuelve SOLO un JSON con la siguiente forma:
 Reglas:
 - Usa "greet" cuando el mensaje sea principalmente un saludo o small-talk inicial (hola, buenos días, etc.) sin intención clara de compra.
 - Usa "site_help" cuando el usuario pregunte por secciones o funcionalidades de la web (moodboard, personalizador de muebles, carrito, checkout, novedades, contacto).
-- Usa "add_to_cart" / "remove_from_cart" / "buy" / "set_address" / "set_payment" / "confirm" solo cuando haya una intención clara de compra.
+- Usa "set_payment" cuando el usuario hable de cómo quiere pagar o mencione Zelle, pago móvil o transferencia; en ese caso, rellena "paymentMethod" con "ZELLE", "PAGO_MOVIL" o "TRANSFERENCIA".
+- Usa "add_to_cart" / "remove_from_cart" / "buy" / "set_address" / "confirm" solo cuando haya una intención clara de compra.
 - Si no es claro, usa intent "search" y entities vacíos.`;
 
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -108,13 +109,25 @@ Reglas:
       entities.section = 'contacto';
     }
 
-    // Intenciones de compra
+    // Método de pago explícito (Zelle / pago móvil / transferencia)
+    const hasZelle = /zelle/.test(low);
+    const hasPagoMovil = /pago m[oó]vil|pago movil|pago-m[oó]vil/.test(low);
+    const hasTransfer = /transferenc/i.test(low);
+
+    if (hasZelle || hasPagoMovil || hasTransfer) {
+      intent = 'set_payment';
+      if (hasZelle) entities.paymentMethod = 'ZELLE';
+      else if (hasPagoMovil) entities.paymentMethod = 'PAGO_MOVIL';
+      else if (hasTransfer) entities.paymentMethod = 'TRANSFERENCIA';
+    }
+
+    // Intenciones de compra genéricas
     if (/agrega|añade|anade|meter|pon|agregar|añadir/.test(low)) intent = 'add_to_cart';
     if (/quitar|remueve|elimina|saca/.test(low)) intent = 'remove_from_cart';
     if (/comprar|cómpralo|compralo|lo quiero|quiero comprar|proceder al pago|ir a pagar|pagar ahora|finalizar compra/.test(low))
       intent = 'buy';
     if (/direcci[oó]n|env[ií]alo a|enviar a/.test(low)) intent = 'set_address';
-    if (/pago|pagar|m[eé]todo de pago|zelle|transferencia|pago m[oó]vil/.test(low)) intent = 'set_payment';
+    if (!entities.paymentMethod && /pago|pagar|m[eé]todo de pago/.test(low)) intent = 'set_payment';
     if (/s[ií] autorizo|si autorizo|confirmar/.test(low)) intent = 'confirm';
 
     const quantityMatch = low.match(/(\d{1,2})\s*(u|unidades|uds|unidad)?/);

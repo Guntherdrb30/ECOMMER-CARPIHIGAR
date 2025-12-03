@@ -141,6 +141,11 @@ export async function runPurchaseConversation({
     return await handleBuyProcess({ customerId, sessionId });
   }
 
+  if (intent === 'set_payment') {
+    const { handlePaymentHelp } = await import('./handlePaymentHelp');
+    return await handlePaymentHelp({ paymentMethod: entities?.paymentMethod, message });
+  }
+
   if (intent === 'confirm') {
     const tokenMatch = String(message || '').match(/\b(\d{4,8})\b/);
     const token = tokenMatch?.[1] || '';
