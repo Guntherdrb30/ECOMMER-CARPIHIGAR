@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { track } from "@vercel/analytics/react";
 
 type Product = { id: string; name: string; images?: string[]; priceUSD?: number };
 
@@ -10,9 +11,21 @@ export default function ProductCard({ product, onAdded }: { product: Product; on
   const add = async () => {
     try {
       setLoading(true);
-      await fetch('/api/assistant/ui-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add_to_cart', payload: { productId: product.id, quantity: 1 } }) });
+      await fetch('/api/assistant/ui-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add_to_cart', payload: { productId: product.id, quantity: 1 } }),
+      });
+      try {
+        track('assistant_add_to_cart', {
+          source: 'aiatlas',
+          product_id: product.id,
+        });
+      } catch {}
       onAdded?.();
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <div className="border rounded-lg p-2 w-full flex gap-2">

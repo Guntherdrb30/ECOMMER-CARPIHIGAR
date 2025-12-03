@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { speak } from "./speech";
 import { useCartStore } from "@/store/cart";
+import { track } from "@vercel/analytics/react";
 
 export type AssistantContent = {
   type: "text" | "voice" | "rich";
@@ -99,6 +100,7 @@ function mapStreamChunkToContent(raw: any): AssistantContent | null {
 }
 
 export function useAssistant() {
+  const lastUserTextRef = useRef<string>("");
   const lastProductsRef = useRef<any[]>([]);
   const [state, setState] = useState<State>(() => {
     try {
@@ -168,6 +170,18 @@ export function useAssistant() {
         }
       };
       text = sanitize(text);
+      if (text && text === lastUserTextRef.current) {
+        // Evita duplicados (especialmente desde voz en m1viles)
+        return;
+      }
+      lastUserTextRef.current = text;
+
+      // Evento: inicio de flujo de pago expresado en texto ("quiero pagar", "proceder al pago", etc.)
+      try {
+        if (/(quiero pagar|proceder al pago|ir a pagar|pagar ahora)/i.test(text)) {
+          track('assistant_start_payment', { source: 'assistant_panel', channel: 'text' });
+        }
+      } catch {}
       const userMsg: AssistantMessage = {
         id: crypto.randomUUID(),
         from: "user",
@@ -531,4 +545,6 @@ export function useAssistant() {
     [state, setOpen, sendMessage, sendAudio, reset, append]
   );
 }
+
+
 

@@ -1,6 +1,4 @@
-"use client";
-
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+"use client";\n\nimport { useCallback, useEffect, useMemo, useRef, useState } from "react";\nimport { track } from "@vercel/analytics/react";
 
 export type AssistantMessage = {
   id: string;
@@ -34,6 +32,7 @@ export function useAssistant() {
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [lastOrderId, setLastOrderId] = useState<string>("");
   const booted = useRef(false);
+  const lastUserTextRef = useRef<string>("");
 
   // Load from localStorage
   useEffect(() => {
@@ -390,3 +389,8 @@ export function useAssistant() {
 
   return value;
 }
+
+
+
+
+

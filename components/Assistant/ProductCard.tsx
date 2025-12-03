@@ -4,6 +4,7 @@ import { useCartStore } from "@/store/cart";
 import { useRouter } from "next/navigation";
 import { useAssistantCtx } from "./AssistantProvider";
 import { toast } from "sonner";
+import { track } from "@vercel/analytics/react";
 
 type Product = { id: string; name: string; slug: string; images?: string[]; priceUSD?: number };
 
@@ -20,6 +21,13 @@ export default function ProductCard({ p, onAdd }: { p: Product; onAdd?: (p: Prod
       await fetch('/api/assistant/ui-event', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: 'add_to_cart', productId: p.id, qty: 1 })
+      });
+    } catch {}
+    try {
+      track('assistant_add_to_cart', {
+        source: 'assistant_panel',
+        product_id: p.id,
+        product_slug: p.slug,
       });
     } catch {}
     try { toast.success(`Se agregó "${p.name}" al carrito`); } catch {}

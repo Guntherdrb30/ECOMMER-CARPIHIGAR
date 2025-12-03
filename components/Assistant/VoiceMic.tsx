@@ -28,13 +28,22 @@ export default function VoiceMic() {
   const v = useVoiceSession(onFinal);
 
   useEffect(() => {
-    // When we stop listening, we can keep TTS enabled. Optional.
+    // Al desmontar, apagamos TTS y cualquier voz en curso
     return () => { a.setTtsEnabled(false); stopSpeaking(); };
   }, []);
 
   const toggle = () => {
-    if (v.listening) { v.stop(); a.setTtsEnabled(false); }
-    else { v.start(); a.setTtsEnabled(true); }
+    if (v.listening) {
+      // Usuario interrumpe: dejamos de escuchar y apagamos TTS
+      v.stop();
+      a.setTtsEnabled(false);
+      stopSpeaking();
+    } else {
+      // Antes de escuchar, asegúrate de que el asistente no esté hablando
+      stopSpeaking();
+      a.setTtsEnabled(false);
+      v.start();
+    }
   };
 
   return (
