@@ -9,6 +9,7 @@ import Providers from "@/components/providers";
 import CookieConsent from "@/components/cookie-consent";
 import AssistantRoot from "@/components/Assistant/AssistantRoot";
 import { cookies } from "next/headers";
+import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -85,6 +86,8 @@ export default async function RootLayout({
           />
           <CookieConsent initialConsent={initialConsent} />
           <AssistantRoot />
+          {/* Analítica de Vercel: solo recolecta datos agregados de uso */}
+          <Analytics />
         </Providers>
       </body>
     </html>
