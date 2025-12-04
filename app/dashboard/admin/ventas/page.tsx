@@ -14,6 +14,7 @@ export default async function AdminSalesPage({
   searchParams?: Promise<{
     sellerId?: string;
     message?: string;
+    orderId?: string;
     invoice?: string;
     cliente?: string;
     rif?: string;
@@ -22,6 +23,7 @@ export default async function AdminSalesPage({
   const sp = ((await searchParams) || {}) as any;
   const sellerId = sp.sellerId || "";
   const message = sp.message || "";
+   const orderId = (sp.orderId || "") as string;
   const invoiceQ = String(sp.invoice || "").trim();
   const clienteQ = String(sp.cliente || "").trim();
   const rifQ = String(sp.rif || "").trim();
@@ -49,8 +51,26 @@ export default async function AdminSalesPage({
       <h1 className="text-2xl font-bold">Ventas</h1>
 
       {message && (
-        <div className="border border-green-200 bg-green-50 text-green-800 px-3 py-2 rounded">
-          {message}
+        <div className="border border-green-200 bg-green-50 text-green-800 px-3 py-2 rounded space-y-2">
+          <div>{message}</div>
+          {orderId && (
+            <div className="flex flex-wrap gap-2 text-sm">
+              <a
+                href={`/dashboard/admin/ventas/${orderId}/print?tipo=recibo`}
+                target="_blank"
+                className="px-2 py-1 border rounded bg-white text-gray-800"
+              >
+                Imprimir recibo
+              </a>
+              <a
+                href={`/dashboard/admin/ventas/${orderId}/print?tipo=factura`}
+                target="_blank"
+                className="px-2 py-1 border rounded bg-white text-gray-800"
+              >
+                Imprimir factura
+              </a>
+            </div>
+          )}
         </div>
       )}
 
@@ -397,4 +417,3 @@ export default async function AdminSalesPage({
     </div>
   );
 }
-

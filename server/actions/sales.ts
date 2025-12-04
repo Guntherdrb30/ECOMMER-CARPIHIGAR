@@ -370,27 +370,53 @@ export async function createOfflineSale(formData: FormData) {
   const totalUSD = subtotalUSD * (1 + ivaPercent/100);
   const totalVES = totalUSD * tasaVES;
 
-  const order = await prisma.order.create({
-    data: ({
-      userId: user.id,
-      sellerId: sellerId || null,
-      subtotalUSD,
-      ivaPercent,
-      tasaVES,
-      totalUSD,
-      totalVES,
-      status: ((role === 'ALIADO') ? ('CONFIRMACION' as any) : (saleType === 'CONTADO' ? ('PAGADO' as any) : ('PENDIENTE' as any))) as any,
-      saleType: saleType as any,
-      creditDueDate: creditDueDate as any,
-      customerTaxId: customerTaxId as any,
-      customerFiscalAddress: customerFiscalAddress as any,
-      originQuoteId: originQuoteId as any,
-      shippingAddressId: finalShippingAddressId || null,
-      items: {
-        create: items.map((it) => ({ productId: it.productId, name: it.name || '', priceUSD: it.priceUSD as any, quantity: it.quantity }))
-      }
-    } as any),
-    include: { items: true }
+  const order = await prisma.$transaction(async (tx) => {
+    const created = await tx.order.create({
+      data: ({
+        userId: user.id,
+        sellerId: sellerId || null,
+        subtotalUSD,
+        ivaPercent,
+        tasaVES,
+        totalUSD,
+        totalVES,
+        status: ((role === 'ALIADO') ? ('CONFIRMACION' as any) : (saleType === 'CONTADO' ? ('PAGADO' as any) : ('PENDIENTE' as any))) as any,
+        saleType: saleType as any,
+        creditDueDate: creditDueDate as any,
+        customerTaxId: customerTaxId as any,
+        customerFiscalAddress: customerFiscalAddress as any,
+        originQuoteId: originQuoteId as any,
+        shippingAddressId: finalShippingAddressId || null,
+        items: {
+          create: items.map((it) => ({ productId: it.productId, name: it.name || '', priceUSD: it.priceUSD as any, quantity: it.quantity }))
+        }
+      } as any),
+      include: { items: true }
+    });
+
+    // Descontar inventario y registrar movimiento de stock por cada ítem
+    for (const it of items) {
+      const qty = Number(it.quantity || 0);
+      if (!it.productId || !qty) continue;
+      await tx.stockMovement.create({
+        data: {
+          productId: it.productId,
+          type: 'SALIDA' as any,
+          quantity: qty,
+          reason: `VENTA_TIENDA ${created.id}`,
+          userId: (session?.user as any)?.id || null,
+        },
+      });
+      await tx.product.update({
+        where: { id: it.productId },
+        data: {
+          stock: { decrement: qty },
+          stockUnits: { decrement: qty } as any,
+        },
+      });
+    }
+
+    return created;
   });
 
   // record payment as approved (solo si es contado)
