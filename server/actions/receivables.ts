@@ -236,6 +236,76 @@ export async function addReceivableNote(formData: FormData) {
   return { ok: true } as any;
 }
 
+export async function updateReceivableNote(formData: FormData) {
+  const noteId = String(formData.get('noteId') || '');
+  const orderIdRaw = String(formData.get('orderId') || '');
+  const typeRaw = String(formData.get('type') || '').toUpperCase();
+  const amount = Number(String(formData.get('amount') || '0'));
+  const reason = String(formData.get('reason') || '') || null;
+
+  if (!noteId) return { ok: false, error: 'Nota inválida' } as any;
+  if (!amount || amount <= 0) return { ok: false, error: 'Monto inválido' } as any;
+
+  const note = await prisma.receivableNote.findUnique({
+    where: { id: noteId },
+    include: { receivable: { include: { order: true } } },
+  });
+  if (!note) return { ok: false, error: 'Nota no encontrada' } as any;
+
+  const orderId = note.receivable?.order?.id || orderIdRaw;
+  if (!orderId) return { ok: false, error: 'Orden inválida' } as any;
+
+  const type: any = typeRaw === 'DEBITO' ? 'DEBITO' : 'CREDITO';
+
+  await prisma.receivableNote.update({
+    where: { id: noteId },
+    data: {
+      type,
+      amountUSD: amount as any,
+      reason,
+    },
+  });
+
+  await recalcReceivable(orderId);
+  revalidatePath('/dashboard/admin/cuentas-por-cobrar');
+  revalidatePath(`/dashboard/admin/cuentas-por-cobrar/${orderId}`);
+  return { ok: true } as any;
+}
+
+export async function deleteReceivableNote(formData: FormData) {
+  const noteId = String(formData.get('noteId') || '');
+  let orderId = String(formData.get('orderId') || '');
+  const secret = String(formData.get('secret') || '');
+
+  const configured = await getDeleteSecret();
+  if (!configured) {
+    return {
+      ok: false,
+      error:
+        'Falta configurar la clave de eliminación (RECEIVABLE_DELETE_SECRET o ADMIN_DELETE_SECRET)',
+    } as any;
+  }
+  if (secret !== configured) {
+    return { ok: false, error: 'Clave secreta inválida' } as any;
+  }
+  if (!noteId) return { ok: false, error: 'Nota inválida' } as any;
+
+  const note = await prisma.receivableNote.findUnique({
+    where: { id: noteId },
+    include: { receivable: { include: { order: true } } },
+  });
+  if (note?.receivable?.order?.id) {
+    orderId = note.receivable.order.id;
+  }
+
+  await prisma.receivableNote.delete({ where: { id: noteId } });
+  if (orderId) await recalcReceivable(orderId);
+  revalidatePath('/dashboard/admin/cuentas-por-cobrar');
+  if (orderId)
+    revalidatePath(`/dashboard/admin/cuentas-por-cobrar/${orderId}`);
+  return { ok: true } as any;
+}
+
 export async function markReceivablePaid(formData: FormData) {
   const orderId = String(formData.get('orderId') || '');
   if (!orderId) return { ok: false, error: 'Orden invÃ¡lida' };

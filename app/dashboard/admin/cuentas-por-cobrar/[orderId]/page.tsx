@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { addReceivablePayment, addReceivableNote, updateReceivableDueDate, markReceivablePaid, updateReceivableNotes, sendReceivableReminder, recordReceivableShare, updateReceivableEntry, deleteReceivableEntry } from '@/server/actions/receivables';
+import { addReceivablePayment, addReceivableNote, updateReceivableNote, deleteReceivableNote, updateReceivableDueDate, markReceivablePaid, updateReceivableNotes, sendReceivableReminder, recordReceivableShare, updateReceivableEntry, deleteReceivableEntry } from '@/server/actions/receivables';
 import SecretDeleteButton from '@/components/admin/secret-delete-button';
 
 export default async function ReceivableDetailPage({ params }: { params: Promise<{ orderId: string }> }) {
@@ -203,21 +203,83 @@ export default async function ReceivableDetailPage({ params }: { params: Promise
           </div>
           <div>
             <h3 className="font-semibold mb-2">Notas de crédito / débito</h3>
-            <div className="space-y-2 mb-3 max-h-40 overflow-auto text-sm">
+            <div className="space-y-2 mb-3 max-h-48 overflow-auto text-sm">
               {notes.length === 0 ? (
                 <div className="text-gray-500 text-sm">Sin notas registradas</div>
               ) : (
                 notes.map((n: any) => (
-                  <div key={n.id} className="flex justify-between items-center border rounded px-2 py-1">
-                    <span>
-                      <span className="font-semibold mr-1">
-                        {String(n.type) === 'CREDITO' ? 'Crédito' : 'Débito'}
+                  <div key={n.id} className="border rounded px-2 py-1 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span>
+                        <span className="font-semibold mr-1">
+                          {String(n.type) === 'CREDITO' ? 'Crédito' : 'Débito'}
+                        </span>
+                        {n.reason && (
+                          <span className="text-gray-700">- {n.reason}</span>
+                        )}
                       </span>
-                      {n.reason && <span className="text-gray-700">- {n.reason}</span>}
-                    </span>
-                    <span className="font-mono">
-                      {String(n.type) === 'CREDITO' ? '-' : '+'}${Number(n.amountUSD || 0).toFixed(2)}
-                    </span>
+                      <span className="font-mono">
+                        {String(n.type) === 'CREDITO' ? '-' : '+'}$
+                        {Number(n.amountUSD || 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-blue-700">
+                        Editar
+                      </summary>
+                      <form
+                        action={updateReceivableNote as any}
+                        className="mt-1 grid grid-cols-1 md:grid-cols-4 gap-2"
+                      >
+                        <input type="hidden" name="noteId" value={n.id} />
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <div>
+                          <label className="block text-[11px]">Tipo</label>
+                          <select
+                            name="type"
+                            defaultValue={String(n.type)}
+                            className="border rounded px-2 py-1 w-full"
+                          >
+                            <option value="CREDITO">Crédito</option>
+                            <option value="DEBITO">Débito</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px]">Monto USD</label>
+                          <input
+                            name="amount"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={Number(n.amountUSD || 0).toFixed(2)}
+                            className="border rounded px-2 py-1 w-full"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-[11px]">Motivo</label>
+                          <input
+                            name="reason"
+                            defaultValue={n.reason || ''}
+                            className="border rounded px-2 py-1 w-full"
+                          />
+                        </div>
+                        <div className="md:col-span-4">
+                          <button className="px-2 py-1 border rounded">
+                            Guardar cambios
+                          </button>
+                        </div>
+                      </form>
+                    </details>
+                    <div className="flex justify-between items-center mt-1">
+                      <SecretDeleteButton
+                        action={deleteReceivableNote as any}
+                        hidden={{ noteId: n.id, orderId: order.id }}
+                        label="Eliminar nota"
+                        title="Eliminar nota"
+                        description="Requiere clave secreta, igual que los abonos."
+                        className="px-2 py-1 border rounded text-red-700 text-xs"
+                      />
+                    </div>
                   </div>
                 ))
               )}
