@@ -9,15 +9,23 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     include: {
       user: { select: { name: true, email: true, phone: true } },
       seller: { select: { name: true, email: true } },
-      receivable: { include: { entries: { orderBy: { createdAt: 'asc' } } } },
+      receivable: { include: { entries: { orderBy: { createdAt: 'asc' } }, noteItems: true } },
     },
   });
   if (!order) return new NextResponse('Not found', { status: 404 });
 
   const totalUSD = Number(order.totalUSD || 0);
   const entries = order.receivable?.entries || [];
+  const notes = (order.receivable as any)?.noteItems || [];
   const abonadoUSD = entries.reduce((a: number, e: any) => a + Number(e.amountUSD || 0), 0);
-  const saldoUSD = Math.max(0, totalUSD - abonadoUSD);
+  const creditsUSD = notes
+    .filter((n: any) => String(n.type) === 'CREDITO')
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const debitsUSD = notes
+    .filter((n: any) => String(n.type) === 'DEBITO')
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const adjustedTotalUSD = totalUSD + debitsUSD - creditsUSD;
+  const saldoUSD = Math.max(0, adjustedTotalUSD - abonadoUSD);
   const vence = (order.receivable?.dueDate || (order as any).creditDueDate || null) as Date | null;
 
   const rows: string[][] = [];
@@ -29,6 +37,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
   rows.push(['Fecha', new Date(order.createdAt as any).toISOString()]);
   rows.push(['Vence', vence ? new Date(vence as any).toISOString() : '']);
   rows.push(['TotalUSD', totalUSD.toFixed(2)]);
+  rows.push(['NotasCreditoUSD', creditsUSD.toFixed(2)]);
+  rows.push(['NotasDebitoUSD', debitsUSD.toFixed(2)]);
+  rows.push(['TotalAjustadoUSD', adjustedTotalUSD.toFixed(2)]);
   rows.push(['AbonadoUSD', abonadoUSD.toFixed(2)]);
   rows.push(['SaldoUSD', saldoUSD.toFixed(2)]);
   rows.push([]);

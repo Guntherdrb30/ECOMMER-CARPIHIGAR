@@ -735,6 +735,11 @@ enum ReceivableStatus {
   CANCELADO
 }
 
+enum ReceivableNoteType {
+  CREDITO
+  DEBITO
+}
+
 model Receivable {
   id         String            @id @default(cuid())
   orderId    String            @unique
@@ -745,6 +750,7 @@ model Receivable {
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
   entries    ReceivableEntry[]
+  noteItems  ReceivableNote[]
 }
 
 model ReceivableEntry {
@@ -757,6 +763,16 @@ model ReceivableEntry {
   reference     String?
   notes         String?
   createdAt     DateTime     @default(now())
+}
+
+model ReceivableNote {
+  id           String             @id @default(cuid())
+  receivableId String
+  receivable   Receivable         @relation(fields: [receivableId], references: [id])
+  type         ReceivableNoteType
+  amountUSD    Decimal            @db.Decimal(12, 2)
+  reason       String?
+  createdAt    DateTime           @default(now())
 }
 
 model WishlistItem {

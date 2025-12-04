@@ -37,8 +37,16 @@ async function generatePdf(order: any): Promise<Buffer> {
 
   const totalUSD = Number(order.totalUSD || 0);
   const entries = order.receivable?.entries || [];
+  const notes = (order.receivable as any)?.noteItems || [];
   const abonadoUSD = entries.reduce((a: number, e: any) => a + Number(e.amountUSD || 0), 0);
-  const saldoUSD = Math.max(0, totalUSD - abonadoUSD);
+  const creditsUSD = notes
+    .filter((n: any) => String(n.type) === 'CREDITO')
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const debitsUSD = notes
+    .filter((n: any) => String(n.type) === 'DEBITO')
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const adjustedTotalUSD = totalUSD + debitsUSD - creditsUSD;
+  const saldoUSD = Math.max(0, adjustedTotalUSD - abonadoUSD);
   const vence = (order.receivable?.dueDate || (order as any).creditDueDate || null) as Date | null;
 
   if (!logoBuf) doc.moveDown(0.5);
@@ -52,7 +60,14 @@ async function generatePdf(order: any): Promise<Buffer> {
   doc.text(`Vendedor: ${order.seller?.name || order.seller?.email || ''}`);
   if (vence) doc.text(`Vence: ${new Date(vence as any).toLocaleDateString()}`);
   doc.moveDown(0.5);
-  doc.text(`Total USD: $${totalUSD.toFixed(2)}`);
+  doc.text(`Total original USD: $${totalUSD.toFixed(2)}`);
+  if (creditsUSD > 0) {
+    doc.text(`Notas de crédito: -$${creditsUSD.toFixed(2)}`);
+  }
+  if (debitsUSD > 0) {
+    doc.text(`Notas de débito: +$${debitsUSD.toFixed(2)}`);
+  }
+  doc.text(`Total ajustado USD: $${adjustedTotalUSD.toFixed(2)}`);
   doc.text(`Abonado USD: $${abonadoUSD.toFixed(2)}`);
   doc.text(`Saldo USD: $${saldoUSD.toFixed(2)}`);
   if (order.receivable?.notes) { doc.moveDown(0.5).text(`Observaciones: ${order.receivable?.notes}`); }
@@ -83,7 +98,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     include: {
       user: { select: { name: true, email: true, phone: true } },
       seller: { select: { name: true, email: true } },
-      receivable: { include: { entries: { orderBy: { createdAt: 'asc' } } } },
+      receivable: { include: { entries: { orderBy: { createdAt: 'asc' } }, noteItems: true } },
     },
   });
   if (!order) return new NextResponse('Not found', { status: 404 });

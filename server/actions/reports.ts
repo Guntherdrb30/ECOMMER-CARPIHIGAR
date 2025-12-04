@@ -144,7 +144,7 @@ export async function getReceivablesAging() {
   try {
     const open = await prisma.receivable.findMany({
       where: { OR: [ { status: 'PENDIENTE' as any }, { status: 'PARCIAL' as any } ] },
-      include: { order: true },
+      include: { order: true, entries: true, noteItems: true },
     });
     const today = new Date();
     const bucket = (days: number) => {
@@ -161,8 +161,22 @@ export async function getReceivablesAging() {
       const b = bucket(days);
       if (!agg.has(b)) agg.set(b, { bucket: b, count: 0, totalUSD: 0 });
       const rec = agg.get(b)!;
+      const totalUSD = Number(r.order?.totalUSD || 0);
+      const abonadoUSD = (r.entries || []).reduce(
+        (acc, e: any) => acc + Number(e.amountUSD || 0),
+        0,
+      );
+      const notes = (r as any).noteItems || [];
+      const creditsUSD = notes
+        .filter((n: any) => String(n.type) === 'CREDITO')
+        .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+      const debitsUSD = notes
+        .filter((n: any) => String(n.type) === 'DEBITO')
+        .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+      const adjustedTotalUSD = totalUSD + debitsUSD - creditsUSD;
+      const saldoUSD = Math.max(0, adjustedTotalUSD - abonadoUSD);
       rec.count += 1;
-      rec.totalUSD += Number(r.order?.totalUSD || 0);
+      rec.totalUSD += saldoUSD;
     }
     const labels = ['Al día','1-30','31-60','61-90','90+'];
     const rows = labels.map(l => agg.get(l) || { bucket: l, count: 0, totalUSD: 0 });
@@ -172,4 +186,3 @@ export async function getReceivablesAging() {
     return [ 'Al día','1-30','31-60','61-90','90+' ].map(l => ({ bucket: l, count: 0, totalUSD: 0 }));
   }
 }
-

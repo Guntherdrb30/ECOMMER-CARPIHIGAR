@@ -20,7 +20,7 @@ export default async function CuentasPorCobrarPage({ searchParams }: { searchPar
     include: {
       user: { select: { name: true, email: true, phone: true } },
       seller: { select: { name: true, email: true } },
-      receivable: { include: { entries: true } },
+      receivable: { include: { entries: true, noteItems: true } },
     },
   });
 
@@ -28,14 +28,22 @@ export default async function CuentasPorCobrarPage({ searchParams }: { searchPar
   const rows = orders.map((o) => {
     const abonadoUSD = (o.receivable?.entries || []).reduce((acc, e) => acc + Number((e as any).amountUSD), 0);
     const totalUSD = Number(o.totalUSD);
-    const saldoUSD = Math.max(0, totalUSD - abonadoUSD);
+    const notes = (o.receivable as any)?.noteItems || [];
+    const creditsUSD = notes
+      .filter((n: any) => String(n.type) === 'CREDITO')
+      .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+    const debitsUSD = notes
+      .filter((n: any) => String(n.type) === 'DEBITO')
+      .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+    const adjustedTotalUSD = totalUSD + debitsUSD - creditsUSD;
+    const saldoUSD = Math.max(0, adjustedTotalUSD - abonadoUSD);
     const vence = (o.receivable?.dueDate || (o as any).creditDueDate || null) as Date | null;
     const estado = (o.receivable?.status || 'PENDIENTE') as string;
     const baseDate = vence ? new Date(vence) : new Date(o.createdAt as any);
     const today = new Date();
     const days = Math.floor((today.getTime() - baseDate.getTime()) / (1000*60*60*24));
     const bucket = days <= 10 ? '0-10' : days <= 20 ? '11-20' : days <= 30 ? '21-30' : 'VENCIDA';
-    return { o, abonadoUSD, totalUSD, saldoUSD, vence, estado, days, bucket };
+    return { o, abonadoUSD, totalUSD, adjustedTotalUSD, creditsUSD, debitsUSD, saldoUSD, vence, estado, days, bucket };
   });
 
   const filtered = rows.filter((r) => {
@@ -219,7 +227,7 @@ export default async function CuentasPorCobrarPage({ searchParams }: { searchPar
             </tr>
           </thead>
           <tbody>
-            {filtered.map(({ o, abonadoUSD, totalUSD, saldoUSD, vence, estado, days, bucket }) => {
+            {filtered.map(({ o, abonadoUSD, totalUSD, adjustedTotalUSD, creditsUSD, debitsUSD, saldoUSD, vence, estado, days, bucket }) => {
               const rowClass = bucket === 'VENCIDA' ? 'bg-red-50' : (bucket === '21-30' ? 'bg-yellow-50' : '');
               const phone = (o.user as any)?.phone as string | undefined;
               const msg = `Hola, le saludamos de ${(process.env.NEXT_PUBLIC_BRAND || 'Carpihogar')}. Orden ${o.id}. Saldo: $${saldoUSD.toFixed(2)}. ${vence ? 'Vence: '+new Date(vence).toLocaleDateString()+'. ' : ''}Agradecemos su pronto pago.`;
@@ -239,7 +247,14 @@ export default async function CuentasPorCobrarPage({ searchParams }: { searchPar
                     </div>
                   </td>
                   <td className="px-3 py-2">{o.seller?.name || o.seller?.email || '-'}</td>
-                  <td className="px-3 py-2">${totalUSD.toFixed(2)}</td>
+                  <td className="px-3 py-2">
+                    <div>${adjustedTotalUSD.toFixed(2)}</div>
+                    {(creditsUSD !== 0 || debitsUSD !== 0) && (
+                      <div className="text-xs text-gray-500">
+                        Orig: ${totalUSD.toFixed(2)}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-3 py-2">${abonadoUSD.toFixed(2)}</td>
                   <td className="px-3 py-2">${saldoUSD.toFixed(2)}</td>
                   <td className="px-3 py-2">{new Date(o.createdAt as any).toLocaleDateString()}</td>

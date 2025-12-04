@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { addReceivablePayment, updateReceivableDueDate, markReceivablePaid, updateReceivableNotes, sendReceivableReminder, recordReceivableShare, updateReceivableEntry, deleteReceivableEntry } from '@/server/actions/receivables';
+import { addReceivablePayment, addReceivableNote, updateReceivableDueDate, markReceivablePaid, updateReceivableNotes, sendReceivableReminder, recordReceivableShare, updateReceivableEntry, deleteReceivableEntry } from '@/server/actions/receivables';
 import SecretDeleteButton from '@/components/admin/secret-delete-button';
 
 export default async function ReceivableDetailPage({ params }: { params: Promise<{ orderId: string }> }) {
@@ -9,7 +9,7 @@ export default async function ReceivableDetailPage({ params }: { params: Promise
     include: {
       user: { select: { name: true, email: true, phone: true } },
       seller: { select: { name: true, email: true } },
-      receivable: { include: { entries: { orderBy: { createdAt: 'asc' } } } },
+      receivable: { include: { entries: { orderBy: { createdAt: 'asc' } }, noteItems: true } },
     }
   });
 
@@ -24,9 +24,17 @@ export default async function ReceivableDetailPage({ params }: { params: Promise
   }
 
   const entries = order.receivable?.entries || [];
+  const notes = (order.receivable as any)?.noteItems || [];
   const abonadoUSD = entries.reduce((a, e) => a + Number((e as any).amountUSD || 0), 0);
   const totalUSD = Number(order.totalUSD || 0);
-  const saldoUSD = Math.max(0, totalUSD - abonadoUSD);
+  const creditsUSD = notes
+    .filter((n: any) => String(n.type) === 'CREDITO')
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const debitsUSD = notes
+    .filter((n: any) => String(n.type) === 'DEBITO')
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const adjustedTotalUSD = totalUSD + debitsUSD - creditsUSD;
+  const saldoUSD = Math.max(0, adjustedTotalUSD - abonadoUSD);
   const vence = (order.receivable?.dueDate || (order as any).creditDueDate || null) as Date | null;
   const estado = (order.receivable?.status || 'PENDIENTE') as string;
 
@@ -53,7 +61,14 @@ export default async function ReceivableDetailPage({ params }: { params: Promise
         <div className="bg-white border rounded p-4">
           <div className="text-xs uppercase text-gray-500">Estado</div>
           <div className="text-lg font-semibold">{estado}</div>
-          <div className="text-sm">Total: ${totalUSD.toFixed(2)}</div>
+          <div className="text-sm">Total original: ${totalUSD.toFixed(2)}</div>
+          {creditsUSD > 0 && (
+            <div className="text-sm">Notas de crédito: -${creditsUSD.toFixed(2)}</div>
+          )}
+          {debitsUSD > 0 && (
+            <div className="text-sm">Notas de débito: +${debitsUSD.toFixed(2)}</div>
+          )}
+          <div className="text-sm">Total ajustado: ${adjustedTotalUSD.toFixed(2)}</div>
           <div className="text-sm">Abonado: ${abonadoUSD.toFixed(2)}</div>
           <div className="text-sm font-semibold">Saldo: ${saldoUSD.toFixed(2)}</div>
         </div>
@@ -187,6 +202,55 @@ export default async function ReceivableDetailPage({ params }: { params: Promise
             </form>
           </div>
           <div>
+            <h3 className="font-semibold mb-2">Notas de crédito / débito</h3>
+            <div className="space-y-2 mb-3 max-h-40 overflow-auto text-sm">
+              {notes.length === 0 ? (
+                <div className="text-gray-500 text-sm">Sin notas registradas</div>
+              ) : (
+                notes.map((n: any) => (
+                  <div key={n.id} className="flex justify-between items-center border rounded px-2 py-1">
+                    <span>
+                      <span className="font-semibold mr-1">
+                        {String(n.type) === 'CREDITO' ? 'Crédito' : 'Débito'}
+                      </span>
+                      {n.reason && <span className="text-gray-700">- {n.reason}</span>}
+                    </span>
+                    <span className="font-mono">
+                      {String(n.type) === 'CREDITO' ? '-' : '+'}${Number(n.amountUSD || 0).toFixed(2)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+            <form action={addReceivableNote as any} className="space-y-2">
+              <input type="hidden" name="orderId" value={order.id} />
+              <div className="grid grid-cols-2 gap-2">
+                <select name="type" className="border rounded px-2 py-1">
+                  <option value="CREDITO">Nota de crédito (-)</option>
+                  <option value="DEBITO">Nota de débito (+)</option>
+                </select>
+                <input
+                  name="amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Monto USD"
+                  className="border rounded px-2 py-1 w-full"
+                  required
+                />
+              </div>
+              <input
+                name="reason"
+                placeholder="Motivo (opcional)"
+                className="border rounded px-2 py-1 w-full"
+              />
+              <button className="w-full px-3 py-2 border rounded">
+                Agregar nota
+              </button>
+            </form>
+          </div>
+
+          <div>
             <h3 className="font-semibold mb-2">Compartir</h3>
             <div className="space-y-2">
               {/* WhatsApp */}
@@ -194,7 +258,7 @@ export default async function ReceivableDetailPage({ params }: { params: Promise
                 className="w-full inline-block px-3 py-2 border rounded text-center"
                 target="_blank"
                 href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                  `Cuenta por cobrar - Orden ${order.id}\nCliente: ${order.user?.name || order.user?.email || 'N/A'}\nTotal: $${totalUSD.toFixed(2)}\nAbonado: $${abonadoUSD.toFixed(2)}\nSaldo: $${saldoUSD.toFixed(2)}${vence ? `\nVence: ${new Date(vence as any).toLocaleDateString()}` : ''}\n\nEstado de cuenta (PDF): /api/receivables/${order.id}/statement/pdf`,
+                  `Cuenta por cobrar - Orden ${order.id}\nCliente: ${order.user?.name || order.user?.email || 'N/A'}\nTotal original: $${totalUSD.toFixed(2)}${creditsUSD > 0 ? `\nNotas de crédito: -$${creditsUSD.toFixed(2)}` : ''}${debitsUSD > 0 ? `\nNotas de débito: +$${debitsUSD.toFixed(2)}` : ''}\nTotal ajustado: $${adjustedTotalUSD.toFixed(2)}\nAbonado: $${abonadoUSD.toFixed(2)}\nSaldo: $${saldoUSD.toFixed(2)}${vence ? `\nVence: ${new Date(vence as any).toLocaleDateString()}` : ''}\n\nEstado de cuenta (PDF): /api/receivables/${order.id}/statement/pdf`,
                 )}`}
               >
                 Compartir por WhatsApp

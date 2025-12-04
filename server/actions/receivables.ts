@@ -5,21 +5,55 @@ import { getDeleteSecret } from "@/server/actions/settings";
 import { revalidatePath } from "next/cache";
 
 async function recalcReceivable(orderId: string) {
-  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { receivable: { include: { entries: true } } } });
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { receivable: { include: { entries: true, noteItems: true } } },
+  });
   if (!order || !order.receivable) return;
-  const abonadoUSD = (order.receivable.entries || []).reduce((acc: number, e: any) => acc + Number(e.amountUSD || 0), 0);
+
+  const entries = order.receivable.entries || [];
+  const notes = (order.receivable as any).noteItems || [];
+
+  const abonadoUSD = entries.reduce(
+    (acc: number, e: any) => acc + Number(e.amountUSD || 0),
+    0,
+  );
   const totalUSD = Number(order.totalUSD || 0);
-  let status: any = 'PENDIENTE';
-  if (abonadoUSD >= totalUSD - 0.01) status = 'PAGADO';
-  else if (abonadoUSD > 0) status = 'PARCIAL';
-  await prisma.receivable.update({ where: { id: order.receivable.id }, data: { status } });
-  if (status === 'PAGADO') {
+
+  const creditsUSD = notes
+    .filter((n: any) => String(n.type) === "CREDITO")
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const debitsUSD = notes
+    .filter((n: any) => String(n.type) === "DEBITO")
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+
+  const adjustedTotalUSD = totalUSD + debitsUSD - creditsUSD;
+
+  let status: any = "PENDIENTE";
+  if (adjustedTotalUSD <= 0.01) {
+    status = abonadoUSD > 0.01 ? "PAGADO" : "CANCELADO";
+  } else if (abonadoUSD >= adjustedTotalUSD - 0.01) {
+    status = "PAGADO";
+  } else if (abonadoUSD > 0) {
+    status = "PARCIAL";
+  }
+
+  await prisma.receivable.update({
+    where: { id: order.receivable.id },
+    data: { status },
+  });
+
+  // Solo disparamos el flujo de "orden pagada" si hubo pagos reales
+  if (status === "PAGADO" && abonadoUSD > 0.01) {
     try {
-      await prisma.order.update({ where: { id: orderId }, data: { status: 'PAGADO' as any } });
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { status: "PAGADO" as any },
+      });
     } catch {}
     try {
-      const { emit } = await import('@/server/events/bus');
-      await emit('order.paid' as any, { orderId });
+      const { emit } = await import("@/server/events/bus");
+      await emit("order.paid" as any, { orderId });
     } catch {}
   }
 }
@@ -60,8 +94,19 @@ async function generateReceivablePdf(order: any): Promise<Buffer> {
 
   const totalUSD = Number(order.totalUSD || 0);
   const entries = order.receivable?.entries || [];
-  const abonadoUSD = entries.reduce((a: number, e: any) => a + Number(e.amountUSD || 0), 0);
-  const saldoUSD = Math.max(0, totalUSD - abonadoUSD);
+  const notes = (order.receivable as any)?.noteItems || [];
+  const abonadoUSD = entries.reduce(
+    (a: number, e: any) => a + Number(e.amountUSD || 0),
+    0,
+  );
+  const creditsUSD = notes
+    .filter((n: any) => String(n.type) === "CREDITO")
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const debitsUSD = notes
+    .filter((n: any) => String(n.type) === "DEBITO")
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const adjustedTotalUSD = totalUSD + debitsUSD - creditsUSD;
+  const saldoUSD = Math.max(0, adjustedTotalUSD - abonadoUSD);
   const vence = (order.receivable?.dueDate || (order as any).creditDueDate || null) as Date | null;
 
   doc.moveDown(0.5);
@@ -74,7 +119,19 @@ async function generateReceivablePdf(order: any): Promise<Buffer> {
   doc.text(`Vendedor: ${order.seller?.name || order.seller?.email || ''}`);
   if (vence) doc.text(`Vence: ${new Date(vence as any).toLocaleDateString()}`);
   doc.moveDown(0.5);
-  doc.text(`Total USD: $${totalUSD.toFixed(2)}`);
+  doc.text(`Total original USD: $${totalUSD.toFixed(2)}`);
+  if (creditsUSD > 0) {
+    doc.text(`Notas de crédito: -$${creditsUSD.toFixed(2)}`);
+  }
+  if (debitsUSD > 0) {
+    doc.text(`Notas de débito: +$${debitsUSD.toFixed(2)}`);
+  }
+  if (creditsUSD !== 0 || debitsUSD !== 0) {
+    doc.text(`Total ajustado USD: $${adjustedTotalUSD.toFixed(2)}`);
+  } else {
+    // Para compatibilidad cuando no hay notas
+    doc.text(`Total ajustado USD: $${adjustedTotalUSD.toFixed(2)}`);
+  }
   doc.text(`Abonado USD: $${abonadoUSD.toFixed(2)}`);
   doc.text(`Saldo USD: $${saldoUSD.toFixed(2)}`);
   if (order.receivable?.notes) { doc.moveDown(0.5).text(`Observaciones: ${order.receivable?.notes}`); }
@@ -126,22 +183,57 @@ export async function addReceivablePayment(formData: FormData) {
 
   await prisma.receivableEntry.create({ data: { receivableId: receivable.id, amountUSD: amountUSD as any, currency: currency as any, method: method || null, reference, notes, ...(createdAt ? { createdAt: createdAt as any } : {}) } });
 
-  // Recalculate status
-  const entries = await prisma.receivableEntry.findMany({ where: { receivableId: receivable.id } });
-  const abonadoUSD = entries.reduce((acc, e) => acc + Number(e.amountUSD), 0);
-  const totalUSD = Number(order.totalUSD);
-  let status: any = 'PENDIENTE';
-  if (abonadoUSD >= totalUSD - 0.01) status = 'PAGADO';
-  else if (abonadoUSD > 0) status = 'PARCIAL';
-
-  await prisma.receivable.update({ where: { id: receivable.id }, data: { status } });
-  if (status === 'PAGADO') {
-    await prisma.order.update({ where: { id: orderId }, data: { status: 'PAGADO' as any } });
-  }
+  // Recalcular estado teniendo en cuenta notas de crédito/débito
+  await recalcReceivable(orderId);
 
   revalidatePath('/dashboard/admin/cuentas-por-cobrar');
   try { revalidatePath('/dashboard/admin/ventas'); } catch {}
   return { ok: true };
+}
+
+export async function addReceivableNote(formData: FormData) {
+  const orderId = String(formData.get('orderId') || '');
+  const typeRaw = String(formData.get('type') || '').toUpperCase();
+  const amount = Number(String(formData.get('amount') || '0'));
+  const reason = String(formData.get('reason') || '') || null;
+
+  if (!orderId || !amount || amount <= 0) {
+    return { ok: false, error: 'Datos inválidos' } as any;
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { receivable: true },
+  });
+  if (!order) return { ok: false, error: 'Orden no encontrada' } as any;
+
+  // Asegura que exista la cuenta por cobrar
+  let receivable = order.receivable;
+  if (!receivable) {
+    receivable = await prisma.receivable.create({
+      data: {
+        orderId,
+        status: 'PENDIENTE' as any,
+        dueDate: (order as any).creditDueDate || null,
+      },
+    });
+  }
+
+  const type: any = typeRaw === 'DEBITO' ? 'DEBITO' : 'CREDITO';
+
+  await prisma.receivableNote.create({
+    data: {
+      receivableId: receivable.id,
+      type,
+      amountUSD: amount as any,
+      reason,
+    },
+  });
+
+  await recalcReceivable(orderId);
+  revalidatePath('/dashboard/admin/cuentas-por-cobrar');
+  revalidatePath(`/dashboard/admin/cuentas-por-cobrar/${orderId}`);
+  return { ok: true } as any;
 }
 
 export async function markReceivablePaid(formData: FormData) {
@@ -225,7 +317,10 @@ export async function deleteReceivableEntry(formData: FormData) {
 export async function sendReceivableReminder(formData: FormData) {
   const orderId = String(formData.get('orderId') || '');
   if (!orderId) return { ok: false, error: 'Orden invÃ¡lida' };
-  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { receivable: { include: { entries: true } }, user: true } });
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { receivable: { include: { entries: true, noteItems: true } }, user: true },
+  });
   if (!order) return { ok: false, error: 'Orden no encontrada' };
   const to = (order.user as any)?.email as string | undefined;
   if (!to) return { ok: false, error: 'Cliente sin email' };
@@ -234,20 +329,36 @@ export async function sendReceivableReminder(formData: FormData) {
   const brand = (settings as any)?.brandName || 'Carpihogar.ai';
   const tasaVES = Number(order.tasaVES || (settings as any)?.tasaVES || 40);
   const totalUSD = Number(order.totalUSD || 0);
-  const abonadoUSD = (order.receivable?.entries || []).reduce((acc, e: any) => acc + Number(e.amountUSD), 0);
-  const saldoUSD = Math.max(0, totalUSD - abonadoUSD);
+  const entries = order.receivable?.entries || [];
+  const notes = (order.receivable as any)?.noteItems || [];
+  const abonadoUSD = entries.reduce((acc, e: any) => acc + Number(e.amountUSD), 0);
+  const creditsUSD = notes
+    .filter((n: any) => String(n.type) === "CREDITO")
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const debitsUSD = notes
+    .filter((n: any) => String(n.type) === "DEBITO")
+    .reduce((acc: number, n: any) => acc + Number(n.amountUSD || 0), 0);
+  const adjustedTotalUSD = totalUSD + debitsUSD - creditsUSD;
+  const saldoUSD = Math.max(0, adjustedTotalUSD - abonadoUSD);
   const due = order.receivable?.dueDate || (order as any).creditDueDate || null;
 
   const subject = `${brand} - Recordatorio de pago Orden ${order.id.slice(-6)}`;
   const lines: string[] = [];
   lines.push(`Estimado cliente,`);
   lines.push(`\nLe recordamos que posee un saldo pendiente asociado a su orden ${order.id}.`);
-  lines.push(`Total: $${totalUSD.toFixed(2)} | Abonado: $${abonadoUSD.toFixed(2)} | Saldo: $${saldoUSD.toFixed(2)}`);
+  const parts: string[] = [];
+  parts.push(`Total original: $${totalUSD.toFixed(2)}`);
+  if (creditsUSD > 0) parts.push(`Notas de crédito: -$${creditsUSD.toFixed(2)}`);
+  if (debitsUSD > 0) parts.push(`Notas de débito: +$${debitsUSD.toFixed(2)}`);
+  parts.push(`Total ajustado: $${adjustedTotalUSD.toFixed(2)}`);
+  parts.push(`Abonado: $${abonadoUSD.toFixed(2)}`);
+  parts.push(`Saldo: $${saldoUSD.toFixed(2)}`);
+  lines.push(parts.join(" | "));
   if (due) lines.push(`Vencimiento: ${new Date(due as any).toLocaleDateString()}`);
   // Detalle de abonos
-  if ((order.receivable?.entries || []).length) {
+  if (entries.length) {
     lines.push(`\nDetalle de abonos:`);
-    for (const e of (order.receivable?.entries || [])) {
+    for (const e of entries) {
       const d = new Date((e as any).createdAt as any);
       lines.push(`- ${d.toLocaleDateString()} $${Number((e as any).amountUSD).toFixed(2)} ${String((e as any).currency)} ${String((e as any).method || '')} ${String((e as any).reference || '')}`.trim());
     }
@@ -267,17 +378,24 @@ export async function sendReceivableReminder(formData: FormData) {
     return { ok: false, skipped: true };
   }
 
-  try {
-    const nodemailer = (await import('nodemailer')).default as any;
-    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
-    let attachments: any[] = [];
     try {
-      const orderFull = await prisma.order.findUnique({ where: { id: orderId }, include: { user: true, seller: true, receivable: { include: { entries: true } } } });
-      if (orderFull) {
-        const pdf = await generateReceivablePdf(orderFull);
-        attachments.push({ filename: `cxc_${order.id}.pdf`, content: pdf });
-      }
-    } catch {}
+      const nodemailer = (await import('nodemailer')).default as any;
+      const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+      let attachments: any[] = [];
+      try {
+        const orderFull = await prisma.order.findUnique({
+          where: { id: orderId },
+          include: {
+            user: true,
+            seller: true,
+            receivable: { include: { entries: true, noteItems: true } },
+          },
+        });
+        if (orderFull) {
+          const pdf = await generateReceivablePdf(orderFull);
+          attachments.push({ filename: `cxc_${order.id}.pdf`, content: pdf });
+        }
+      } catch {}
     await transporter.sendMail({ from, to, subject, text, html, attachments });
     const stamp = new Date().toISOString().slice(0,10);
     try { await prisma.auditLog.create({ data: { userId: undefined, action: 'RECEIVABLE_REMINDER_SENT', details: `order:${orderId} via:EMAIL date:${stamp}` } }); } catch {}
