@@ -45,6 +45,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
   const [confirmClear, setConfirmClear] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const cartRef = useRef<HTMLDivElement | null>(null);
+  const experiencesRef = useRef<HTMLDivElement | null>(null);
   const { data: session, status } = useSession();
   const [experiencesOpen, setExperiencesOpen] = useState(false);
 
@@ -54,8 +55,13 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
-      if (!cartRef.current) return;
-      if (!cartRef.current.contains(e.target as Node)) setCartOpen(false);
+      const target = e.target as Node;
+      if (cartRef.current && !cartRef.current.contains(target)) {
+        setCartOpen(false);
+      }
+      if (experiencesRef.current && !experiencesRef.current.contains(target)) {
+        setExperiencesOpen(false);
+      }
     }
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -184,7 +190,7 @@ export default function Header({ logoUrl, brandName }: HeaderProps) {
           <NavbarItem className="px-1">
             <div
               className="relative"
-              onMouseLeave={() => setExperiencesOpen(false)}
+              ref={experiencesRef}
             >
               <button
                 type="button"
