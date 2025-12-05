@@ -163,10 +163,12 @@ export async function createOfflineSale(formData: FormData) {
   }
   const role = String((session?.user as any)?.role || '');
   const backNewSale = role === 'ALIADO' ? '/dashboard/aliado/ventas/nueva' : '/dashboard/admin/ventas/nueva';
-  const userEmail = String(formData.get('customerEmail') || '');
-  const userName = String(formData.get('customerName') || '');
+  const userEmailRaw = String(formData.get('customerEmail') || '');
+  const userEmail = userEmailRaw.trim().toLowerCase();
+  const userName = String(formData.get('customerName') || '').trim();
   const customerPhone = String(formData.get('customerPhone') || '');
   const normalizedPhone = normalizeVePhone(customerPhone || '');
+  let customerCreated = false;
   let sellerId = String(formData.get('sellerId') || '');
   const itemsJson = String(formData.get('items') || '[]');
   const items: Array<{ productId: string; name?: string; priceUSD: number; quantity: number } > = JSON.parse(itemsJson || '[]');
@@ -263,15 +265,74 @@ export async function createOfflineSale(formData: FormData) {
     redirect(`${backNewSale}?error=C%C3%A9dula%2FRIF%20y%20direcci%C3%B3n%20fiscal%20son%20obligatorias`);
   }
 
-  // Ensure customer exists or create a placeholder
-  let user = await prisma.user.findUnique({ where: { email: userEmail } });
-  if (!user) {
-    user = await prisma.user.create({ data: { email: userEmail || `walkin_${Date.now()}@local`, password: '', name: userName || 'Cliente Tienda', role: 'CLIENTE', alliedStatus: 'NONE' } });
+  // Ensure customer exists or create a placeholder (cliente para ERP + tienda online)
+  let user: any = null;
+  // 1) Buscar por email si viene informado
+  if (userEmail) {
+    user = await prisma.user.findUnique({ where: { email: userEmail } });
   }
-  // Update phone if provided
+  // 2) Si no existe por email, intentar por Cédula/RIF a partir de ventas previas
+  if (!user && customerTaxId) {
+    try {
+      const previousOrder = await prisma.order.findFirst({
+        where: { customerTaxId: customerTaxId as any },
+        select: { userId: true },
+      });
+      if (previousOrder?.userId) {
+        user = await prisma.user.findUnique({ where: { id: previousOrder.userId } });
+      }
+    } catch {}
+  }
+  // 3) Como último intento, buscar por teléfono exacto
+  const customerPhoneTrimmed = customerPhone.trim();
+  if (!user && customerPhoneTrimmed) {
+    try {
+      user = await prisma.user.findFirst({ where: { phone: customerPhoneTrimmed } });
+    } catch {}
+  }
+  // 4) Crear el cliente si no existe en BD
+  if (!user) {
+    const emailForNewUser = userEmail || `walkin_${Date.now()}@local`;
+    user = await prisma.user.create({
+      data: {
+        email: emailForNewUser,
+        password: '',
+        name: userName || 'Cliente Tienda',
+        role: 'CLIENTE',
+        alliedStatus: 'NONE',
+      },
+    });
+    customerCreated = true;
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: (session?.user as any)?.id,
+          action: 'OFFLINE_SALE_CUSTOMER_CREATED',
+          details: `email:${emailForNewUser};phone:${customerPhoneTrimmed};tax:${customerTaxId || ''}`,
+        },
+      });
+    } catch {}
+  } else {
+    // Cliente ya existe, registrar evento para trazabilidad
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: (session?.user as any)?.id,
+          action: 'OFFLINE_SALE_CUSTOMER_REUSED',
+          details: `userId:${user.id};email:${user.email};phone:${customerPhoneTrimmed};tax:${customerTaxId || ''}`,
+        },
+      });
+    } catch {}
+  }
+  // 5) Actualizar datos básicos del cliente si vienen en esta venta
   try {
-    if (normalizedPhone && user.phone !== normalizedPhone) {
-      await prisma.user.update({ where: { id: user.id }, data: { phone: customerPhone } });
+    const updates: any = {};
+    if (userName && !user.name) updates.name = userName;
+    if (customerPhoneTrimmed && customerPhoneTrimmed !== String(user.phone || '')) {
+      updates.phone = customerPhoneTrimmed;
+    }
+    if (Object.keys(updates).length > 0) {
+      user = await prisma.user.update({ where: { id: user.id }, data: updates });
     }
   } catch {}
 
@@ -375,6 +436,7 @@ export async function createOfflineSale(formData: FormData) {
       data: ({
         userId: user.id,
         sellerId: sellerId || null,
+        originChannel: 'ERP' as any,
         subtotalUSD,
         ivaPercent,
         tasaVES,
@@ -482,10 +544,12 @@ Total: ${totalTxt}.
     await prisma.commission.create({ data: { orderId: order.id, sellerId, percent: commissionPercent as any, amountUSD: amountUSD as any } });
   }
 
+  const finalMessage = customerCreated ? `${successMessage} - Cliente creado para tienda online` : successMessage;
+
   try { revalidatePath('/dashboard/admin/ventas'); } catch {}
   try { revalidatePath('/dashboard/aliado/ventas'); } catch {}
   const backTo = role === 'ALIADO' ? '/dashboard/aliado/ventas' : '/dashboard/admin/ventas';
-  redirect(`${backTo}?message=${encodeURIComponent(successMessage)}&orderId=${encodeURIComponent(order.id)}`);
+  redirect(`${backTo}?message=${encodeURIComponent(finalMessage)}&orderId=${encodeURIComponent(order.id)}`);
 }
 
 export async function sendOrderWhatsAppByForm(formData: FormData) {

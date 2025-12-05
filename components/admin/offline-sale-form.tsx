@@ -108,34 +108,63 @@ export default function OfflineSaleForm({
     return () => clearTimeout(t);
   }, [q]);
 
-  // Cargar direcciones guardadas del cliente por email (admin/aliado)
+  // Buscar cliente existente por Email / Teléfono / Cédula-RIF y precargar datos + direcciones
   useEffect(() => {
     const t = setTimeout(async () => {
-      const e = (customerEmail || '').trim();
-      if (!e) { setSavedAddresses([]); setAddrMode('new'); setSelectedAddressId(''); return; }
+      const email = (customerEmail || "").trim();
+      const phone = (customerPhone || "").trim();
+      const taxId = (customerTaxId || "").trim();
+      if (!email && !phone && !taxId) {
+        setSavedAddresses([]);
+        setAddrMode("new");
+        setSelectedAddressId("");
+        return;
+      }
       try {
-        const res = await fetch(`/api/admin/addresses/by-email?email=${encodeURIComponent(e)}`, { credentials: 'include' });
-        if (res.ok) {
-          const list: Address[] = await res.json();
-          setSavedAddresses(list);
-          if (list.length) {
-            setAddrMode('saved');
-            setSelectedAddressId(list[0].id);
-            setAddrState(list[0].state || '');
-            setAddrCity(list[0].city || '');
-            setAddrZone(list[0].zone || '');
-            setAddr1(list[0].address1 || '');
-            setAddr2(list[0].address2 || '');
-            setAddrNotes(list[0].notes || '');
-          } else {
-            setAddrMode('new');
-            setSelectedAddressId('');
-          }
+        const params = new URLSearchParams();
+        if (email) params.set("email", email.toLowerCase());
+        if (phone) params.set("phone", phone);
+        if (taxId) params.set("taxId", taxId);
+        const res = await fetch(`/api/admin/customers/lookup?${params.toString()}`, {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.user) return;
+        const u = data.user as { name?: string | null; email?: string | null; phone?: string | null };
+        const fiscal = data.fiscal as
+          | { customerTaxId?: string | null; customerFiscalAddress?: string | null }
+          | null;
+        const addresses = (data.addresses || []) as Address[];
+
+        // Autocompletar solo campos vacíos para no pisar lo que escriba el vendedor
+        if (!customerName && u.name) setCustomerName(u.name);
+        if (!customerEmail && u.email) setCustomerEmail(u.email);
+        if (!customerPhone && u.phone) setCustomerPhone(u.phone);
+        if (!customerTaxId && fiscal?.customerTaxId) setCustomerTaxId(fiscal.customerTaxId);
+        if (!customerFiscalAddress && fiscal?.customerFiscalAddress) {
+          setCustomerFiscalAddress(fiscal.customerFiscalAddress);
+        }
+
+        setSavedAddresses(addresses);
+        if (addresses.length) {
+          const first = addresses[0];
+          setAddrMode("saved");
+          setSelectedAddressId(first.id);
+          setAddrState(first.state || "");
+          setAddrCity(first.city || "");
+          setAddrZone(first.zone || "");
+          setAddr1(first.address1 || "");
+          setAddr2(first.address2 || "");
+          setAddrNotes(first.notes || "");
+        } else {
+          setAddrMode("new");
+          setSelectedAddressId("");
         }
       } catch {}
-    }, 400);
+    }, 500);
     return () => clearTimeout(t);
-  }, [customerEmail]);
+  }, [customerEmail, customerPhone, customerTaxId, customerName, customerFiscalAddress]);
 
   // Actualizar ciudades al cambiar estado
   useEffect(() => {
