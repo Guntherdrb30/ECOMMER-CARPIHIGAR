@@ -231,18 +231,22 @@ export default function OfflineSaleForm({
 
   const remove = (id: string) => setItems((prev) => prev.filter((l) => l.productId !== id));
 
-  const handleCustomerSearch = async () => {
-    const query = customerSearch.trim();
+  const runCustomerSearch = async (query: string) => {
+    const trimmed = query.trim();
     setCustomerSearchError("");
-    setCustomerSearchResults([]);
-    if (!query) return;
+    if (!trimmed) {
+      setCustomerSearchResults([]);
+      setCustomerSearchLoading(false);
+      return;
+    }
     setCustomerSearchLoading(true);
     try {
-      const res = await fetch(`/api/admin/customers/search?q=${encodeURIComponent(query)}`, {
+      const res = await fetch(`/api/admin/customers/search?q=${encodeURIComponent(trimmed)}`, {
         credentials: "include",
       });
       if (!res.ok) {
         setCustomerSearchError("No se pudo buscar clientes.");
+        setCustomerSearchResults([]);
         return;
       }
       const data: CustomerSearchResult[] = await res.json();
@@ -252,9 +256,14 @@ export default function OfflineSaleForm({
       }
     } catch {
       setCustomerSearchError("No se pudo buscar clientes.");
+      setCustomerSearchResults([]);
     } finally {
       setCustomerSearchLoading(false);
     }
+  };
+
+  const handleCustomerSearch = async () => {
+    await runCustomerSearch(customerSearch);
   };
 
   const handleSelectCustomer = (c: CustomerSearchResult) => {
@@ -264,6 +273,21 @@ export default function OfflineSaleForm({
     setCustomerSearchResults([]);
     setCustomerSearch(c.name || c.email);
   };
+
+  // Búsqueda en vivo mientras se escribe (autocompletado)
+  useEffect(() => {
+    const query = customerSearch.trim();
+    if (!query) {
+      setCustomerSearchResults([]);
+      setCustomerSearchError("");
+      setCustomerSearchLoading(false);
+      return;
+    }
+    const t = setTimeout(() => {
+      runCustomerSearch(query);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [customerSearch]);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     setError("");
@@ -334,7 +358,7 @@ export default function OfflineSaleForm({
             disabled={customerSearchLoading}
             className="px-3 py-1 rounded bg-gray-800 text-white text-sm disabled:opacity-50"
           >
-            {customerSearchLoading ? "Buscando..." : "Buscar cliente"}
+            {customerSearchLoading ? "Buscando..." : "Buscar"}
           </button>
         </div>
         <p className="text-xs text-gray-500">

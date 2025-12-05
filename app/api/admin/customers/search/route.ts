@@ -19,13 +19,14 @@ export async function GET(req: Request) {
   try {
     const where: any = {
       OR: [
-        { name: { contains: q, mode: 'insensitive' } as any },
-        { email: { contains: q, mode: 'insensitive' } as any },
+        { name: { startsWith: q, mode: 'insensitive' } as any },
+        { email: { startsWith: q, mode: 'insensitive' } as any },
+        // Teléfono puede tener prefijos (+58), usamos contains
         { phone: { contains: q, mode: 'insensitive' } as any },
         {
           orders: {
             some: {
-              customerTaxId: { contains: q, mode: 'insensitive' } as any,
+              customerTaxId: { startsWith: q, mode: 'insensitive' } as any,
             },
           },
         },
@@ -52,4 +53,3 @@ export async function GET(req: Request) {
     );
   }
 }
-
