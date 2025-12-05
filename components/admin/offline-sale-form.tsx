@@ -22,6 +22,12 @@ type Line = {
 };
 
 type PriceMode = "P1" | "P2" | "P3";
+type CustomerSearchResult = {
+  id: string;
+  name?: string | null;
+  email: string;
+  phone?: string | null;
+};
 
 export default function OfflineSaleForm({
   sellers,
@@ -90,6 +96,10 @@ export default function OfflineSaleForm({
   const [addr2, setAddr2] = useState<string>("");
   const [addrNotes, setAddrNotes] = useState<string>("");
   const [cities, setCities] = useState<string[]>([]);
+  const [customerSearch, setCustomerSearch] = useState<string>("");
+  const [customerSearchResults, setCustomerSearchResults] = useState<CustomerSearchResult[]>([]);
+  const [customerSearchLoading, setCustomerSearchLoading] = useState<boolean>(false);
+  const [customerSearchError, setCustomerSearchError] = useState<string>("");
 
   useEffect(() => {
     const t = setTimeout(async () => {
@@ -221,6 +231,40 @@ export default function OfflineSaleForm({
 
   const remove = (id: string) => setItems((prev) => prev.filter((l) => l.productId !== id));
 
+  const handleCustomerSearch = async () => {
+    const query = customerSearch.trim();
+    setCustomerSearchError("");
+    setCustomerSearchResults([]);
+    if (!query) return;
+    setCustomerSearchLoading(true);
+    try {
+      const res = await fetch(`/api/admin/customers/search?q=${encodeURIComponent(query)}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        setCustomerSearchError("No se pudo buscar clientes.");
+        return;
+      }
+      const data: CustomerSearchResult[] = await res.json();
+      setCustomerSearchResults(data || []);
+      if (!data || data.length === 0) {
+        setCustomerSearchError("Sin resultados.");
+      }
+    } catch {
+      setCustomerSearchError("No se pudo buscar clientes.");
+    } finally {
+      setCustomerSearchLoading(false);
+    }
+  };
+
+  const handleSelectCustomer = (c: CustomerSearchResult) => {
+    setCustomerName(c.name || "");
+    setCustomerEmail(c.email);
+    setCustomerPhone(c.phone || "");
+    setCustomerSearchResults([]);
+    setCustomerSearch(c.name || c.email);
+  };
+
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     setError("");
     if (!items.length) {
@@ -272,6 +316,55 @@ export default function OfflineSaleForm({
 
   return (
     <form action={action} onSubmit={onSubmit} className="space-y-4">
+      <div className="bg-white p-3 rounded border space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Buscar cliente guardado
+        </label>
+        <div className="flex flex-col md:flex-row gap-2 items-stretch">
+          <input
+            type="text"
+            value={customerSearch}
+            onChange={(e) => setCustomerSearch(e.target.value)}
+            placeholder="Nombre, email, teléfono o Cédula/RIF"
+            className="border rounded px-2 py-1 w-full"
+          />
+          <button
+            type="button"
+            onClick={handleCustomerSearch}
+            disabled={customerSearchLoading}
+            className="px-3 py-1 rounded bg-gray-800 text-white text-sm disabled:opacity-50"
+          >
+            {customerSearchLoading ? "Buscando..." : "Buscar cliente"}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500">
+          Escribe un dato del cliente (nombre, email, teléfono o RIF) y selecciónalo para llenar
+          automáticamente sus datos, dirección fiscal y direcciones de envío.
+        </p>
+        {customerSearchError && (
+          <div className="text-xs text-red-600">{customerSearchError}</div>
+        )}
+        {customerSearchResults.length > 0 && (
+          <div className="mt-1 border rounded bg-white max-h-56 overflow-y-auto divide-y">
+            {customerSearchResults.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => handleSelectCustomer(c)}
+                className="w-full text-left px-2 py-1 text-sm hover:bg-gray-50"
+              >
+                <div className="font-medium truncate">
+                  {c.name || c.email}
+                </div>
+                <div className="text-xs text-gray-500 truncate">
+                  {c.email}
+                  {c.phone ? ` · ${c.phone}` : ""}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <label className="block text-sm text-gray-700">Vendedor</label>
