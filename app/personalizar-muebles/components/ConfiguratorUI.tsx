@@ -21,9 +21,9 @@ type OverlayState = {
   x: number; // 0-1 horizontal (centro)
   y: number; // 0-1 vertical (centro)
   scale: number;
-  rotation: number; // rotación frontal (Z)
-  tiltX: number; // inclinación adelante / atrás (X)
-  tiltY: number; // inclinación izquierda / derecha (Y)
+  rotation: number; // rotación frontal (eje Z)
+  tiltX: number; // inclinación adelante / atrás (eje X)
+  tiltY: number; // inclinación izquierda / derecha (eje Y)
 };
 
 type ConfiguratorUIProps = {
@@ -79,9 +79,19 @@ export default function ConfiguratorUI({
   );
   const [spaceUploading, setSpaceUploading] = useState(false);
   const [spaceUploadError, setSpaceUploadError] = useState<string | null>(null);
+
   const [overlay, setOverlay] = useState<OverlayState>(
-    initialOverlay || { x: 0.5, y: 0.5, scale: 1, rotation: 0, tiltX: 0, tiltY: 0 },
+    initialOverlay || {
+      x: 0.5,
+      y: 0.5,
+      scale: 1,
+      rotation: 0,
+      tiltX: 0,
+      tiltY: 0,
+    },
   );
+  const [isFullscreenEditorOpen, setIsFullscreenEditorOpen] = useState(false);
+
   const spaceContainerRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
 
@@ -117,8 +127,8 @@ export default function ConfiguratorUI({
     // para mostrarla en grande en la imagen principal.
     if (key === 'colors' && Array.isArray(ecpdColors) && ecpdColors.length) {
       const normalized = value.trim().toLowerCase();
-      // En combinaciones "Color A + Color B" usamos primero coincidencia exacta,
-      // y si no existe, usamos el primer color como referencia.
+      // En combinaciones "Color A + Color B" usamos primero coincidencia exacta
+      // y, si no existe, usamos el primer color como referencia.
       const baseName =
         normalized.split('+')[0]?.trim().toLowerCase() || normalized;
 
@@ -192,7 +202,9 @@ export default function ConfiguratorUI({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-      } catch {}
+      } catch {
+        // Silenciar errores del carrito paralelo
+      }
 
       toast.success('Configuración agregada al carrito.');
     } finally {
@@ -333,7 +345,9 @@ export default function ConfiguratorUI({
     if (container && typeof (container as any).setPointerCapture === 'function') {
       try {
         (container as any).setPointerCapture(e.pointerId);
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
   };
 
@@ -347,7 +361,9 @@ export default function ConfiguratorUI({
     ) {
       try {
         (container as any).releasePointerCapture(e.pointerId);
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
   };
 
@@ -383,356 +399,417 @@ export default function ConfiguratorUI({
     Math.min(4, dimensionScale * overlay.scale),
   );
 
-  return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)] items-start">
-      {/* Columna izquierda: foto del espacio + mueble superpuesto + galería */}
-      <div className="space-y-4">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="p-4 space-y-4">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold tracking-[0.18em] text-brand uppercase">
-                1. Sube la imagen de tu espacio
-              </p>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleSpaceImageChange}
-                  className="text-xs"
-                />
-                {spaceUploading && (
-                  <span className="text-xs text-gray-500">
-                    Subiendo imagen...
-                  </span>
-                )}
-                {spaceImageUrl && !spaceUploading && (
-                  <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
-                    Imagen cargada
-                  </span>
-                )}
-              </div>
-              {spaceUploadError && (
-                <p className="text-xs text-red-600">{spaceUploadError}</p>
+  const SpaceEditorCard = ({ fullscreen = false }: { fullscreen?: boolean }) => {
+    const containerHeightClasses = fullscreen
+      ? 'h-[60vh] md:h-[65vh] lg:h-[70vh]'
+      : 'h-64 md:h-80 lg:h-[380px]';
+
+    return (
+      <div
+        className={`bg-white rounded-xl shadow-lg overflow-hidden ${
+          fullscreen ? 'max-w-5xl mx-auto h-full flex flex-col' : ''
+        }`}
+      >
+        <div className={`p-4 space-y-4 ${fullscreen ? 'flex-1 flex flex-col' : ''}`}>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold tracking-[0.18em] text-brand uppercase">
+              1. Sube la imagen de tu espacio
+            </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleSpaceImageChange}
+                className="text-xs"
+              />
+              {spaceUploading && (
+                <span className="text-xs text-gray-500">Subiendo imagen...</span>
+              )}
+              {spaceImageUrl && !spaceUploading && (
+                <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                  Imagen cargada
+                </span>
               )}
             </div>
+            {spaceUploadError && (
+              <p className="text-xs text-red-600">{spaceUploadError}</p>
+            )}
+          </div>
 
-            <div className="space-y-3">
+          <div className="space-y-3 flex-1">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-semibold tracking-[0.18em] text-brand uppercase">
                 2. Coloca el mueble en tu espacio
               </p>
-              <div
-                ref={spaceContainerRef}
-                className="relative h-64 md:h-80 lg:h-[380px] bg-gray-900 rounded-lg overflow-hidden cursor-move"
-                onPointerMove={handleOverlayPointerMove}
-                onPointerUp={handleOverlayPointerUp}
-                onPointerLeave={handleOverlayPointerUp}
-                style={{
-                  perspective: '1000px',
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                {spaceImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
+              {!fullscreen && (
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreenEditorOpen(true)}
+                  className="inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+                >
+                  Pantalla completa
+                </button>
+              )}
+            </div>
+
+            <div
+              ref={spaceContainerRef}
+              className={`relative bg-gray-900 rounded-lg overflow-hidden cursor-move ${containerHeightClasses}`}
+              onPointerMove={handleOverlayPointerMove}
+              onPointerUp={handleOverlayPointerUp}
+              onPointerLeave={handleOverlayPointerUp}
+              style={{
+                perspective: '1000px',
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              {spaceImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={spaceImageUrl}
+                  alt="Tu espacio"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : mainImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={mainImage}
+                  alt={productName}
+                  className="absolute inset-0 w-full h-full object-cover opacity-60"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm px-4 text-center">
+                  Sube una foto de tu espacio para ver el mueble en contexto.
+                </div>
+              )}
+
+              {mainImage && (
+                <div
+                  role="button"
+                  aria-label="Mueble en tu espacio"
+                  onPointerDown={handleOverlayPointerDown}
+                  className="absolute"
+                  style={{
+                    left: `${overlay.x * 100}%`,
+                    top: `${overlay.y * 100}%`,
+                    transform: `translate(-50%, -50%) rotateX(${overlay.tiltX}deg) rotateY(${overlay.tiltY}deg) rotateZ(${overlay.rotation}deg) scale(${visualScale})`,
+                    transformOrigin: 'center center',
+                    touchAction: 'none',
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={spaceImageUrl}
-                    alt="Tu espacio"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : mainImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                    id="producto-imagen-principal"
                     src={mainImage}
                     alt={productName}
-                    className="absolute inset-0 w-full h-full object-cover opacity-60"
+                    className="max-w-[55vw] md:max-w-[40vw] lg:max-w-[32vw] h-auto drop-shadow-2xl"
                   />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm px-4 text-center">
-                    Sube una foto de tu espacio para ver el mueble en
-                    contexto.
-                  </div>
-                )}
+                </div>
+              )}
+            </div>
 
-                {mainImage && (
-                  <div
-                    role="button"
-                    aria-label="Mueble en tu espacio"
-                    onPointerDown={handleOverlayPointerDown}
-                    className="absolute"
-                    style={{
-                      left: `${overlay.x * 100}%`,
-                      top: `${overlay.y * 100}%`,
-                      transform: `translate(-50%, -50%) rotateX(${overlay.tiltX}deg) rotateY(${overlay.tiltY}deg) rotateZ(${overlay.rotation}deg) scale(${visualScale})`,
-                      transformOrigin: 'center center',
-                      touchAction: 'none',
-                    }}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                  Escala visual
+                </label>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={2}
+                  step={0.05}
+                  value={overlay.scale}
+                  onChange={(e) =>
+                    setOverlay((prev) => ({
+                      ...prev,
+                      scale: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                  Rotación frontal
+                </label>
+                <input
+                  type="range"
+                  min={-30}
+                  max={30}
+                  step={1}
+                  value={overlay.rotation}
+                  onChange={(e) =>
+                    setOverlay((prev) => ({
+                      ...prev,
+                      rotation: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="block text-[11px] font-medium text-gray-600 mb-1">
+                  Posición rápida
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOverlay((prev) => ({ ...prev, x: 0.5, y: 0.5 }))
+                    }
+                    className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      id="producto-imagen-principal"
-                      src={mainImage}
-                      alt={productName}
-                      className="max-w-[55vw] md:max-w-[40vw] lg:max-w-[32vw] h-auto drop-shadow-2xl"
-                    />
-                  </div>
-                )}
+                    Centrar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverlay((prev) => ({ ...prev, y: 0.8 }))}
+                    className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
+                  >
+                    Piso
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOverlay((prev) => ({ ...prev, x: 0.25 }))
+                    }
+                    className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
+                  >
+                    Izquierda
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOverlay((prev) => ({ ...prev, x: 0.75 }))
+                    }
+                    className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
+                  >
+                    Derecha
+                  </button>
+                </div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <div>
-                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
-                    Escala visual
-                  </label>
-                  <input
-                    type="range"
-                    min={0.5}
-                    max={2}
-                    step={0.05}
-                    value={overlay.scale}
-                    onChange={(e) =>
-                      setOverlay((prev) => ({
-                        ...prev,
-                        scale: Number(e.target.value),
-                      }))
-                    }
-                    className="w-full"
-                  />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mt-2">
+              <div>
+                <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                  Profundidad (inclinación)
+                </label>
+                <input
+                  type="range"
+                  min={-25}
+                  max={25}
+                  step={1}
+                  value={overlay.tiltX}
+                  onChange={(e) =>
+                    setOverlay((prev) => ({
+                      ...prev,
+                      tiltX: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                  Ángulo lateral
+                </label>
+                <input
+                  type="range"
+                  min={-25}
+                  max={25}
+                  step={1}
+                  value={overlay.tiltY}
+                  onChange={(e) =>
+                    setOverlay((prev) => ({
+                      ...prev,
+                      tiltY: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleSaveDesign}
+                className="inline-flex items-center px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-semibold shadow-sm hover:bg-emerald-700 disabled:opacity-40"
+                disabled={!canSaveDesign}
+              >
+                Guardar diseño
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadDesignImage}
+                className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Descargar imagen del diseño
+              </button>
+            </div>
+
+            <div className="mt-3 border-t pt-3">
+              <div className="text-xs text-gray-700 space-y-1">
+                <div className="font-semibold">
+                  Mueble seleccionado:{' '}
+                  <span className="font-normal">{productName}</span>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
-                    Rotación
-                  </label>
-                  <input
-                    type="range"
-                    min={-30}
-                    max={30}
-                    step={1}
-                    value={overlay.rotation}
-                    onChange={(e) =>
-                      setOverlay((prev) => ({
-                        ...prev,
-                        rotation: Number(e.target.value),
-                      }))
-                    }
-                    className="w-full"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="block text-[11px] font-medium text-gray-600 mb-1">
-                    Posición rápida
+                <div className="flex flex-wrap gap-2">
+                  {productSku && (
+                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
+                      Código: {productSku}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
+                    Medidas:{' '}
+                    <span className="ml-1 font-medium">
+                      {config.dimensions.width} cm (ancho) ·{' '}
+                      {config.dimensions.height} cm (alto) ·{' '}
+                      {config.dimensions.depth} cm (fondo)
+                    </span>
                   </span>
-                  <div className="flex flex-wrap gap-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOverlay((prev) => ({ ...prev, x: 0.5, y: 0.5 }))
-                      }
-                      className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
-                    >
-                      Centrar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOverlay((prev) => ({ ...prev, y: 0.8 }))
-                      }
-                      className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
-                    >
-                      Piso
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOverlay((prev) => ({ ...prev, x: 0.25 }))
-                      }
-                      className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
-                    >
-                      Izquierda
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOverlay((prev) => ({ ...prev, x: 0.75 }))
-                      }
-                      className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
-                    >
-                      Derecha
-                    </button>
-                  </div>
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
+                    Color:{' '}
+                    <span className="ml-1 font-medium">
+                      {config.aesthetics.colors}
+                    </span>
+                  </span>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mt-2">
-                <div>
-                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
-                    Profundidad (inclinación)
-                  </label>
-                  <input
-                    type="range"
-                    min={-25}
-                    max={25}
-                    step={1}
-                    value={overlay.tiltX}
-                    onChange={(e) =>
-                      setOverlay((prev) => ({
-                        ...prev,
-                        tiltX: Number(e.target.value),
-                      }))
-                    }
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={handleSaveDesign}
-                  className="inline-flex items-center px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-semibold shadow-sm hover:bg-emerald-700 disabled:opacity-40"
-                  disabled={!canSaveDesign}
-                >
-                  Guardar diseño
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDownloadDesignImage}
-                  className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  Descargar imagen del diseño
-                </button>
-              </div>
-
-              <div className="mt-3 border-t pt-3">
-                <div className="text-xs text-gray-700 space-y-1">
-                  <div className="font-semibold">
-                    Mueble seleccionado:{' '}
-                    <span className="font-normal">{productName}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {productSku && (
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
-                        Código: {productSku}
-                      </span>
-                    )}
-                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
-                      Medidas:{' '}
-                      <span className="ml-1 font-medium">
-                        {config.dimensions.width} cm (ancho) ·{' '}
-                        {config.dimensions.height} cm (alto) ·{' '}
-                        {config.dimensions.depth} cm (fondo)
-                      </span>
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
-                      Color:{' '}
-                      <span className="ml-1 font-medium">
-                        {config.aesthetics.colors}
-                      </span>
-                    </span>
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 mt-1">
-                    Precio actual:{' '}
-                    <span className="text-brand">
-                      ${price.toFixed(2)}
-                    </span>
-                  </div>
+                <div className="text-sm font-semibold text-gray-900 mt-1">
+                  Precio actual:{' '}
+                  <span className="text-brand">${price.toFixed(2)}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
 
-        {images.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Galería del producto
-            </h3>
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {images.map((img, idx) => (
-                <button
-                  key={img + idx.toString()}
-                  type="button"
-                  onClick={() => {
-                    setActiveImageIndex(idx);
-                    setLightboxImage(img);
-                  }}
-                  className={`relative flex-shrink-0 w-20 h-20 rounded-lg border overflow-hidden ${
-                    idx === activeImageIndex
-                      ? 'border-brand ring-2 ring-brand/40'
-                      : 'border-gray-200 hover:border-brand/60'
-                  }`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={img}
-                    alt={`${productName} vista ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
+  return (
+    <>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)] items-start">
+        {/* Columna izquierda: foto del espacio + mueble superpuesto + galería */}
+        <div className="space-y-4">
+          <SpaceEditorCard />
+
+          {images.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm p-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                Galería del producto
+              </h3>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {images.map((img, idx) => (
+                  <button
+                    key={img + idx.toString()}
+                    type="button"
+                    onClick={() => {
+                      setActiveImageIndex(idx);
+                      setLightboxImage(img);
+                    }}
+                    className={`relative flex-shrink-0 w-20 h-20 rounded-lg border overflow-hidden ${
+                      idx === activeImageIndex
+                        ? 'border-brand ring-2 ring-brand/40'
+                        : 'border-gray-200 hover:border-brand/60'
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img}
+                      alt={`${productName} vista ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Columna derecha: precio + panel de configuración (medidas y color) */}
+        <div className="space-y-6">
+          <PriceBox
+            price={price}
+            tasa={tasa}
+            validation={validation}
+            onAddToCart={handleAddToCart}
+            onExportConfig={handleExportConfig}
+            isAdding={isAdding}
+            config={config}
+            productName={productName}
+            whatsappPhone={whatsappPhone}
+          />
+
+          <div className="form-card space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Medidas</h3>
+              <DimensionInputs
+                schema={schema.dimensions}
+                values={config.dimensions}
+                onChange={handleDimensionChange}
+              />
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Color</h3>
+              <AestheticSelector
+                schema={schema.aesthetics}
+                values={config.aesthetics}
+                onChange={handleAestheticChange}
+                ecpdColors={ecpdColors}
+              />
+            </div>
+          </div>
+        </div>
+
+        {lightboxImage && (
+          <div
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+            onClick={() => setLightboxImage(null)}
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxImage(null)}
+              className="absolute top-4 right-4 text-white text-2xl font-bold"
+              aria-label="Cerrar imagen ampliada"
+            >
+              ×
+            </button>
+            <div className="w-full h-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={lightboxImage}
+                alt={productName}
+                className="w-full h-full object-contain"
+              />
             </div>
           </div>
         )}
       </div>
 
-      {/* Columna derecha: precio + panel de configuración (medidas y color) */}
-      <div className="space-y-6">
-        <PriceBox
-          price={price}
-          tasa={tasa}
-          validation={validation}
-          onAddToCart={handleAddToCart}
-          onExportConfig={handleExportConfig}
-          isAdding={isAdding}
-          config={config}
-          productName={productName}
-          whatsappPhone={whatsappPhone}
-        />
-
-        <div className="form-card space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Medidas</h3>
-            <DimensionInputs
-              schema={schema.dimensions}
-              values={config.dimensions}
-              onChange={handleDimensionChange}
-            />
+      {isFullscreenEditorOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 text-white">
+            <p className="text-sm font-semibold">
+              Editar diseño en tu espacio
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsFullscreenEditorOpen(false)}
+              className="inline-flex items-center rounded-md border border-white/60 bg-white/10 px-3 py-1 text-xs font-semibold hover:bg-white/20"
+            >
+              Cerrar
+            </button>
           </div>
-
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Color</h3>
-            <AestheticSelector
-              schema={schema.aesthetics}
-              values={config.aesthetics}
-              onChange={handleAestheticChange}
-              ecpdColors={ecpdColors}
-            />
-          </div>
-        </div>
-      </div>
-
-      {lightboxImage && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
-          onClick={() => setLightboxImage(null)}
-        >
-          <button
-            type="button"
-            onClick={() => setLightboxImage(null)}
-            className="absolute top-4 right-4 text-white text-2xl font-bold"
-            aria-label="Cerrar imagen ampliada"
-          >
-            ×
-          </button>
-          <div className="w-full h-full">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={lightboxImage}
-              alt={productName}
-              className="w-full h-full object-contain"
-            />
+          <div className="flex-1 overflow-auto p-3">
+            <SpaceEditorCard fullscreen />
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
+
