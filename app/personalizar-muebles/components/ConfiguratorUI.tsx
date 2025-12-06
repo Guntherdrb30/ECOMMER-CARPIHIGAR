@@ -484,6 +484,7 @@ export default function ConfiguratorUI({
                 <img
                   src={spaceImageUrl}
                   alt="Tu espacio"
+                  crossOrigin="anonymous"
                   className="absolute inset-0 w-full h-full object-cover"
                 />
               ) : mainImage ? (
