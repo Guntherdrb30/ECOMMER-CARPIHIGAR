@@ -68,9 +68,8 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     ? (tipoRaw as "recibo" | "factura")
     : "recibo";
 
-  // For now we always generate in VES
+  // Por ahora todos los montos del PDF se muestran en VES
   const moneda: "VES" = "VES";
-
   const orderId = params.orderId;
 
   try {
@@ -103,7 +102,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
 
     const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
 
-    // Correlatives (only assigned first time)
+    // Correlativos (solo se asignan la primera vez)
     let invoiceNumber = (order as any).invoiceNumber as number | null | undefined;
     let receiptNumber = (order as any).receiptNumber as number | null | undefined;
 
@@ -139,7 +138,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
       });
     }
 
-    // Logo: configured one (settings), then Trends172, luego logo genérico de Carpihogar
+    // Logo: configurado, luego Trends172, luego genérico
     const logoBuf =
       (await fetchLogoBuffer((settings as any)?.logoUrl)) ||
       (await fetchLogoBuffer("/trends172-logo.png")) ||
@@ -158,7 +157,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     const toMoney = (v: number) => v * tasaVES;
     const money = (v: number) => `Bs ${formatAmount(v)}`;
 
-    // Base totals in USD
+    // Totales base en USD
     let subtotalUSD = 0;
     for (const it of order.items as any[]) {
       const p = Number((it as any).priceUSD || 0);
@@ -212,7 +211,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     }
 
     if (tipo === "factura") {
-      // Legal header for Trends172
+      // Encabezado legal
       doc.fontSize(14).fillColor("#111").text(legalName, logoBuf ? 100 : 40, 30);
       doc.fontSize(10).fillColor("#444");
       doc.text(`RIF: ${legalRif}`, logoBuf ? 100 : 40);
@@ -231,8 +230,11 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
         doc.y,
       );
     } else {
-      // Simple receipt header with Carpihogar branding
-      doc.fontSize(18).fillColor("#111").text(String(brandName), logoBuf ? 90 : 40, 35);
+      // Encabezado de recibo Carpihogar
+      doc
+        .fontSize(18)
+        .fillColor("#111")
+        .text(String(brandName), logoBuf ? 90 : 40, 35);
       doc.fontSize(10).fillColor("#444");
       if (contactEmail) doc.text(contactEmail, logoBuf ? 90 : 40);
       if (contactPhone) doc.text(contactPhone, logoBuf ? 90 : 40);
@@ -248,45 +250,65 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     // Operation info ------------------------------------------------
     doc.moveDown(0.5);
     doc.fontSize(11).fillColor("#111").text("Datos de la operación", 40, doc.y);
-    doc.moveDown(0.5);
+    doc.moveDown(0.4);
     doc.fontSize(9).fillColor("#333");
 
-    doc.text(`Cliente: ${user?.name || user?.email || "-"}`);
-    if (order.customerTaxId) {
-      doc.text(`Cédula/RIF: ${order.customerTaxId}`);
-    }
-    if (order.customerFiscalAddress) {
-      doc.text(`Dirección fiscal: ${order.customerFiscalAddress}`);
-    }
+    const infoTopY = doc.y;
+    const leftX = 40;
+    const rightX = 320;
+    const lineHeight = 12;
 
     const phone =
       (order as any)?.shippingAddress?.phone || (user?.phone as string | undefined) || "";
+
+    const leftLines: string[] = [];
+    leftLines.push(`Cliente: ${user?.name || user?.email || "-"}`);
+    if (order.customerTaxId) {
+      leftLines.push(`Cédula/RIF: ${order.customerTaxId}`);
+    }
+    if (order.customerFiscalAddress) {
+      leftLines.push(`Dirección fiscal: ${order.customerFiscalAddress}`);
+    }
     if (phone) {
-      doc.text(`Teléfono: ${phone}`);
+      leftLines.push(`Teléfono: ${phone}`);
     }
 
+    const rightLines: string[] = [];
     if (seller) {
-      doc.text(`Vendedor: ${seller.name || seller.email || ""}`);
+      rightLines.push(`Vendedor: ${seller.name || seller.email || ""}`);
     }
-
-    doc.text(
+    rightLines.push(
       `Fecha: ${new Date(order.createdAt as any).toLocaleString("es-VE", {
         dateStyle: "short",
         timeStyle: "short",
       })}`,
     );
-    doc.text(`Moneda: ${moneda}`);
-    doc.text(`IVA: ${ivaPercent}%  -  Tasa: ${tasaVES}`);
+    rightLines.push(`Moneda: ${moneda}`);
+    rightLines.push(`IVA: ${ivaPercent}%  -  Tasa: ${tasaVES}`);
 
     if (order.payment) {
-      doc.moveDown(0.5);
       const pay = order.payment as any;
-      doc.text(
+      rightLines.push(
         `Pago: ${pay.method || "-"} - ${pay.currency || "USD"}${
           pay.reference ? ` - Ref: ${pay.reference}` : ""
         }`,
       );
     }
+
+    leftLines.forEach((line, idx) => {
+      doc.text(line, leftX, infoTopY + idx * lineHeight, {
+        width: rightX - leftX - 10,
+      });
+    });
+
+    rightLines.forEach((line, idx) => {
+      doc.text(line, rightX, infoTopY + idx * lineHeight, {
+        width: 555 - rightX,
+      });
+    });
+
+    const infoLines = Math.max(leftLines.length, rightLines.length);
+    doc.y = infoTopY + infoLines * lineHeight + 8;
 
     // Products ------------------------------------------------------
     doc.moveDown(0.8);
@@ -296,7 +318,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     const startX = 40;
     // Usable width: from 40 (margin) to 555 -> 515 points
     const colWidths = [30, 70, 240, 60, 60, 55]; // sum = 515
-    const headers = ["Cant", "Codigo", "Descripcion del Producto", "Precio", "Total", "Kg/Und"];
+    const headers = ["Cant", "Código", "Descripción del Producto", "Precio", "Total", "Kg/Und"];
 
     doc.fontSize(9).fillColor("#333");
     headers.forEach((h, i) => {
@@ -320,7 +342,7 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
         (it as any).name || (it as any).product?.name || "Producto",
         money(toMoney(p)),
         money(toMoney(sub)),
-        "", // weight/unit (not available yet)
+        "", // peso/unidad (no disponible aún)
       ];
 
       cols.forEach((c, i) => {
@@ -353,44 +375,28 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     const totalsValueX = 495;
     const totalsWidth = 90;
 
-    doc.fontSize(10).fillColor("#111");
-    doc.text("Base imponible:", totalsLabelX, doc.y);
-    doc.text(money(subtotalBs), totalsValueX, doc.y, {
-      align: "right",
-      width: totalsWidth,
-    });
-    doc.moveDown(0.2);
-
-    doc.text(`I.V.A. (${ivaPercent}%):`, totalsLabelX, doc.y);
-    doc.text(money(ivaBs), totalsValueX, doc.y, {
-      align: "right",
-      width: totalsWidth,
-    });
-    doc.moveDown(0.2);
-
-    if (discountUSD > 0) {
-      doc.text("Descuento 20% pago USD:", totalsLabelX, doc.y);
-      doc.text(`- ${money(discountBs)}`, totalsValueX, doc.y, {
+    const writeTotalLine = (label: string, value: string, bold = false) => {
+      const lineY = doc.y;
+      doc.font(bold ? "Helvetica-Bold" : "Helvetica");
+      doc.text(label, totalsLabelX, lineY);
+      doc.text(value, totalsValueX, lineY, {
         align: "right",
         width: totalsWidth,
       });
-      doc.moveDown(0.2);
+      doc.moveDown(0.25);
+    };
+
+    doc.fontSize(10).fillColor("#111");
+
+    writeTotalLine("Base imponible:", money(subtotalBs));
+    writeTotalLine(`I.V.A. (${ivaPercent}%):`, money(ivaBs));
+
+    if (discountUSD > 0) {
+      writeTotalLine("Descuento 20% pago USD:", `- ${money(discountBs)}`);
     }
 
-    doc.text("I.G.T.F. 3%:", totalsLabelX, doc.y);
-    doc.text(money(igtfBs), totalsValueX, doc.y, {
-      align: "right",
-      width: totalsWidth,
-    });
-    doc.moveDown(0.2);
-
-    doc.font("Helvetica-Bold");
-    doc.text("Total operación:", totalsLabelX, doc.y);
-    doc.text(money(totalOperacionBs), totalsValueX, doc.y, {
-      align: "right",
-      width: totalsWidth,
-    });
-    doc.font("Helvetica");
+    writeTotalLine("I.G.T.F. 3%:", money(igtfBs));
+    writeTotalLine("Total operación:", money(totalOperacionBs), true);
 
     // Footer --------------------------------------------------------
     doc.moveDown(1);
@@ -434,3 +440,4 @@ export async function GET(req: Request, { params }: { params: { orderId: string 
     return new NextResponse(`Error: ${String(e)}`, { status: 500 });
   }
 }
+
