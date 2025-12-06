@@ -263,6 +263,21 @@ export default function ConfiguratorUI({
     }
   }, []);
 
+  const handleOverlayClick = () => {
+    // Atajo rápido: cada clic alterna entre tres tamaños cómodos.
+    const presets = [0.8, 1, 1.4];
+    setOverlay((prev) => {
+      const currentIndex = presets.findIndex(
+        (p) => Math.abs(p - prev.scale) < 0.05,
+      );
+      const nextIndex = currentIndex === -1 ? 1 : (currentIndex + 1) % presets.length;
+      return {
+        ...prev,
+        scale: presets[nextIndex],
+      };
+    });
+  };
+
   const handleDownloadDesignImage = async () => {
     if (!spaceImageUrl) {
       toast.error('Primero sube la foto de tu espacio.');
@@ -489,6 +504,7 @@ export default function ConfiguratorUI({
                   role="button"
                   aria-label="Mueble en tu espacio"
                   onPointerDown={handleOverlayPointerDown}
+                  onClick={handleOverlayClick}
                   className="absolute"
                   style={{
                     left: `${overlay.x * 100}%`,
@@ -812,4 +828,3 @@ export default function ConfiguratorUI({
     </>
   );
 }
-
