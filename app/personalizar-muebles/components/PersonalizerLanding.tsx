@@ -84,6 +84,7 @@ export default function PersonalizerLanding({
             <input
               type="file"
               accept="image/*"
+              capture="environment"
               onChange={handleUpload}
               className="text-xs"
             />
@@ -125,8 +126,9 @@ export default function PersonalizerLanding({
               </h2>
               {!spaceImageUrl && (
                 <p className="text-[11px] text-gray-500">
-                  Consejo: sube primero la foto de tu espacio para verlo
-                  inmediatamente con el mueble elegido.
+                  Consejo: sube primero la foto de tu espacio (puedes usar la
+                  cámara del teléfono o elegir una imagen de tu galería) para
+                  verlo inmediatamente con el mueble elegido.
                 </p>
               )}
             </div>
@@ -173,4 +175,3 @@ export default function PersonalizerLanding({
     </div>
   );
 }
-

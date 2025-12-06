@@ -395,6 +395,7 @@ export default function ConfiguratorUI({
                 <input
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={handleSpaceImageChange}
                   className="text-xs"
                 />
@@ -707,4 +708,3 @@ export default function ConfiguratorUI({
     </div>
   );
 }
-
