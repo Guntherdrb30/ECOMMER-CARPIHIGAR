@@ -93,6 +93,8 @@ model User {
 
   // Moodboards creados por el usuario
   moodboards        Moodboard[]
+  // Diseños personalizados del configurador ECPD
+  ecpdDesigns       EcpdDesign[]
 
   passwordResetToken          String?   @unique
   passwordResetTokenExpiresAt DateTime?
@@ -279,6 +281,8 @@ model Product {
 
   // Back-relation to assistant cart items
   assistantCartItems AssistantCartItem[]
+  // Diseños personalizados vinculados a este producto
+  ecpdDesigns   EcpdDesign[]
 }
 
 // Join table for Product <-> Product related items
@@ -955,6 +959,32 @@ model Moodboard {
   updatedAt DateTime @updatedAt
 
   @@index([userId, updatedAt])
+}
+
+// Diseños de muebles personalizados (ECPD) guardados por el cliente
+model EcpdDesign {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  // Imagen del espacio subida por el cliente
+  spaceImageUrl  String
+  // Configuración completa del mueble (dimensiones, componentes, estética)
+  config         Json
+  // Posición relativa del mueble sobre la foto (0-1, centro)
+  overlayX       Float    @default(0.5)
+  overlayY       Float    @default(0.5)
+  // Escala visual adicional aplicada sobre la escala derivada de las dimensiones reales
+  overlayScale   Float    @default(1)
+  // Rotación visual en grados
+  overlayRotation Float   @default(0)
+  // Precio en el momento de guardar
+  priceUSD       Decimal  @db.Decimal(10, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId, createdAt])
 }
 
 // Token para confirmar órdenes por WhatsApp

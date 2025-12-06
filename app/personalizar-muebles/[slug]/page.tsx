@@ -3,6 +3,8 @@ import { getConfigurableProductBySlug } from '@/server/actions/ecpd';
 import { getSettings } from '@/server/actions/settings';
 import ConfiguratorUI from '../components/ConfiguratorUI';
 import { ProductSchema, type ProductSchemaType } from '../lib/ProductSchema';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export const metadata = {
   title: 'Personalizar mueble | Carpihogar',
@@ -10,14 +12,19 @@ export const metadata = {
 
 export default async function PersonalizarMuebleBySlugPage({
   params,
+  searchParams,
 }: {
   params: { slug: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }) {
   const product = await getConfigurableProductBySlug(params.slug);
   if (!product) {
     notFound();
   }
-  const settings = await getSettings();
+  const [settings, session] = await Promise.all([
+    getSettings(),
+    getServerSession(authOptions),
+  ]);
   const tasa = Number((settings as any).tasaVES ?? 1);
   const whatsappPhone =
     ((settings as any).whatsappPhone as string | undefined) || undefined;
@@ -100,6 +107,19 @@ export default async function PersonalizarMuebleBySlugPage({
     ? ((product as any).images as string[])
     : [];
 
+  const spaceImageUrlParam = (() => {
+    const raw = searchParams?.space;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    if (!value) return null;
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  })();
+
+  const canSaveDesign = Boolean((session as any)?.user?.id);
+
   return (
     <div className="bg-gray-50 py-10">
       <div className="container mx-auto px-4 space-y-8">
@@ -124,6 +144,9 @@ export default async function PersonalizarMuebleBySlugPage({
           productImages={images}
           ecpdColors={ecpdColors}
           whatsappPhone={whatsappPhone}
+          productSku={(product as any).sku || null}
+          initialSpaceImageUrl={spaceImageUrlParam}
+          canSaveDesign={canSaveDesign}
         />
       </div>
     </div>

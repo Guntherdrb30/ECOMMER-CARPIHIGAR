@@ -329,12 +329,18 @@ export default function ProductDetailClient({
             </p>
 
             {isConfigurable && configurableHref && (
-              <div className="mb-6">
+              <div className="mb-6 flex flex-wrap gap-3">
                 <a
                   href={configurableHref}
                   className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-brand text-white text-sm font-semibold shadow-sm hover:bg-opacity-90 transition-colors"
                 >
                   Personalizar este mueble
+                </a>
+                <a
+                  href={configurableHref}
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-gray-300 text-sm font-semibold text-gray-800 bg-white hover:bg-gray-50 transition-colors"
+                >
+                  Personalizar en mi espacio
                 </a>
               </div>
             )}

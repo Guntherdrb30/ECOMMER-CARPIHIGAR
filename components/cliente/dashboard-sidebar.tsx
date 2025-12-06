@@ -10,6 +10,7 @@ const navItems = [
   { name: 'Mis Envíos', href: '/dashboard/cliente/envios', icon: 'Package' },
   { name: 'Mis Favoritos', href: '/dashboard/cliente/favoritos', icon: 'Heart' },
   { name: 'Mis Direcciones', href: '/dashboard/cliente/direcciones', icon: 'MapPin' },
+  { name: 'Mis diseños personalizados', href: '/dashboard/cliente/disenos', icon: 'Heart' },
   { name: 'Mi Perfil', href: '/dashboard/cliente/perfil', icon: 'User' },
 ];
 

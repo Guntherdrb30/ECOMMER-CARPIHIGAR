@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import DimensionInputs from './DimensionInputs';
 import AestheticSelector from './AestheticSelector';
 import PriceBox from './PriceBox';
@@ -17,6 +17,13 @@ import { calculatePriceForConfig } from '../api/calculate';
 import { useCartStore } from '@/store/cart';
 import { toast } from 'sonner';
 
+type OverlayState = {
+  x: number; // 0-1 horizontal (centro)
+  y: number; // 0-1 vertical (centro)
+  scale: number;
+  rotation: number; // grados
+};
+
 type ConfiguratorUIProps = {
   schema: ProductSchemaType;
   tasa: number;
@@ -25,6 +32,11 @@ type ConfiguratorUIProps = {
   productImages?: string[];
   ecpdColors?: Array<{ name?: string; description?: string; image?: string }>;
   whatsappPhone?: string;
+  productSku?: string | null;
+  initialConfig?: ProductConfig | null;
+  initialSpaceImageUrl?: string | null;
+  initialOverlay?: OverlayState | null;
+  canSaveDesign?: boolean;
 };
 
 export default function ConfiguratorUI({
@@ -35,15 +47,23 @@ export default function ConfiguratorUI({
   productImages,
   ecpdColors,
   whatsappPhone,
+  productSku,
+  initialConfig,
+  initialSpaceImageUrl,
+  initialOverlay,
+  canSaveDesign = false,
 }: ConfiguratorUIProps) {
   const [config, setConfig] = useState<ProductConfig>(() =>
-    createDefaultConfig(schema),
+    initialConfig ? initialConfig : createDefaultConfig(schema),
   );
   const [validation, setValidation] = useState<FullValidationResult | null>(
     null,
   );
   const [price, setPrice] = useState<number>(() =>
-    calculatePriceForConfig(createDefaultConfig(schema), schema),
+    calculatePriceForConfig(
+      initialConfig ? initialConfig : createDefaultConfig(schema),
+      schema,
+    ),
   );
   const [isAdding, setIsAdding] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -51,6 +71,17 @@ export default function ConfiguratorUI({
   const [colorPreviewImage, setColorPreviewImage] = useState<string | null>(
     null,
   );
+
+  const [spaceImageUrl, setSpaceImageUrl] = useState<string | null>(
+    initialSpaceImageUrl || null,
+  );
+  const [spaceUploading, setSpaceUploading] = useState(false);
+  const [spaceUploadError, setSpaceUploadError] = useState<string | null>(null);
+  const [overlay, setOverlay] = useState<OverlayState>(
+    initialOverlay || { x: 0.5, y: 0.5, scale: 1, rotation: 0 },
+  );
+  const spaceContainerRef = useRef<HTMLDivElement | null>(null);
+  const isDraggingRef = useRef(false);
 
   const addItem = useCartStore((state) => state.addItem);
 
@@ -167,6 +198,173 @@ export default function ConfiguratorUI({
     }
   };
 
+  const handleSpaceImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSpaceUploadError(null);
+    setSpaceUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('type', 'image');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: form,
+      });
+      const json: any = await res.json().catch(() => null);
+      if (!res.ok || !json?.url) {
+        throw new Error(json?.error || 'No se pudo subir la imagen.');
+      }
+      setSpaceImageUrl(json.url as string);
+      toast.success('Imagen de tu espacio cargada.');
+    } catch (err: any) {
+      const msg =
+        typeof err?.message === 'string'
+          ? err.message
+          : 'No se pudo subir la imagen.';
+      setSpaceUploadError(msg);
+      toast.error(msg);
+    } finally {
+      setSpaceUploading(false);
+      // Permitir volver a subir el mismo archivo si hace falta
+      e.target.value = '';
+    }
+  };
+
+  const runDownloadCapture = useCallback(async (): Promise<string | null> => {
+    if (!spaceContainerRef.current) return null;
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(spaceContainerRef.current, {
+        useCORS: true,
+        backgroundColor: null,
+      });
+      return canvas.toDataURL('image/png');
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Error capturando diseño ECPD:', err);
+      return null;
+    }
+  }, []);
+
+  const handleDownloadDesignImage = async () => {
+    if (!spaceImageUrl) {
+      toast.error('Primero sube la foto de tu espacio.');
+      return;
+    }
+    const dataUrl = await runDownloadCapture();
+    if (!dataUrl) {
+      toast.error(
+        'No se pudo generar la imagen del diseño. Intenta de nuevo o usa una captura de pantalla.',
+      );
+      return;
+    }
+    try {
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `${productName || 'diseno-mueble'}-carpihogar.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {
+      toast.error('No se pudo descargar la imagen del diseño.');
+    }
+  };
+
+  const handleSaveDesign = async () => {
+    if (!canSaveDesign) {
+      toast.error('Debes iniciar sesión para guardar tu diseño.');
+      return;
+    }
+    if (!spaceImageUrl) {
+      toast.error('Primero sube la foto de tu espacio.');
+      return;
+    }
+    const currentValidation = validateConfig(config, schema);
+    if (!currentValidation.valid) {
+      setValidation(currentValidation);
+      toast.error('Revisa la configuración antes de guardar el diseño.');
+      return;
+    }
+
+    try {
+      const payload = {
+        productId,
+        spaceImageUrl,
+        config,
+        overlay,
+        priceUSD: price,
+      };
+      const res = await fetch('/api/ecpd-designs/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json: any = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg =
+          json?.message ||
+          json?.error ||
+          'No se pudo guardar el diseño personalizado.';
+        toast.error(String(msg));
+        return;
+      }
+      toast.success('Diseño personalizado guardado en tu cuenta.');
+    } catch (err: any) {
+      const msg =
+        typeof err?.message === 'string'
+          ? err.message
+          : 'No se pudo guardar el diseño personalizado.';
+      toast.error(msg);
+    }
+  };
+
+  const handleOverlayPointerDown = (
+    e: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDraggingRef.current = true;
+    const container = spaceContainerRef.current;
+    if (container && typeof (container as any).setPointerCapture === 'function') {
+      try {
+        (container as any).setPointerCapture(e.pointerId);
+      } catch {}
+    }
+  };
+
+  const handleOverlayPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    const container = spaceContainerRef.current;
+    if (
+      container &&
+      typeof (container as any).releasePointerCapture === 'function'
+    ) {
+      try {
+        (container as any).releasePointerCapture(e.pointerId);
+      } catch {}
+    }
+  };
+
+  const handleOverlayPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    const container = spaceContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const clampedX = Math.min(1, Math.max(0, x));
+    const clampedY = Math.min(1, Math.max(0, y));
+    setOverlay((prev) => ({
+      ...prev,
+      x: clampedX,
+      y: clampedY,
+    }));
+  };
+
   const images = Array.isArray(productImages) ? productImages : [];
   const mainImage =
     colorPreviewImage ||
@@ -174,31 +372,243 @@ export default function ConfiguratorUI({
       ? images[Math.min(activeImageIndex, images.length - 1)]
       : undefined);
 
+  const baseWidth =
+    (schema as any).initialDimensions?.width ?? schema.dimensions.width.min;
+  const dimensionScale =
+    baseWidth > 0 ? config.dimensions.width / baseWidth : 1;
+  const visualScale = Math.max(
+    0.25,
+    Math.min(4, dimensionScale * overlay.scale),
+  );
+
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)] items-start">
-      {/* Columna izquierda: imagen principal + galería */}
+      {/* Columna izquierda: foto del espacio + mueble superpuesto + galería */}
       <div className="space-y-4">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div
-            className="h-64 md:h-80 lg:h-[420px] bg-gray-900 flex items-center justify-center relative cursor-pointer"
-            onClick={() => {
-              if (mainImage) setLightboxImage(mainImage);
-            }}
-          >
-            {mainImage && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                id="producto-imagen-principal"
-                src={mainImage}
-                alt={productName}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            )}
-            {!mainImage && (
-              <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
-                Sin imagen disponible
+          <div className="p-4 space-y-4">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold tracking-[0.18em] text-brand uppercase">
+                1. Sube la imagen de tu espacio
+              </p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleSpaceImageChange}
+                  className="text-xs"
+                />
+                {spaceUploading && (
+                  <span className="text-xs text-gray-500">
+                    Subiendo imagen...
+                  </span>
+                )}
+                {spaceImageUrl && !spaceUploading && (
+                  <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                    Imagen cargada
+                  </span>
+                )}
               </div>
-            )}
+              {spaceUploadError && (
+                <p className="text-xs text-red-600">{spaceUploadError}</p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs font-semibold tracking-[0.18em] text-brand uppercase">
+                2. Coloca el mueble en tu espacio
+              </p>
+              <div
+                ref={spaceContainerRef}
+                className="relative h-64 md:h-80 lg:h-[380px] bg-gray-900 rounded-lg overflow-hidden cursor-move"
+                onPointerMove={handleOverlayPointerMove}
+                onPointerUp={handleOverlayPointerUp}
+                onPointerLeave={handleOverlayPointerUp}
+              >
+                {spaceImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={spaceImageUrl}
+                    alt="Tu espacio"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : mainImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mainImage}
+                    alt={productName}
+                    className="absolute inset-0 w-full h-full object-cover opacity-60"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm px-4 text-center">
+                    Sube una foto de tu espacio para ver el mueble en
+                    contexto.
+                  </div>
+                )}
+
+                {mainImage && (
+                  <div
+                    role="button"
+                    aria-label="Mueble en tu espacio"
+                    onPointerDown={handleOverlayPointerDown}
+                    className="absolute"
+                    style={{
+                      left: `${overlay.x * 100}%`,
+                      top: `${overlay.y * 100}%`,
+                      transform: `translate(-50%, -50%) scale(${visualScale}) rotate(${overlay.rotation}deg)`,
+                      transformOrigin: 'center center',
+                      touchAction: 'none',
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      id="producto-imagen-principal"
+                      src={mainImage}
+                      alt={productName}
+                      className="max-w-[55vw] md:max-w-[40vw] lg:max-w-[32vw] h-auto drop-shadow-2xl"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                    Escala visual
+                  </label>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={2}
+                    step={0.05}
+                    value={overlay.scale}
+                    onChange={(e) =>
+                      setOverlay((prev) => ({
+                        ...prev,
+                        scale: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                    Rotación
+                  </label>
+                  <input
+                    type="range"
+                    min={-30}
+                    max={30}
+                    step={1}
+                    value={overlay.rotation}
+                    onChange={(e) =>
+                      setOverlay((prev) => ({
+                        ...prev,
+                        rotation: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="block text-[11px] font-medium text-gray-600 mb-1">
+                    Posición rápida
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOverlay((prev) => ({ ...prev, x: 0.5, y: 0.5 }))
+                      }
+                      className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
+                    >
+                      Centrar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOverlay((prev) => ({ ...prev, y: 0.8 }))
+                      }
+                      className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
+                    >
+                      Piso
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOverlay((prev) => ({ ...prev, x: 0.25 }))
+                      }
+                      className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
+                    >
+                      Izquierda
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOverlay((prev) => ({ ...prev, x: 0.75 }))
+                      }
+                      className="px-2 py-1 rounded border text-[11px] text-gray-700 hover:bg-gray-50"
+                    >
+                      Derecha
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveDesign}
+                  className="inline-flex items-center px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-semibold shadow-sm hover:bg-emerald-700 disabled:opacity-40"
+                  disabled={!canSaveDesign}
+                >
+                  Guardar diseño
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadDesignImage}
+                  className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  Descargar imagen del diseño
+                </button>
+              </div>
+
+              <div className="mt-3 border-t pt-3">
+                <div className="text-xs text-gray-700 space-y-1">
+                  <div className="font-semibold">
+                    Mueble seleccionado:{' '}
+                    <span className="font-normal">{productName}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {productSku && (
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
+                        Código: {productSku}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
+                      Medidas:{' '}
+                      <span className="ml-1 font-medium">
+                        {config.dimensions.width} cm (ancho) ·{' '}
+                        {config.dimensions.height} cm (alto) ·{' '}
+                        {config.dimensions.depth} cm (fondo)
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
+                      Color:{' '}
+                      <span className="ml-1 font-medium">
+                        {config.aesthetics.colors}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 mt-1">
+                    Precio actual:{' '}
+                    <span className="text-brand">
+                      ${price.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -297,3 +707,4 @@ export default function ConfiguratorUI({
     </div>
   );
 }
+
