@@ -21,7 +21,9 @@ type OverlayState = {
   x: number; // 0-1 horizontal (centro)
   y: number; // 0-1 vertical (centro)
   scale: number;
-  rotation: number; // grados
+  rotation: number; // rotación frontal (Z)
+  tiltX: number; // inclinación adelante / atrás (X)
+  tiltY: number; // inclinación izquierda / derecha (Y)
 };
 
 type ConfiguratorUIProps = {
@@ -78,7 +80,7 @@ export default function ConfiguratorUI({
   const [spaceUploading, setSpaceUploading] = useState(false);
   const [spaceUploadError, setSpaceUploadError] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<OverlayState>(
-    initialOverlay || { x: 0.5, y: 0.5, scale: 1, rotation: 0 },
+    initialOverlay || { x: 0.5, y: 0.5, scale: 1, rotation: 0, tiltX: 0, tiltY: 0 },
   );
   const spaceContainerRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
@@ -425,6 +427,10 @@ export default function ConfiguratorUI({
                 onPointerMove={handleOverlayPointerMove}
                 onPointerUp={handleOverlayPointerUp}
                 onPointerLeave={handleOverlayPointerUp}
+                style={{
+                  perspective: '1000px',
+                  transformStyle: 'preserve-3d',
+                }}
               >
                 {spaceImageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -456,7 +462,7 @@ export default function ConfiguratorUI({
                     style={{
                       left: `${overlay.x * 100}%`,
                       top: `${overlay.y * 100}%`,
-                      transform: `translate(-50%, -50%) scale(${visualScale}) rotate(${overlay.rotation}deg)`,
+                      transform: `translate(-50%, -50%) rotateX(${overlay.tiltX}deg) rotateY(${overlay.tiltY}deg) rotateZ(${overlay.rotation}deg) scale(${visualScale})`,
                       transformOrigin: 'center center',
                       touchAction: 'none',
                     }}
@@ -553,6 +559,28 @@ export default function ConfiguratorUI({
                       Derecha
                     </button>
                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mt-2">
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                    Profundidad (inclinación)
+                  </label>
+                  <input
+                    type="range"
+                    min={-25}
+                    max={25}
+                    step={1}
+                    value={overlay.tiltX}
+                    onChange={(e) =>
+                      setOverlay((prev) => ({
+                        ...prev,
+                        tiltX: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full"
+                  />
                 </div>
               </div>
 

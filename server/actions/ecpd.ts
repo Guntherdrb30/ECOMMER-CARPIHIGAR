@@ -83,6 +83,7 @@ export async function getConfigurableProductBySlug(rawSlug: string) {
       id: true,
       name: true,
       slug: true,
+      sku: true,
       description: true,
       images: true,
       priceUSD: true,
