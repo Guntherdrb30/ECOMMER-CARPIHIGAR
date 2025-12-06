@@ -648,6 +648,10 @@ export default function ConfiguratorUI({
               </div>
             </div>
 
+            <p className="mt-2 text-[11px] text-gray-500">
+              Tip: también puedes tocar o hacer clic sobre el mueble para cambiar rápidamente su tamaño.
+            </p>
+
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
